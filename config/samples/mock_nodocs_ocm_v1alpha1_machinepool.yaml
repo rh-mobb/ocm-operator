@@ -1,0 +1,18 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: MachinePool
+metadata:
+  name: machinepool-sample
+spec:
+  cluster: "cluster-name"
+  displayName: "New Machine Pool"
+  minimumNodesPerZone: 2
+  maximumNodesPerZone: 4
+  instanceType: m5.xlarge
+  labels:
+    this: that
+  taints:
+    - key: this
+      value: that
+      effect: NoSchedule
+  aws:
+    requestSpotInstances: false

@@ -1,0 +1,12 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: MachinePool
+metadata:
+  labels:
+    app.kubernetes.io/name: machinepool
+    app.kubernetes.io/instance: machinepool-sample
+    app.kubernetes.io/part-of: ocm-machine-pool-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: ocm-machine-pool-operator
+  name: machinepool-sample
+spec:
+  # TODO(user): Add fields here

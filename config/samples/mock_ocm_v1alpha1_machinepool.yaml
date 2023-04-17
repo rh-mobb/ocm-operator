@@ -1,0 +1,53 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: MachinePool
+metadata:
+  # this is used as the name for the machine pool if displayName is not set.  This
+  # allows us to simplify the API by using a kubernetes friendly name, while allowing 
+  # the user to override this value with the "spec.displayName" field so that OCM
+  # can display a more friendly name.
+  name: machinepool-sample
+spec:
+  # NOTE: all validations to be done in the controller for simplicity for now.
+  #       can move to a proper webhook at a later time for a more robust
+  #       implementation.
+  #
+
+  # this is the cluster name in OCM that we are interacting with
+  cluster: "cluster-name"
+
+  # this is the name displayed in OCM.  if unset, the "metadata.name" field is used
+  # to set the name for the machine pool.
+  displayName: "Machine Pool Sample"
+
+  # validate that minimum nodes is >= 2 for single AZ config (default to 2 for single AZ)
+  # validate that minimum nodes is >= 1 for multi AZ config (default to 1 for multi AZ x 3 = 3 nodes total)
+  # NOTE: see https://docs.openshift.com/rosa/rosa_architecture/rosa_policy_service_definition/rosa-service-definition.html#rosa-sdpolicy-instance-types_rosa-service-definition
+  minimumNodesPerZone: 2
+  # if maximumNodesPerZone is enabled, autoscaling is also enabled
+  # validate that maximum nodes > minimum nodes
+  maximumNodesPerZone: 4
+
+  # default to m5.xlarge
+  # must validate that then node types meet the node types as set in the service definition
+  instanceType: m5.xlarge
+
+  # passed in directly as map[string]string
+  labels:
+    this: that
+    # this is reserved.  this will allow us to detect overlaps and not
+    # affect unmanaged machine pools.
+    #
+    # ocm.mobb.redhat.com/managed: true
+
+  # use metav1.Taint to define
+  taints:
+    - key: this
+      value: that
+      # one of NoSchedule, NoExecute, PreferNoSchedule
+      effect: NoSchedule
+      # operator: Equal < this is always set to Equal in OCM
+
+  # provider specific config
+  # NOTE: we can self-detect the provider for validations/defaults when we pull the cluster from OCM
+  aws:
+    requestSpotInstances: false
