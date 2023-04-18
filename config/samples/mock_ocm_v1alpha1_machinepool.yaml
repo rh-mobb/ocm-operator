@@ -13,7 +13,7 @@ spec:
   #
 
   # this is the cluster name in OCM that we are interacting with
-  cluster: "cluster-name"
+  clusterName: "dscott"
 
   # this is the name displayed in OCM.  if unset, the "metadata.name" field is used
   # to set the name for the machine pool.

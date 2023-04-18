@@ -3,8 +3,8 @@ kind: MachinePool
 metadata:
   name: machinepool-sample
 spec:
-  cluster: "cluster-name"
-  displayName: "New Machine Pool"
+  clusterName: "dscott"
+  displayName: "test3"
   minimumNodesPerZone: 2
   maximumNodesPerZone: 4
   instanceType: m5.xlarge
@@ -15,4 +15,5 @@ spec:
       value: that
       effect: NoSchedule
   aws:
-    requestSpotInstances: false
+    spotInstances:
+      enabled: false

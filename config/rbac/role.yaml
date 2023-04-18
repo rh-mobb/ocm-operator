@@ -1,0 +1,49 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - nodes/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - machinepools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - machinepools/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - machinepools/status
+  verbs:
+  - get
+  - patch
+  - update

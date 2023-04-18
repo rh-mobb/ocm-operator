@@ -1,4 +1,4 @@
-module github.com/rh-mobb/ocm-machine-pool-operator
+module github.com/rh-mobb/ocm-operator
 
 go 1.19
 
@@ -8,6 +8,28 @@ require (
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
 	sigs.k8s.io/controller-runtime v0.14.1
+)
+
+require (
+	emperror.dev/errors v0.8.1 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
+	github.com/banzaicloud/k8s-objectmatcher v1.8.0 // indirect
+	github.com/banzaicloud/operator-tools v0.28.4 // indirect
+	github.com/briandowns/spinner v1.18.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
+	github.com/cppforlife/go-patch v0.2.0 // indirect
+	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
+	github.com/fatih/color v1.13.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
+	github.com/golang/glog v1.0.0 // indirect
+	github.com/gorilla/css v1.0.0 // indirect
+	github.com/iancoleman/orderedmap v0.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.12 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
+	github.com/nukleros/desired v0.1.0 // indirect
+	github.com/spf13/cast v1.5.0 // indirect
+	github.com/wayneashleyberry/terminal-dimensions v1.1.0 // indirect
 )
 
 require (
@@ -21,33 +43,35 @@ require (
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
-	github.com/go-openapi/swag v0.19.14 // indirect
+	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/gnostic v0.5.7-v3refs // indirect
+	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/gofuzz v1.1.0 // indirect
-	github.com/google/uuid v1.1.2 // indirect
-	github.com/imdario/mergo v0.3.6 // indirect
+	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/nukleros/operator-builder-tools v0.3.1
+	github.com/openshift-online/ocm-sdk-go v0.1.333
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/net v0.3.1-0.20221206200815-1e63c2f08a10 // indirect
-	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
+	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect

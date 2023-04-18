@@ -24,6 +24,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	sdk "github.com/openshift-online/ocm-sdk-go"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -31,8 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	ocmv1alpha1 "github.com/rh-mobb/ocm-machine-pool-operator/api/v1alpha1"
-	"github.com/rh-mobb/ocm-machine-pool-operator/controllers"
+	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
+	"github.com/rh-mobb/ocm-operator/controllers"
+	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -49,14 +51,14 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	config := controllers.Config{}
+
+	flag.StringVar(&config.MetricsAddress, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&config.ProbeAddress, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.BoolVar(&config.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&config.TokenFile, "ocm-token-file", "/tmp/ocm.json", "The OCM JSON Token file to use for the OCM Connection")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -67,10 +69,10 @@ func main() {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
+		MetricsBindAddress:     config.MetricsAddress,
 		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
+		HealthProbeBindAddress: config.ProbeAddress,
+		LeaderElection:         config.EnableLeaderElection,
 		LeaderElectionID:       "453df18d.mobb.redhat.com",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
@@ -89,9 +91,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	// load the token and create the ocm client
+	token, err := ocm.NewToken(config.TokenFile)
+	if err != nil {
+		setupLog.Error(err, "unable to load token", "file", config.TokenFile)
+		os.Exit(1)
+	}
+
+	// create the connection
+	connection, err := sdk.NewConnectionBuilder().
+		Tokens(token.RefreshToken).
+		Build()
+	if err != nil {
+		setupLog.Error(err, "unable to create ocm client", "file", config.TokenFile)
+		os.Exit(1)
+	}
+
 	if err = (&controllers.MachinePoolReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Connection: connection,
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MachinePool")
 		os.Exit(1)
@@ -110,6 +129,11 @@ func main() {
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
+
+		if err := connection.Close(); err != nil {
+			setupLog.Error(err, "unable to close ocm connection")
+		}
+
 		os.Exit(1)
 	}
 }
