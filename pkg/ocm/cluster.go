@@ -14,20 +14,20 @@ const (
 	clusterContextPrefix = "clusterID"
 )
 
-type ClusterClient struct {
+type clusterClient struct {
 	Name       string
 	Connection *clustersmgmtv1.ClustersClient
 	Object     *clustersmgmtv1.Cluster
 }
 
-func NewClusterClient(connection *sdk.Connection, name string) *ClusterClient {
-	return &ClusterClient{
+func NewClusterClient(connection *sdk.Connection, name string) *clusterClient {
+	return &clusterClient{
 		Name:       name,
 		Connection: connection.ClustersMgmt().V1().Clusters(),
 	}
 }
 
-func (cc *ClusterClient) Get() error {
+func (cc *clusterClient) Get() error {
 	// retrieve the cluster from openshift cluster manager
 	clusterList, err := cc.Connection.List().Search(fmt.Sprintf("name = '%s'", cc.Name)).Send()
 	if err != nil {

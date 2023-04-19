@@ -14,25 +14,31 @@ const (
 )
 
 type MachinePoolClient struct {
-	Name       string
-	Connection *clustersmgmtv1.MachinePoolsClient
-	Object     *clustersmgmtv1.MachinePool
+	Connection  *clustersmgmtv1.MachinePoolsClient
+	MachinePool *machinePool
+}
+
+type machinePool struct {
+	Name   string
+	Object *clustersmgmtv1.MachinePool
 }
 
 func NewMachinePoolClient(connection *sdk.Connection, name, clusterID string) *MachinePoolClient {
 	return &MachinePoolClient{
-		Name:       name,
 		Connection: connection.ClustersMgmt().V1().Clusters().Cluster(clusterID).MachinePools(),
+		MachinePool: &machinePool{
+			Name: name,
+		},
 	}
 }
 
-func (mp *MachinePoolClient) For(machinePoolName string) *clustersmgmtv1.MachinePoolClient {
-	return mp.Connection.MachinePool(mp.Name)
+func (mpc *MachinePoolClient) For(machinePoolName string) *clustersmgmtv1.MachinePoolClient {
+	return mpc.Connection.MachinePool(machinePoolName)
 }
 
-func (mp *MachinePoolClient) Get() error {
+func (mpc *MachinePoolClient) Get() error {
 	// retrive the machine pool from ocm
-	response, err := mp.For(mp.Name).Get().Send()
+	response, err := mpc.For(mpc.MachinePool.Name).Get().Send()
 	if err != nil {
 		if response.Status() == http.StatusNotFound {
 			return nil
@@ -41,12 +47,12 @@ func (mp *MachinePoolClient) Get() error {
 		return fmt.Errorf("unable to retrieve machine pools from ocm - %w", err)
 	}
 
-	mp.Object = response.Body()
+	mpc.MachinePool.Object = response.Body()
 
 	return nil
 }
 
-func (mp *MachinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder) error {
+func (mpc *MachinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder) error {
 	// build the object to create
 	object, err := builder.Build()
 	if err != nil {
@@ -54,12 +60,30 @@ func (mp *MachinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder) 
 	}
 
 	// create the machine pool in ocm
-	response, err := mp.Connection.Add().Body(object).Send()
+	response, err := mpc.Connection.Add().Body(object).Send()
 	if err != nil {
 		return fmt.Errorf("unable to create machine pool in ocm - %w", err)
 	}
 
-	mp.Object = response.Body()
+	mpc.MachinePool.Object = response.Body()
+
+	return nil
+}
+
+func (mpc *MachinePoolClient) Update(builder *clustersmgmtv1.MachinePoolBuilder) error {
+	// build the object to update
+	object, err := builder.Build()
+	if err != nil {
+		return fmt.Errorf("unable to build object for machine pool update - %w", err)
+	}
+
+	// update the machine pool in ocm
+	response, err := mpc.For(object.ID()).Update().Send()
+	if err != nil {
+		return fmt.Errorf("unable to update machine pool in ocm - %w", err)
+	}
+
+	mpc.MachinePool.Object = response.Body()
 
 	return nil
 }
