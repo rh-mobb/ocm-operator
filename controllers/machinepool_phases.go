@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -19,10 +18,8 @@ type MachinePoolPhaseFunc func(*MachinePoolRequest) error
 // is stored in a custom resource within the OpenShift cluster in which this controller is reconciling against.  It will
 // be compared against the current state which exists in OpenShift Cluster Manager.
 func (r *MachinePoolReconciler) GetDesiredState(request *MachinePoolRequest) error {
-	desiredState := &ocmv1alpha1.MachinePool{}
-
 	// get the resource from the cluster
-	if err := r.Get(request.Context, request.ControllerRequest.NamespacedName, desiredState); err != nil {
+	if err := r.Get(request.Context, request.ControllerRequest.NamespacedName, request.DesiredState); err != nil {
 		if !apierrs.IsNotFound(err) {
 			return fmt.Errorf("unable to fetch machine pool from cluster - %w", err)
 		}
@@ -33,17 +30,16 @@ func (r *MachinePoolReconciler) GetDesiredState(request *MachinePoolRequest) err
 	// ensure the our managed labels do not conflict with what was submitted
 	// to the cluster
 	// TODO: move to validating/mutating webhook
-	if desiredState.HasManagedLabels() {
-		return fmt.Errorf("invalid labels [%+v] - %w", desiredState.Spec.Labels, ErrMachinePoolReservedLabel)
+	if request.DesiredState.HasManagedLabels() {
+		return fmt.Errorf("invalid labels [%+v] - %w", request.DesiredState.Spec.Labels, ErrMachinePoolReservedLabel)
 	}
 
 	// set the display name
-	desiredState.Spec.DisplayName = desiredState.GetDisplayName()
+	request.DesiredState.Spec.DisplayName = request.DesiredState.GetDisplayName()
 
 	// set the managed labels on the desired state.  we do this because we expect
 	// that the current state should have these labels.
-	desiredState.SetMachinePoolLabels()
-	request.DesiredState = desiredState
+	request.DesiredState.SetMachinePoolLabels()
 
 	return nil
 }
@@ -93,8 +89,7 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) err
 
 	// copy the machine pool object from ocm into a
 	// new object.
-	currentState := &ocmv1alpha1.MachinePool{}
-	if err := currentState.CopyFrom(r.ClientOCM.Object); err != nil {
+	if err := request.CurrentState.CopyFrom(r.ClientOCM.Object); err != nil {
 		return fmt.Errorf("unable to copy ocm machine pool object - %w", err)
 	}
 
@@ -102,11 +97,9 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) err
 	// we found.  we do this to ensure we are not managing something that
 	// may have been created by another process.
 	// TODO: move to validating/mutating webhook
-	if !currentState.HasManagedLabels() {
-		return fmt.Errorf("missing managed labels [%+v] - %w", currentState.Spec.Labels, ErrMachinePoolReservedLabel)
+	if !request.CurrentState.HasManagedLabels() {
+		return fmt.Errorf("missing managed labels [%+v] - %w", request.CurrentState.Spec.Labels, ErrMachinePoolReservedLabel)
 	}
-
-	request.CurrentState = currentState
 
 	return nil
 }

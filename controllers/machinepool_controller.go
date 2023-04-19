@@ -68,6 +68,8 @@ type MachinePoolRequest struct {
 
 func NewRequest(ctx context.Context, req ctrl.Request) MachinePoolRequest {
 	return MachinePoolRequest{
+		CurrentState:      &ocmv1alpha1.MachinePool{},
+		DesiredState:      &ocmv1alpha1.MachinePool{},
 		ControllerRequest: req,
 		Context:           ctx,
 		Log:               log.FromContext(ctx),
