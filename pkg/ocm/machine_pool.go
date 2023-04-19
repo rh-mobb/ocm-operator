@@ -90,8 +90,12 @@ func (mpc *MachinePoolClient) Update(builder *clustersmgmtv1.MachinePoolBuilder)
 
 func (mpc *MachinePoolClient) Delete(id string) error {
 	// delete the machine pool in ocm
-	_, err := mpc.For(id).Delete().Send()
+	response, err := mpc.For(id).Delete().Send()
 	if err != nil {
+		if response.Status() == http.StatusNotFound {
+			return nil
+		}
+
 		return fmt.Errorf("error in delete request - %w", err)
 	}
 

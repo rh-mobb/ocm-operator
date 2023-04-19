@@ -10,17 +10,21 @@ const (
 	conditionTypeReconciling = "Reconciling"
 )
 
-func conditionReconciling(status metav1.ConditionStatus, reason, message string) metav1.Condition {
+func conditionReconciling(status metav1.ConditionStatus, trigger controllerTrigger, message string) metav1.Condition {
 	return metav1.Condition{
 		Type:               conditionTypeReconciling,
 		LastTransitionTime: metav1.Now(),
 		Status:             status,
-		Reason:             reason,
+		Reason:             trigger.String(),
 		Message:            message,
 	}
 }
 
 func addCondition(current []metav1.Condition, new metav1.Condition) []metav1.Condition {
+	if len(current) < 1 {
+		return []metav1.Condition{new}
+	}
+
 	for condition := range current {
 		if current[condition].Type == new.Type {
 			if equalCondition(current[condition], new) {

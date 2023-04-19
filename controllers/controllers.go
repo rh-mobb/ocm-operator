@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -9,19 +8,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-)
-
-var (
-	ErrTriggerUnknown = errors.New("unknown controller trigger")
-)
-
-type controllerTrigger int
-
-const (
-	triggerUnknown controllerTrigger = iota
-	triggerCreate
-	triggerUpdate
-	triggerDelete
 )
 
 const (
@@ -80,17 +66,4 @@ func containsString(list []string, str string) bool {
 	}
 
 	return false
-}
-
-// trigger returns the trigger that caused the reconciliation event.
-func trigger(object client.Object) controllerTrigger {
-	if object.GetCreationTimestamp().Time.IsZero() {
-		return triggerCreate
-	}
-
-	if object.GetDeletionTimestamp() == nil {
-		return triggerUpdate
-	}
-
-	return triggerDelete
 }

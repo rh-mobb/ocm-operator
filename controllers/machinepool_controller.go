@@ -51,7 +51,6 @@ var (
 type MachinePoolReconciler struct {
 	client.Client
 
-	Context    context.Context
 	Scheme     *runtime.Scheme
 	Connection *sdk.Connection
 }
@@ -70,8 +69,6 @@ type MachinePoolReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	r.Context = ctx
-
 	// create the request
 	request, err := NewRequest(r, ctx, req)
 	if err != nil {
@@ -114,7 +111,7 @@ func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequ
 		r.Begin,
 		r.GetDesiredState,
 		r.GetCurrentState,
-		r.CreateOrUpdate,
+		r.Apply,
 		r.WaitUntilReady,
 		r.Complete,
 	} {
@@ -133,6 +130,24 @@ func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequ
 }
 
 func (r *MachinePoolReconciler) ReconcileDelete(request *MachinePoolRequest) (ctrl.Result, error) {
+	// run through each phase of controller reconciliation
+	for _, phase := range []MachinePoolPhaseFunc{
+		r.Begin,
+		r.Destroy,
+		r.WaitUntilMissing,
+		r.CompleteDestroy,
+	} {
+		// run each phase function and return if we receive any errors
+		result, err := phase(request)
+		if err != nil || result.Requeue {
+			return result, reconcilerError(
+				request.ControllerRequest,
+				"phase reconciliation error in create",
+				err,
+			)
+		}
+	}
+
 	return noRequeue(), nil
 }
 

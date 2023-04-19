@@ -3,10 +3,13 @@ package controllers
 import (
 	"fmt"
 
+	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 type MachinePoolPhaseFunc func(*MachinePoolRequest) (ctrl.Result, error)
@@ -19,7 +22,6 @@ func (r *MachinePoolReconciler) Begin(request *MachinePoolRequest) (ctrl.Result,
 	if err := r.updateReconcilingCondition(
 		request,
 		metav1.ConditionTrue,
-		"controller requested reconciliation",
 		"beginning controller reconciliation",
 	); err != nil {
 		return requeue(), err
@@ -70,8 +72,10 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 		}
 
 		clusterID = cluster.Object.ID()
+		request.Desired.Status.ClusterID = clusterID
 
 		// store the cluster id in the status
+		// TODO: refactor and switch to patch over update
 		updatedObject := *request.Desired
 		updatedObject.Status.ClusterID = clusterID
 		if err := r.Status().Update(request.Context, &updatedObject); err != nil {
@@ -120,9 +124,9 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 	return noRequeue(), nil
 }
 
-// CreateOrUpdate will create an OpenShift Cluster Manager machine pool if it does not exist,
+// Apply will create an OpenShift Cluster Manager machine pool if it does not exist,
 // or update an OpenShift Cluster Manager machine pool if it does exist.
-func (r *MachinePoolReconciler) CreateOrUpdate(request *MachinePoolRequest) (ctrl.Result, error) {
+func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	builder := request.Desired.Builder()
 
 	// if we have a current state, we need to compare it for equality
@@ -147,6 +151,26 @@ func (r *MachinePoolReconciler) CreateOrUpdate(request *MachinePoolRequest) (ctr
 	request.Log.Info(machinePoolLog("creating machine pool", request))
 	if err := request.Client.Create(builder); err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to create machine pool - %w", err)
+	}
+
+	return noRequeue(), nil
+}
+
+// Destroy will destroy an OpenShift Cluster Manager machine pool.
+func (r *MachinePoolReconciler) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
+	// create the machine pool client
+	if request.Client == nil {
+		request.Client = ocm.NewMachinePoolClient(
+			r.Connection,
+			request.Desired.GetDisplayName(),
+			request.Desired.Status.ClusterID,
+		)
+	}
+
+	// delete the object
+	request.Log.Info(machinePoolLog("deleting machine pool", request))
+	if err := request.Client.Delete(request.Desired.GetDisplayName()); err != nil {
+		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to delete machine pool - %w", err)
 	}
 
 	return noRequeue(), nil
@@ -186,9 +210,9 @@ func (r *MachinePoolReconciler) WaitUntilReady(request *MachinePoolRequest) (ctr
 	return noRequeue(), nil
 }
 
-// WaitUntilDeleted will requeue until the reconciler determines that the nodes
+// WaitUntilMissing will requeue until the reconciler determines that the nodes
 // no longer exist in the cluster.
-func (r *MachinePoolReconciler) WaitUntilDeleted(request *MachinePoolRequest) (ctrl.Result, error) {
+func (r *MachinePoolReconciler) WaitUntilMissing(request *MachinePoolRequest) (ctrl.Result, error) {
 	nodes, err := kubernetes.GetLabeledNodes(request.Context, r, request.Desired.Labels)
 	if err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to get labeled nodes - %w", err)
@@ -208,7 +232,6 @@ func (r *MachinePoolReconciler) Complete(request *MachinePoolRequest) (ctrl.Resu
 	if err := r.updateReconcilingCondition(
 		request,
 		metav1.ConditionFalse,
-		"controller finished reconciliation",
 		"ending controller reconciliation",
 	); err != nil {
 		return requeue(), err
@@ -217,22 +240,41 @@ func (r *MachinePoolReconciler) Complete(request *MachinePoolRequest) (ctrl.Resu
 	return noRequeue(), nil
 }
 
+// CompleteDestroy will perform all actions required to successful complete a reconciliation request.
+func (r *MachinePoolReconciler) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, error) {
+	if containsString(request.Desired.GetFinalizers(), finalizerName(request.Desired)) {
+		// remove our finalizer from the list and update it.
+		controllerutil.RemoveFinalizer(request.Desired, finalizerName(request.Desired))
+
+		if err := r.Update(request.Context, request.Desired); err != nil {
+			return noRequeue(), fmt.Errorf("unable to remove finalizer - %w", err)
+		}
+	}
+
+	return noRequeue(), nil
+}
+
 func (r *MachinePoolReconciler) updateReconcilingCondition(
 	request *MachinePoolRequest,
 	status metav1.ConditionStatus,
-	reason, message string,
+	message string,
 ) error {
 	// set the reconciling conditions
-	request.Desired.Status.Conditions = addCondition(
-		request.Desired.Status.Conditions, conditionReconciling(
-			status,
-			"controller requested reconciliation",
-			"beginning controller reconciliation",
-		),
-	)
+	conditionPatch := &ocmv1alpha1.MachinePool{
+		ObjectMeta: request.Desired.ObjectMeta,
+		Status: ocmv1alpha1.MachinePoolStatus{
+			Conditions: addCondition(
+				request.Desired.Status.Conditions, conditionReconciling(
+					status,
+					request.Trigger,
+					message,
+				),
+			),
+		},
+	}
 
 	// update the reconciling conditions
-	if err := r.Status().Update(request.Context, request.Desired); err != nil {
+	if err := r.Status().Patch(request.Context, request.Desired, client.MergeFrom(conditionPatch)); err != nil {
 		return fmt.Errorf("unable to update status conditions - %w", err)
 	}
 
