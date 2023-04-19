@@ -44,7 +44,7 @@ func (mpc *MachinePoolClient) Get() error {
 			return nil
 		}
 
-		return fmt.Errorf("unable to retrieve machine pools from ocm - %w", err)
+		return fmt.Errorf("error in get request - %w", err)
 	}
 
 	mpc.MachinePool.Object = response.Body()
@@ -62,7 +62,7 @@ func (mpc *MachinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder)
 	// create the machine pool in ocm
 	response, err := mpc.Connection.Add().Body(object).Send()
 	if err != nil {
-		return fmt.Errorf("unable to create machine pool in ocm - %w", err)
+		return fmt.Errorf("error in create request - %w", err)
 	}
 
 	mpc.MachinePool.Object = response.Body()
@@ -78,12 +78,22 @@ func (mpc *MachinePoolClient) Update(builder *clustersmgmtv1.MachinePoolBuilder)
 	}
 
 	// update the machine pool in ocm
-	response, err := mpc.For(object.ID()).Update().Send()
+	response, err := mpc.For(object.ID()).Update().Body(object).Send()
 	if err != nil {
-		return fmt.Errorf("unable to update machine pool in ocm - %w", err)
+		return fmt.Errorf("error in update request - %w", err)
 	}
 
 	mpc.MachinePool.Object = response.Body()
+
+	return nil
+}
+
+func (mpc *MachinePoolClient) Delete(id string) error {
+	// delete the machine pool in ocm
+	_, err := mpc.For(id).Delete().Send()
+	if err != nil {
+		return fmt.Errorf("error in delete request - %w", err)
+	}
 
 	return nil
 }

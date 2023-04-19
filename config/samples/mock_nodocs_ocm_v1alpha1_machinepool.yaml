@@ -4,9 +4,9 @@ metadata:
   name: machinepool-sample
 spec:
   clusterName: "dscott"
-  displayName: "test3"
-  minimumNodesPerZone: 2
-  maximumNodesPerZone: 4
+  displayName: "test5"
+  minimumNodesPerZone: 1
+  maximumNodesPerZone: 1
   instanceType: m5.xlarge
   labels:
     this: that

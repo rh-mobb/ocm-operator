@@ -128,6 +128,12 @@ spec:
           status:
             description: MachinePoolStatus defines the observed state of MachinePool
             properties:
+              clusterID:
+                description: Represents the programmatic cluster ID of the cluster,
+                  as determined during reconciliation.  This is used to reduce the
+                  number of API calls to look up a cluster ID based on the cluster
+                  name.
+                type: string
               conditions:
                 items:
                   description: "Condition contains details for one aspect of the current

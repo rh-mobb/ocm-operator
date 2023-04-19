@@ -176,7 +176,8 @@ func (machinePool *MachinePool) HasManagedLabels() bool {
 
 // CopyFrom copies an OCM MachinePool object into a MachinePool object that is recognizable by this
 // controller.
-func (machinePool *MachinePool) CopyFrom(source *clustersmgmtv1.MachinePool) error {
+func (machinePool *MachinePool) CopyFrom(source *clustersmgmtv1.MachinePool, clusterName string) error {
+	machinePool.Spec.ClusterName = clusterName
 	machinePool.Spec.DisplayName = source.ID()
 	machinePool.Spec.InstanceType = source.InstanceType()
 	machinePool.Spec.Labels = source.Labels()
