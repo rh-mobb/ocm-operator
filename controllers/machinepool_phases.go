@@ -6,6 +6,7 @@ import (
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -103,7 +104,7 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
-		request.Log.Info(machinePoolLog("machine pool already in desired state", request))
+		request.Log.V(5).Info("machine pool already in desired state", machinePoolLog(request)...)
 
 		return noRequeue(), nil
 	}
@@ -120,19 +121,43 @@ func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result,
 
 	// if no machine pool exists, create it and return
 	if request.Current == nil {
-		request.Log.Info(machinePoolLog("creating machine pool", request))
+		request.Log.Info("creating machine pool", machinePoolLog(request)...)
 		if _, err := poolClient.Create(builder); err != nil {
 			return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to create machine pool - %w", err)
 		}
+
+		// create an event indicating that the machine pool has been created
+		r.Recorder.Event(
+			request.Original,
+			corev1.EventTypeNormal,
+			"MachinePoolCreated",
+			fmt.Sprintf(
+				"Created Machine Pool %s in cluster %s",
+				request.Desired.Spec.DisplayName,
+				request.Desired.Spec.ClusterName,
+			),
+		)
 
 		return noRequeue(), nil
 	}
 
 	// update the object
-	request.Log.Info(machinePoolLog("updating machine pool", request))
+	request.Log.Info("updating machine pool", machinePoolLog(request)...)
 	if _, err := poolClient.Update(builder); err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to update machine pool - %w", err)
 	}
+
+	// create an event indicating that the machine pool has been created
+	r.Recorder.Event(
+		request.Original,
+		corev1.EventTypeNormal,
+		"MachinePoolUpdated",
+		fmt.Sprintf(
+			"Updated Machine Pool %s in cluster %s",
+			request.Desired.Spec.DisplayName,
+			request.Desired.Spec.ClusterName,
+		),
+	)
 
 	return noRequeue(), nil
 }
@@ -152,10 +177,22 @@ func (r *MachinePoolReconciler) Destroy(request *MachinePoolRequest) (ctrl.Resul
 	)
 
 	// delete the object
-	request.Log.Info(machinePoolLog("deleting machine pool", request))
+	request.Log.Info("deleting machine pool", machinePoolLog(request)...)
 	if err := poolClient.Delete(request.Desired.Spec.DisplayName); err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to delete machine pool - %w", err)
 	}
+
+	// create an event indicating that the machine pool has been created
+	r.Recorder.Event(
+		request.Original,
+		corev1.EventTypeNormal,
+		"MachinePoolDeleted",
+		fmt.Sprintf(
+			"Deleted Machine Pool %s in cluster %s",
+			request.Desired.Spec.DisplayName,
+			request.Desired.Spec.ClusterName,
+		),
+	)
 
 	// set the deleted condition
 	if err := updateCondition(
@@ -228,6 +265,8 @@ func (r *MachinePoolReconciler) CompleteDestroy(request *MachinePoolRequest) (ct
 		}
 	}
 
+	request.Log.Info("completed machine pool deletion", machinePoolLog(request)...)
+
 	return noRequeue(), nil
 }
 
@@ -242,14 +281,15 @@ func (r *MachinePoolReconciler) Complete(request *MachinePoolRequest) (ctrl.Resu
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
+	request.Log.Info("completed machine pool reconciliation", machinePoolLog(request)...)
+
 	return noRequeue(), nil
 }
 
-func machinePoolLog(message string, request *MachinePoolRequest) string {
-	return fmt.Sprintf(
-		"%s: name=%s, cluster=%s",
-		message,
-		request.Desired.Spec.DisplayName,
-		request.Desired.Spec.ClusterName,
-	)
+func machinePoolLog(request *MachinePoolRequest) []interface{} {
+	return []interface{}{
+		"resource", fmt.Sprintf("%s/%s", request.Desired.Namespace, request.Desired.Name),
+		"cluster", request.Desired.Spec.ClusterName,
+		"name", request.Desired.Spec.DisplayName,
+	}
 }

@@ -56,15 +56,6 @@ func reconcilerError(request reconcile.Request, message string, err error) error
 	)
 }
 
-// finalizerName returns the finalizer name for the controller.
-func finalizerName(object client.Object) string {
-	return strings.ToLower(fmt.Sprintf("%s.%s/%s",
-		object.GetObjectKind().GroupVersionKind().Kind,
-		object.GetObjectKind().GroupVersionKind().Group,
-		defaultFinalizerSuffix,
-	))
-}
-
 // containsString determines if a string is in an array of strings.
 func containsString(list []string, str string) bool {
 	for item := range list {
@@ -74,4 +65,13 @@ func containsString(list []string, str string) bool {
 	}
 
 	return false
+}
+
+// finalizerName returns the finalizer name for the controller.
+func finalizerName(object client.Object) string {
+	return strings.ToLower(fmt.Sprintf("%s.%s/%s",
+		object.GetObjectKind().GroupVersionKind().Kind,
+		object.GetObjectKind().GroupVersionKind().Group,
+		defaultFinalizerSuffix,
+	))
 }

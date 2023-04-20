@@ -26,6 +26,7 @@ import (
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -54,11 +55,13 @@ type MachinePoolReconciler struct {
 
 	Scheme     *runtime.Scheme
 	Connection *sdk.Connection
+	Recorder   record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=machinepools,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=machinepools/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=machinepools/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -73,16 +76,7 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return noRequeue(), nil
 	}
 
-	// register the delete hooks
-	if err := r.RegisterDeleteHooks(&request); err != nil {
-		return noRequeue(), reconcilerError(
-			request.ControllerRequest,
-			"unable to register delete hooks",
-			err,
-		)
-	}
-
-	// run the reconciliation loop
+	// run the reconciliation loop based on the type of request
 	switch request.Trigger {
 	case triggerCreate:
 		return r.ReconcileCreateOrUpdate(&request)
@@ -100,8 +94,13 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequest) (ctrl.Result, error) {
+	// register the delete hooks
+	if err := r.RegisterDeleteHooks(request); err != nil {
+		return noRequeue(), fmt.Errorf("unable to register delete hooks - %w", err)
+	}
+
 	// run through each phase of controller reconciliation
-	for name, run := range map[string]PhaseFunction{
+	for name, execute := range map[string]PhaseFunction{
 		"begin":           r.Begin,
 		"getCurrentState": r.GetCurrentState,
 		"applyState":      r.Apply,
@@ -109,7 +108,7 @@ func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequ
 		"complete":        r.Complete,
 	} {
 		// run each phase function and return if we receive any errors
-		result, err := run(request)
+		result, err := execute(request)
 		if err != nil || result.Requeue {
 			return result, reconcilerError(
 				request.ControllerRequest,
@@ -124,14 +123,14 @@ func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequ
 
 func (r *MachinePoolReconciler) ReconcileDelete(request *MachinePoolRequest) (ctrl.Result, error) {
 	// run through each phase of controller reconciliation
-	for name, run := range map[string]PhaseFunction{
+	for name, execute := range map[string]PhaseFunction{
 		"begin":            r.Begin,
 		"destroy":          r.Destroy,
 		"waitUntilMissing": r.WaitUntilMissing,
 		"complete":         r.CompleteDestroy,
 	} {
 		// run each phase function and return if we receive any errors
-		result, err := run(request)
+		result, err := execute(request)
 		if err != nil || result.Requeue {
 			return result, reconcilerError(
 				request.ControllerRequest,

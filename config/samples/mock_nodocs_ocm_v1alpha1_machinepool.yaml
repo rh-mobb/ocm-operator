@@ -1,17 +1,15 @@
 apiVersion: ocm.mobb.redhat.com/v1alpha1
 kind: MachinePool
 metadata:
-  name: machinepool-sample1
+  name: machinepool-sample
 spec:
   clusterName: "dscott"
-  displayName: "test6"
-  minimumNodesPerZone: 2
+  displayName: "test5"
+  minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge
   labels:
     this: that
-    ocm.mobb.redhat.com/name: "test"
-    ocm.mobb.redhat.com/managed: "false" 
   taints:
     - key: this
       value: that

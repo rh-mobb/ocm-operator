@@ -15,7 +15,9 @@ import (
 
 // MachinePoolRequest is an object that is unique to each reconciliation
 // request.
+//
 // TODO: make this a generic request to be used across a variety of controllers
+// which will likely require some fields to become interfaces.
 type MachinePoolRequest struct {
 	Context           context.Context
 	ControllerRequest ctrl.Request
@@ -57,7 +59,7 @@ func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request)
 		Desired:           original.DesiredState(),
 		ControllerRequest: req,
 		Context:           ctx,
-		Log:               log.FromContext(ctx),
+		Log:               log.Log,
 		Trigger:           trigger(original),
 	}, nil
 }
