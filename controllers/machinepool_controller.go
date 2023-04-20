@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -61,13 +62,6 @@ type MachinePoolReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the MachinePool object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// create the request
 	request, err := NewRequest(r, ctx, req)
@@ -107,20 +101,19 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequest) (ctrl.Result, error) {
 	// run through each phase of controller reconciliation
-	for _, phase := range []MachinePoolPhaseFunc{
-		r.Begin,
-		r.GetDesiredState,
-		r.GetCurrentState,
-		r.Apply,
-		r.WaitUntilReady,
-		r.Complete,
+	for name, run := range map[string]PhaseFunction{
+		"begin":           r.Begin,
+		"getCurrentState": r.GetCurrentState,
+		"applyState":      r.Apply,
+		"waitUntilReady":  r.WaitUntilReady,
+		"complete":        r.Complete,
 	} {
 		// run each phase function and return if we receive any errors
-		result, err := phase(request)
+		result, err := run(request)
 		if err != nil || result.Requeue {
 			return result, reconcilerError(
 				request.ControllerRequest,
-				"phase reconciliation error in create",
+				fmt.Sprintf("%s phase reconciliation error in create or update", name),
 				err,
 			)
 		}
@@ -131,18 +124,18 @@ func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequ
 
 func (r *MachinePoolReconciler) ReconcileDelete(request *MachinePoolRequest) (ctrl.Result, error) {
 	// run through each phase of controller reconciliation
-	for _, phase := range []MachinePoolPhaseFunc{
-		r.Begin,
-		r.Destroy,
-		r.WaitUntilMissing,
-		r.CompleteDestroy,
+	for name, run := range map[string]PhaseFunction{
+		"begin":            r.Begin,
+		"destroy":          r.Destroy,
+		"waitUntilMissing": r.WaitUntilMissing,
+		"complete":         r.CompleteDestroy,
 	} {
 		// run each phase function and return if we receive any errors
-		result, err := phase(request)
+		result, err := run(request)
 		if err != nil || result.Requeue {
 			return result, reconcilerError(
 				request.ControllerRequest,
-				"phase reconciliation error in create",
+				fmt.Sprintf("%s phase reconciliation error in delete", name),
 				err,
 			)
 		}
@@ -154,14 +147,14 @@ func (r *MachinePoolReconciler) ReconcileDelete(request *MachinePoolRequest) (ct
 // RegisterDeleteHooks adds finializers to the machine pool so that the delete lifecycle can be run
 // before the object is deleted.
 func (r *MachinePoolReconciler) RegisterDeleteHooks(request *MachinePoolRequest) error {
-	if request.Desired.GetDeletionTimestamp().IsZero() {
+	if request.Original.GetDeletionTimestamp().IsZero() {
 		// The object is not being deleted, so if it does not have our finalizer,
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
-		if !containsString(request.Desired.GetFinalizers(), finalizerName(request.Desired)) {
-			controllerutil.AddFinalizer(request.Desired, finalizerName(request.Desired))
+		if !containsString(request.Original.GetFinalizers(), finalizerName(request.Original)) {
+			controllerutil.AddFinalizer(request.Original, finalizerName(request.Original))
 
-			if err := r.Update(request.Context, request.Desired); err != nil {
+			if err := r.Update(request.Context, request.Original); err != nil {
 				return fmt.Errorf("unable to register delete hook - %w", err)
 			}
 		}
@@ -173,6 +166,7 @@ func (r *MachinePoolReconciler) RegisterDeleteHooks(request *MachinePoolRequest)
 // SetupWithManager sets up the controller with the Manager.
 func (r *MachinePoolReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithEventFilter(predicates.WorkloadPredicates()).
 		For(&ocmv1alpha1.MachinePool{}).
 		Complete(r)
 }

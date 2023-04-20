@@ -7,10 +7,6 @@ import (
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 )
 
-const (
-	clusterContextPrefix = "clusterID"
-)
-
 type clusterClient struct {
 	Name       string
 	Connection *clustersmgmtv1.ClustersClient

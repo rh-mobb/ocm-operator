@@ -6,11 +6,11 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
-	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 )
 
 // MachinePoolRequest is an object that is unique to each reconciliation
@@ -20,18 +20,17 @@ type MachinePoolRequest struct {
 	Context           context.Context
 	ControllerRequest ctrl.Request
 	Current           *ocmv1alpha1.MachinePool
+	Original          *ocmv1alpha1.MachinePool
 	Desired           *ocmv1alpha1.MachinePool
-	Client            *ocm.MachinePoolClient
 	Log               logr.Logger
 	Trigger           controllerTrigger
-	NodesReady        bool
 }
 
 func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request) (MachinePoolRequest, error) {
-	desiredState := &ocmv1alpha1.MachinePool{}
+	original := &ocmv1alpha1.MachinePool{}
 
 	// get the object (desired state) from the cluster
-	if err := r.Get(ctx, req.NamespacedName, desiredState); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, original); err != nil {
 		if !apierrs.IsNotFound(err) {
 			return MachinePoolRequest{}, fmt.Errorf("unable to fetch cluster object - %w", err)
 		}
@@ -39,26 +38,28 @@ func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request)
 		return MachinePoolRequest{}, err
 	}
 
+	// ensure the our managed labels do not conflict with what was submitted
+	// to the cluster
+	//
+	// NOTE: this is implemented via CRD CEL validations, however leaving in
+	// place for clusters that may not have this feature gate enabled as CEL
+	// is in beta currently.
+	if original.HasManagedLabels() {
+		return MachinePoolRequest{}, fmt.Errorf(
+			"spec.labels cannot contain reserved labels [%+v] - %w",
+			original.Spec.Labels,
+			ErrMachinePoolReservedLabel,
+		)
+	}
+
 	return MachinePoolRequest{
-		Current:           &ocmv1alpha1.MachinePool{},
-		Desired:           desiredState,
+		Original:          original,
+		Desired:           original.DesiredState(),
 		ControllerRequest: req,
 		Context:           ctx,
 		Log:               log.FromContext(ctx),
-		Trigger:           trigger(desiredState),
+		Trigger:           trigger(original),
 	}, nil
-}
-
-func (request *MachinePoolRequest) hasMachinePool() bool {
-	if request.Client == nil {
-		return false
-	}
-
-	if request.Client.MachinePool == nil {
-		return false
-	}
-
-	return (request.Client.MachinePool.Object != nil)
 }
 
 func (request *MachinePoolRequest) desired() bool {

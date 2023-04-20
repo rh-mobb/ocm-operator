@@ -46,12 +46,18 @@ spec:
                           enabled a maximum price for the spot instances may be set
                           in spec.aws.spotInstances.maximumPrice.
                         type: boolean
+                        x-kubernetes-validations:
+                        - message: aws.spotInstances.enabled is immutable
+                          rule: (self == oldSelf)
                       maximumPrice:
                         description: Maximum price to pay for spot instance. To be
                           used with spec.aws.spotInstances.enabled. If no maximum
                           price is set, the spot instance configuration defaults to
                           on-demand pricing.
                         type: integer
+                        x-kubernetes-validations:
+                        - message: aws.spotInstances.maximumPrice is immutable
+                          rule: (self == oldSelf)
                     type: object
                 type: object
               clusterName:
@@ -62,6 +68,9 @@ spec:
                   the format of 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' where the 'x'
                   represents any alphanumeric character.
                 type: string
+                x-kubernetes-validations:
+                - message: clusterName is immutable
+                  rule: (self == oldSelf)
               displayName:
                 description: Friendly display name of the machine pool as displayed
                   in the OpenShift Cluster Manager console.  If this is empty, the
@@ -70,6 +79,9 @@ spec:
                 maxLength: 64
                 minLength: 4
                 type: string
+                x-kubernetes-validations:
+                - message: displayName is immutable
+                  rule: (self == oldSelf)
               instanceType:
                 default: m5.xlarge
                 description: "Instance type to use for all nodes within this MachinePool.
@@ -77,13 +89,23 @@ spec:
                   based on the provider type (ROSA/OSD only supported for now): \n
                   *ROSA/OSD: https://docs.openshift.com/rosa/rosa_architecture/rosa_policy_service_definition/rosa-service-definition.html"
                 type: string
+                x-kubernetes-validations:
+                - message: instanceType is immutable
+                  rule: (self == oldSelf)
               labels:
                 additionalProperties:
                   type: string
                 description: Additional labels to apply to this MachinePool.  It should
                   be noted that 'ocm.mobb.redhat.com/managed' = 'true' is automatically
-                  applied.
+                  applied as well as 'ocm.mobb.redhat.com/name' = spec.displayName.  Both
+                  of these labels are reserved and cannot be used as part of the spec.labels
+                  field.
                 type: object
+                x-kubernetes-validations:
+                - message: ocm.mobb.redhat.com/name is a reserved label
+                  rule: '!(''ocm.mobb.redhat.com/name'' in self)'
+                - message: ocm.mobb.redhat.com/managed is a reserved label
+                  rule: '!(''ocm.mobb.redhat.com/managed'' in self)'
               maximumNodesPerZone:
                 description: Maximum amount of nodes allowed per availability zone.  Must
                   be greater than or equal to spec.minimumNodesPerZone.  If this field
@@ -125,6 +147,10 @@ spec:
                   type: object
                 type: array
             type: object
+            x-kubernetes-validations:
+            - message: maximumNodesPerZone must be greater than or equal to minimumNodesPerZone
+              rule: (self.maximumNodesPerZone == 0 || self.minimumNodesPerZone <=
+                self.maximumNodesPerZone)
           status:
             description: MachinePoolStatus defines the observed state of MachinePool
             properties:

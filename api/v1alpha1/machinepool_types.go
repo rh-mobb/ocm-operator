@@ -27,6 +27,7 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// +kubebuilder:validation:XValidation:message="maximumNodesPerZone must be greater than or equal to minimumNodesPerZone",rule=(self.maximumNodesPerZone == 0 || self.minimumNodesPerZone <= self.maximumNodesPerZone)
 // MachinePoolSpec defines the desired state of MachinePool
 type MachinePoolSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -35,12 +36,14 @@ type MachinePoolSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=4
 	// +kubebuilder:validation:MaxLength=64
+	// +kubebuilder:validation:XValidation:message="displayName is immutable",rule=(self == oldSelf)
 	// Friendly display name of the machine pool as displayed in the OpenShift Cluster Manager
 	// console.  If this is empty, the metadata.name field of the parent resource is used
 	// to construct the display name.
 	DisplayName string `json:"displayName,omitempty"`
 
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:message="clusterName is immutable",rule=(self == oldSelf)
 	// Cluster ID in OpenShift Cluster Manager by which this MachinePool should be managed for.  The cluster ID
 	// can be obtained on the Clusters page for the individual cluster.  It may also be known as the
 	// 'External ID' in some CLI clients.  It shows up in the format of 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
@@ -62,6 +65,7 @@ type MachinePoolSpec struct {
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default="m5.xlarge"
+	// +kubebuilder:validation:XValidation:message="instanceType is immutable",rule=(self == oldSelf)
 	// Instance type to use for all nodes within this MachinePool.  Please see the following for
 	// a list of supported instance types based on the provider type (ROSA/OSD only supported for now):
 	//
@@ -69,8 +73,12 @@ type MachinePoolSpec struct {
 	InstanceType string `json:"instanceType,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:message="ocm.mobb.redhat.com/name is a reserved label",rule=!('ocm.mobb.redhat.com/name' in self)
+	// +kubebuilder:validation:XValidation:message="ocm.mobb.redhat.com/managed is a reserved label",rule=!('ocm.mobb.redhat.com/managed' in self)
 	// Additional labels to apply to this MachinePool.  It should be noted that
-	// 'ocm.mobb.redhat.com/managed' = 'true' is automatically applied.
+	// 'ocm.mobb.redhat.com/managed' = 'true' is automatically applied as well
+	// as 'ocm.mobb.redhat.com/name' = spec.displayName.  Both of these labels
+	// are reserved and cannot be used as part of the spec.labels field.
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// +kubebuilder:validation:Optional
@@ -93,11 +101,13 @@ type MachinePoolProviderAWS struct {
 // MachinePoolProviderAWSSpotInstances represents the AWS Spot Intance configuration.
 type MachinePoolProviderAWSSpotInstances struct {
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:message="aws.spotInstances.enabled is immutable",rule=(self == oldSelf)
 	// Request spot instances when scaling up this MachinePool.  If enabled a maximum
 	// price for the spot instances may be set in spec.aws.spotInstances.maximumPrice.
 	Enabled bool `json:"enabled,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:XValidation:message="aws.spotInstances.maximumPrice is immutable",rule=(self == oldSelf)
 	// Maximum price to pay for spot instance.
 	// To be used with spec.aws.spotInstances.enabled. If no maximum price is set,
 	// the spot instance configuration defaults to on-demand pricing.
@@ -138,6 +148,34 @@ type MachinePoolList struct {
 
 func init() {
 	SchemeBuilder.Register(&MachinePool{}, &MachinePoolList{})
+}
+
+// DesiredState returns the desired state of an object that should exist in
+// OCM.  This is required because there are certain things that get set
+// that are not a part of the spec such as managed labels.
+func (machinePool *MachinePool) DesiredState() *MachinePool {
+	desiredState := machinePool.DeepCopy()
+
+	// set the display name
+	desiredState.Spec.DisplayName = desiredState.GetDisplayName()
+
+	// set the managed labels on the desired state.  we do this because we expect
+	// that the current state should have these labels.
+	desiredState.SetMachinePoolLabels()
+
+	return desiredState
+}
+
+// GetConditions returns the status.conditions field from the object.  It is used to
+// satisfy the Workload interface.
+func (machinePool *MachinePool) GetConditions() []metav1.Condition {
+	return machinePool.Status.Conditions
+}
+
+// SetConditions sets the status.conditions field from the object.  It is used to
+// satisfy the Workload interface.
+func (machinePool *MachinePool) SetConditions(conditions []metav1.Condition) {
+	machinePool.Status.Conditions = conditions
 }
 
 // GetDisplayName returns the name for the OCM MachinePool.  It defaults to wanting to use

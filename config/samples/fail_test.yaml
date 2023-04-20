@@ -1,15 +1,17 @@
 apiVersion: ocm.mobb.redhat.com/v1alpha1
 kind: MachinePool
 metadata:
-  name: machinepool-sample1
+  name: fail-test
 spec:
   clusterName: "dscott"
   displayName: "test6"
+  # maximum must exceed minimum
   minimumNodesPerZone: 2
   maximumNodesPerZone: 1
   instanceType: m5.xlarge
   labels:
     this: that
+    # these are managed and cannot be set
     ocm.mobb.redhat.com/name: "test"
     ocm.mobb.redhat.com/managed: "false" 
   taints:

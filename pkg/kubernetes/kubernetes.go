@@ -8,4 +8,5 @@ import (
 
 type Client interface {
 	List(context.Context, client.ObjectList, ...client.ListOption) error
+	Status() client.SubResourceWriter
 }
