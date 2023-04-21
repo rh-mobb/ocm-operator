@@ -39,17 +39,17 @@ type MachinePoolRequest struct {
 	Reconciler        *MachinePoolReconciler
 }
 
-func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request) (MachinePoolRequest, error) {
+func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request) (*MachinePoolRequest, error) {
 	original := &ocmv1alpha1.MachinePool{}
 
 	// get the object (desired state) from the cluster
 	//nolint:wrapcheck
 	if err := r.Get(ctx, req.NamespacedName, original); err != nil {
 		if !apierrs.IsNotFound(err) {
-			return MachinePoolRequest{}, fmt.Errorf("unable to fetch cluster object - %w", err)
+			return &MachinePoolRequest{}, fmt.Errorf("unable to fetch cluster object - %w", err)
 		}
 
-		return MachinePoolRequest{}, err
+		return &MachinePoolRequest{}, err
 	}
 
 	// ensure the our managed labels do not conflict with what was submitted
@@ -59,14 +59,14 @@ func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request)
 	// place for clusters that may not have this feature gate enabled as CEL
 	// is in beta currently.
 	if original.HasManagedLabels() {
-		return MachinePoolRequest{}, fmt.Errorf(
+		return &MachinePoolRequest{}, fmt.Errorf(
 			"spec.labels cannot contain reserved labels [%+v] - %w",
 			original.Spec.Labels,
 			ErrMachinePoolReservedLabel,
 		)
 	}
 
-	return MachinePoolRequest{
+	return &MachinePoolRequest{
 		Original:          original,
 		Desired:           original.DesiredState(),
 		ControllerRequest: req,
@@ -110,8 +110,8 @@ func (request *MachinePoolRequest) logValues() []interface{} {
 	}
 }
 
-// updateClusterID updates the cluster ID in the status field.
-func (request *MachinePoolRequest) updateClusterID() error {
+// updateStatusCluster updates fields related to the cluster in which the machine pool resides in.
+func (request *MachinePoolRequest) updateStatusCluster() error {
 	// retrieve the cluster id
 	clusterClient := ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.ClusterName)
 	cluster, err := clusterClient.Get()
@@ -131,6 +131,7 @@ func (request *MachinePoolRequest) updateClusterID() error {
 	// keep track of the original object
 	original := request.Original.DeepCopy()
 	request.Original.Status.ClusterID = cluster.ID()
+	request.Original.Status.AvailabilityZoneCount = len(cluster.Nodes().AvailabilityZones())
 
 	// store the cluster id in the status
 	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {

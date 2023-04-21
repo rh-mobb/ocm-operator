@@ -33,7 +33,7 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 	// retrieve the cluster id
 	clusterID := request.Original.Status.ClusterID
 	if clusterID == "" {
-		if err := request.updateClusterID(); err != nil {
+		if err := request.updateStatusCluster(); err != nil {
 			return requeueAfter(defaultMachinePoolRequeue), err
 		}
 	}
@@ -49,6 +49,10 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 			err,
 		)
 	}
+
+	// debug the machinePool
+	fmt.Printf("\n\n\n\nmachine pool response: %+v\n\n\n\n", machinePool)
+	request.Log.V(logLevelDebug).Info(fmt.Sprintf("machine pool response: %+v", machinePool))
 
 	// return if we did not find a machine pool.  this means that the machine pool does not
 	// exist and must be created in the CreateOrUpdate phase.

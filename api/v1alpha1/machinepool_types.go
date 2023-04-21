@@ -126,6 +126,11 @@ type MachinePoolStatus struct {
 	// the number of API calls to look up a cluster ID based on
 	// the cluster name.
 	ClusterID string `json:"clusterID,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.clusterID is immutable",rule=(self == oldSelf)
+	// Represents the number of availability zones that the cluster
+	// resides in.  Used to calculate the total number of replicas.
+	AvailabilityZoneCount int `json:"multiAZ,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -268,8 +273,8 @@ func (machinePool *MachinePool) convertTaints() (builders []*clustersmgmtv1.Tain
 func (machinePool *MachinePool) convertAutoscaling() (builder *clustersmgmtv1.MachinePoolAutoscalingBuilder) {
 	if machinePool.Spec.MaximumNodesPerZone > 0 {
 		return clustersmgmtv1.NewMachinePoolAutoscaling().
-			MinReplicas(machinePool.Spec.MinimumNodesPerZone).
-			MaxReplicas(machinePool.Spec.MaximumNodesPerZone)
+			MinReplicas(machinePool.Spec.MinimumNodesPerZone * machinePool.Status.AvailabilityZoneCount).
+			MaxReplicas(machinePool.Spec.MaximumNodesPerZone * machinePool.Status.AvailabilityZoneCount)
 	}
 
 	return clustersmgmtv1.NewMachinePoolAutoscaling()

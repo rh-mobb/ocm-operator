@@ -78,11 +78,11 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// run the reconciliation loop based on the type of request
 	switch request.Trigger.String() {
 	case triggers.CreateString:
-		return r.ReconcileCreateOrUpdate(&request)
+		return r.ReconcileCreateOrUpdate(request)
 	case triggers.UpdateString:
-		return r.ReconcileCreateOrUpdate(&request)
+		return r.ReconcileCreateOrUpdate(request)
 	case triggers.DeleteString:
-		return r.ReconcileDelete(&request)
+		return r.ReconcileDelete(request)
 	default:
 		return noRequeue(), reconcilerError(
 			request.ControllerRequest,
