@@ -160,6 +160,9 @@ spec:
                   number of API calls to look up a cluster ID based on the cluster
                   name.
                 type: string
+                x-kubernetes-validations:
+                - message: status.clusterID is immutable
+                  rule: (self == oldSelf)
               conditions:
                 items:
                   description: "Condition contains details for one aspect of the current

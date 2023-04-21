@@ -118,6 +118,7 @@ type MachinePoolProviderAWSSpotInstances struct {
 type MachinePoolStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
+	// +kubebuilder:validation:XValidation:message="status.clusterID is immutable",rule=(self == oldSelf)
 	// Represents the programmatic cluster ID of the cluster, as
 	// determined during reconciliation.  This is used to reduce
 	// the number of API calls to look up a cluster ID based on

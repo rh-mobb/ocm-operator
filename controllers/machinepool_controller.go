@@ -32,7 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
+	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
+	"github.com/rh-mobb/ocm-operator/pkg/utils"
 )
 
 const (
@@ -78,17 +80,17 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// run the reconciliation loop based on the type of request
 	switch request.Trigger {
-	case triggerCreate:
+	case triggers.Create:
 		return r.ReconcileCreateOrUpdate(&request)
-	case triggerUpdate:
+	case triggers.Update:
 		return r.ReconcileCreateOrUpdate(&request)
-	case triggerDelete:
+	case triggers.Delete:
 		return r.ReconcileDelete(&request)
 	default:
 		return noRequeue(), reconcilerError(
 			request.ControllerRequest,
 			"unable to determine controller trigger",
-			ErrTriggerUnknown,
+			triggers.ErrTriggerUnknown,
 		)
 	}
 }
@@ -150,10 +152,12 @@ func (r *MachinePoolReconciler) RegisterDeleteHooks(request *MachinePoolRequest)
 		// The object is not being deleted, so if it does not have our finalizer,
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
-		if !containsString(request.Original.GetFinalizers(), finalizerName(request.Original)) {
+		if !utils.ContainsString(request.Original.GetFinalizers(), finalizerName(request.Original)) {
+			original := request.Original.DeepCopy()
+
 			controllerutil.AddFinalizer(request.Original, finalizerName(request.Original))
 
-			if err := r.Update(request.Context, request.Original); err != nil {
+			if err := r.Patch(request.Context, request.Original, client.MergeFrom(original)); err != nil {
 				return fmt.Errorf("unable to register delete hook - %w", err)
 			}
 		}

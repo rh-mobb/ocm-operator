@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -14,13 +13,6 @@ import (
 const (
 	defaultFinalizerSuffix = "finalizer"
 )
-
-type Workload interface {
-	client.Object
-
-	GetConditions() []metav1.Condition
-	SetConditions([]metav1.Condition)
-}
 
 // requeue returns the default controller result when a custom one
 // is not needed.
@@ -54,17 +46,6 @@ func reconcilerError(request reconcile.Request, message string, err error) error
 		message,
 		err,
 	)
-}
-
-// containsString determines if a string is in an array of strings.
-func containsString(list []string, str string) bool {
-	for item := range list {
-		if str == list[item] {
-			return true
-		}
-	}
-
-	return false
 }
 
 // finalizerName returns the finalizer name for the controller.

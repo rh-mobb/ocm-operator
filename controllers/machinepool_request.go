@@ -7,10 +7,15 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
+	"github.com/rh-mobb/ocm-operator/controllers/conditions"
+	"github.com/rh-mobb/ocm-operator/controllers/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
+	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
 // MachinePoolRequest is an object that is unique to each reconciliation
@@ -25,7 +30,8 @@ type MachinePoolRequest struct {
 	Original          *ocmv1alpha1.MachinePool
 	Desired           *ocmv1alpha1.MachinePool
 	Log               logr.Logger
-	Trigger           controllerTrigger
+	Trigger           triggers.Trigger
+	Reconciler        *MachinePoolReconciler
 }
 
 func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request) (MachinePoolRequest, error) {
@@ -60,7 +66,8 @@ func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request)
 		ControllerRequest: req,
 		Context:           ctx,
 		Log:               log.Log,
-		Trigger:           trigger(original),
+		Trigger:           triggers.GetTrigger(original),
+		Reconciler:        r,
 	}, nil
 }
 
@@ -73,4 +80,60 @@ func (request *MachinePoolRequest) desired() bool {
 		request.Desired.Spec,
 		request.Current.Spec,
 	)
+}
+
+func (request *MachinePoolRequest) updateCondition(condition metav1.Condition) error {
+	if err := conditions.Update(
+		request.Context,
+		request.Reconciler,
+		request.Original,
+		condition,
+	); err != nil {
+		return fmt.Errorf("unable to update condition - %w", err)
+	}
+
+	return nil
+}
+
+// logValues produces a consistent set of log values for this request.
+func (request *MachinePoolRequest) logValues() []interface{} {
+	return []interface{}{
+		"resource", fmt.Sprintf("%s/%s", request.Desired.Namespace, request.Desired.Name),
+		"cluster", request.Desired.Spec.ClusterName,
+		"name", request.Desired.Spec.DisplayName,
+	}
+}
+
+// updateClusterID updates the cluster ID in the status field.
+func (request *MachinePoolRequest) updateClusterID() error {
+	// retrieve the cluster id
+	clusterClient := ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.ClusterName)
+	cluster, err := clusterClient.Get()
+	if err != nil {
+		return fmt.Errorf(
+			"unable to retrieve cluster from ocm [name=%s] - %w",
+			request.Desired.Spec.ClusterName,
+			err,
+		)
+	}
+
+	// if the cluster id is missing return an error
+	if cluster.ID() == "" {
+		return fmt.Errorf("missing cluster id in response")
+	}
+
+	// keep track of the original object
+	original := request.Original.DeepCopy()
+	request.Original.Status.ClusterID = cluster.ID()
+
+	// store the cluster id in the status
+	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
+		return fmt.Errorf(
+			"unable to update status.clusterID=%s - %w",
+			cluster.ID(),
+			err,
+		)
+	}
+
+	return nil
 }

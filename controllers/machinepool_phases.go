@@ -4,11 +4,13 @@ import (
 	"fmt"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
+	"github.com/rh-mobb/ocm-operator/controllers/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
+	"github.com/rh-mobb/ocm-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -16,12 +18,7 @@ import (
 // It is mainly used to set conditions of the controller and to let anyone who is viewiing the
 // custom resource know that we are currently reconciling.
 func (r *MachinePoolReconciler) Begin(request *MachinePoolRequest) (ctrl.Result, error) {
-	if err := updateCondition(
-		request.Context,
-		r,
-		request.Original,
-		conditionReconciling(metav1.ConditionTrue, request.Trigger, "beginning reconciliation"),
-	); err != nil {
+	if err := request.updateCondition(conditions.Reconciling(request.Trigger)); err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
@@ -35,28 +32,8 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 	// retrieve the cluster id
 	clusterID := request.Original.Status.ClusterID
 	if clusterID == "" {
-		cluster := ocm.NewClusterClient(r.Connection, request.Desired.Spec.ClusterName)
-		if err := cluster.Get(); err != nil {
-			return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf(
-				"unable to retrieve cluster from ocm [name=%s] - %w",
-				request.Desired.Spec.ClusterName,
-				err,
-			)
-		}
-
-		clusterID = cluster.Object.ID()
-		request.Original.Status.ClusterID = clusterID
-
-		// store the cluster id in the status
-		// TODO: refactor and switch to patch over update
-		updatedObject := *request.Original
-		updatedObject.Status.ClusterID = clusterID
-		if err := r.Status().Update(request.Context, &updatedObject); err != nil {
-			return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf(
-				"unable to update status.clusterID=%s - %w",
-				clusterID,
-				err,
-			)
+		if err := request.updateClusterID(); err != nil {
+			return requeueAfter(defaultMachinePoolRequeue), err
 		}
 	}
 
@@ -104,7 +81,7 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
-		request.Log.V(5).Info("machine pool already in desired state", machinePoolLog(request)...)
+		request.Log.V(5).Info("machine pool already in desired state", request.logValues()...)
 
 		return noRequeue(), nil
 	}
@@ -121,7 +98,7 @@ func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result,
 
 	// if no machine pool exists, create it and return
 	if request.Current == nil {
-		request.Log.Info("creating machine pool", machinePoolLog(request)...)
+		request.Log.Info("creating machine pool", request.logValues()...)
 		if _, err := poolClient.Create(builder); err != nil {
 			return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to create machine pool - %w", err)
 		}
@@ -142,7 +119,7 @@ func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result,
 	}
 
 	// update the object
-	request.Log.Info("updating machine pool", machinePoolLog(request)...)
+	request.Log.Info("updating machine pool", request.logValues()...)
 	if _, err := poolClient.Update(builder); err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to update machine pool - %w", err)
 	}
@@ -165,7 +142,7 @@ func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result,
 // Destroy will destroy an OpenShift Cluster Manager machine pool.
 func (r *MachinePoolReconciler) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the machine pool
-	if hasCondition(request.Original.Status.Conditions, conditionDeleted()) {
+	if conditions.IsSet(conditions.MachinePoolDeleted(), request.Original) {
 		return noRequeue(), nil
 	}
 
@@ -177,7 +154,7 @@ func (r *MachinePoolReconciler) Destroy(request *MachinePoolRequest) (ctrl.Resul
 	)
 
 	// delete the object
-	request.Log.Info("deleting machine pool", machinePoolLog(request)...)
+	request.Log.Info("deleting machine pool", request.logValues()...)
 	if err := poolClient.Delete(request.Desired.Spec.DisplayName); err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to delete machine pool - %w", err)
 	}
@@ -195,13 +172,8 @@ func (r *MachinePoolReconciler) Destroy(request *MachinePoolRequest) (ctrl.Resul
 	)
 
 	// set the deleted condition
-	if err := updateCondition(
-		request.Context,
-		r,
-		request.Original,
-		conditionDeleted(),
-	); err != nil {
-		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating deleted condition - %w", err)
+	if err := request.updateCondition(conditions.MachinePoolDeleted()); err != nil {
+		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
 	return noRequeue(), nil
@@ -235,6 +207,8 @@ func (r *MachinePoolReconciler) WaitUntilReady(request *MachinePoolRequest) (ctr
 		return requeueAfter(defaultMachinePoolRequeue), nil
 	}
 
+	request.Log.Info("nodes are ready", request.logValues()...)
+
 	return noRequeue(), nil
 }
 
@@ -251,45 +225,36 @@ func (r *MachinePoolReconciler) WaitUntilMissing(request *MachinePoolRequest) (c
 		return requeueAfter(defaultMachinePoolRequeue), nil
 	}
 
+	request.Log.Info("nodes have been removed", request.logValues()...)
+
 	return noRequeue(), nil
 }
 
 // CompleteDestroy will perform all actions required to successful complete a reconciliation request.
 func (r *MachinePoolReconciler) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, error) {
-	if containsString(request.Original.GetFinalizers(), finalizerName(request.Original)) {
+	if utils.ContainsString(request.Original.GetFinalizers(), finalizerName(request.Original)) {
 		// remove our finalizer from the list and update it.
+		original := request.Original.DeepCopy()
+
 		controllerutil.RemoveFinalizer(request.Original, finalizerName(request.Original))
 
-		if err := r.Update(request.Context, request.Original); err != nil {
-			return noRequeue(), fmt.Errorf("unable to remove finalizer - %w", err)
+		if err := r.Patch(request.Context, request.Original, client.MergeFrom(original)); err != nil {
+			return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to remove finalizer - %w", err)
 		}
 	}
 
-	request.Log.Info("completed machine pool deletion", machinePoolLog(request)...)
+	request.Log.Info("completed machine pool deletion", request.logValues()...)
 
 	return noRequeue(), nil
 }
 
 // Complete will perform all actions required to successful complete a reconciliation request.
 func (r *MachinePoolReconciler) Complete(request *MachinePoolRequest) (ctrl.Result, error) {
-	if err := updateCondition(
-		request.Context,
-		r,
-		request.Original,
-		conditionReconciling(metav1.ConditionFalse, request.Trigger, "ending reconciliation"),
-	); err != nil {
-		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
+	if err := request.updateCondition(conditions.Reconciled(request.Trigger)); err != nil {
+		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciled condition - %w", err)
 	}
 
-	request.Log.Info("completed machine pool reconciliation", machinePoolLog(request)...)
+	request.Log.Info("completed machine pool reconciliation", request.logValues()...)
 
 	return noRequeue(), nil
-}
-
-func machinePoolLog(request *MachinePoolRequest) []interface{} {
-	return []interface{}{
-		"resource", fmt.Sprintf("%s/%s", request.Desired.Namespace, request.Desired.Name),
-		"cluster", request.Desired.Spec.ClusterName,
-		"name", request.Desired.Spec.DisplayName,
-	}
 }

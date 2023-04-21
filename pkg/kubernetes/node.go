@@ -30,6 +30,10 @@ func GetLabeledNodes(ctx context.Context, c Client, nodeLabels map[string]string
 }
 
 func NodesAreReady(nodes ...corev1.Node) bool {
+	if len(nodes) < 1 {
+		return false
+	}
+
 	for _, node := range nodes {
 		for _, condition := range node.Status.Conditions {
 			if condition.Type == corev1.NodeConditionType(nodeConditionReady) && condition.Status == corev1.ConditionFalse {
