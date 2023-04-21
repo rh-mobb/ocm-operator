@@ -99,19 +99,19 @@ func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequ
 	}
 
 	// run through each phase of controller reconciliation
-	for name, execute := range map[string]PhaseFunction{
-		"begin":           r.Begin,
-		"getCurrentState": r.GetCurrentState,
-		"applyState":      r.Apply,
-		"waitUntilReady":  r.WaitUntilReady,
-		"complete":        r.Complete,
+	for _, execute := range []Phase{
+		{Name: "begin", Function: r.Begin},
+		{Name: "getCurrentState", Function: r.GetCurrentState},
+		{Name: "applyState", Function: r.Apply},
+		{Name: "waitUntilReady", Function: r.WaitUntilReady},
+		{Name: "complete", Function: r.Complete},
 	} {
 		// run each phase function and return if we receive any errors
-		result, err := execute(request)
+		result, err := execute.Function(request)
 		if err != nil || result.Requeue {
 			return result, reconcilerError(
 				request.ControllerRequest,
-				fmt.Sprintf("%s phase reconciliation error in create or update", name),
+				fmt.Sprintf("%s phase reconciliation error in create or update", execute.Name),
 				err,
 			)
 		}
@@ -122,18 +122,18 @@ func (r *MachinePoolReconciler) ReconcileCreateOrUpdate(request *MachinePoolRequ
 
 func (r *MachinePoolReconciler) ReconcileDelete(request *MachinePoolRequest) (ctrl.Result, error) {
 	// run through each phase of controller reconciliation
-	for name, execute := range map[string]PhaseFunction{
-		"begin":            r.Begin,
-		"destroy":          r.Destroy,
-		"waitUntilMissing": r.WaitUntilMissing,
-		"complete":         r.CompleteDestroy,
+	for _, execute := range []Phase{
+		{Name: "begin", Function: r.Begin},
+		{Name: "destroy", Function: r.Destroy},
+		{Name: "waitUntilMissing", Function: r.WaitUntilMissing},
+		{Name: "complete", Function: r.CompleteDestroy},
 	} {
 		// run each phase function and return if we receive any errors
-		result, err := execute(request)
+		result, err := execute.Function(request)
 		if err != nil || result.Requeue {
 			return result, reconcilerError(
 				request.ControllerRequest,
-				fmt.Sprintf("%s phase reconciliation error in delete", name),
+				fmt.Sprintf("%s phase reconciliation error in delete", execute.Name),
 				err,
 			)
 		}

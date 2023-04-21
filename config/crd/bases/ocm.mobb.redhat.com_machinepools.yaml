@@ -154,6 +154,13 @@ spec:
           status:
             description: MachinePoolStatus defines the observed state of MachinePool.
             properties:
+              availabilityZoneCount:
+                description: Represents the number of availability zones that the
+                  cluster resides in.  Used to calculate the total number of replicas.
+                type: integer
+                x-kubernetes-validations:
+                - message: status.AvailabilityZoneCount is immutable
+                  rule: (self == oldSelf)
               clusterID:
                 description: Represents the programmatic cluster ID of the cluster,
                   as determined during reconciliation.  This is used to reduce the

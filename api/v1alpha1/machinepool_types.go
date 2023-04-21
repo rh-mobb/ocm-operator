@@ -127,10 +127,10 @@ type MachinePoolStatus struct {
 	// the cluster name.
 	ClusterID string `json:"clusterID,omitempty"`
 
-	// +kubebuilder:validation:XValidation:message="status.clusterID is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="status.AvailabilityZoneCount is immutable",rule=(self == oldSelf)
 	// Represents the number of availability zones that the cluster
 	// resides in.  Used to calculate the total number of replicas.
-	AvailabilityZoneCount int `json:"multiAZ,omitempty"`
+	AvailabilityZoneCount int `json:"availabilityZoneCount,omitempty"`
 }
 
 //+kubebuilder:object:root=true

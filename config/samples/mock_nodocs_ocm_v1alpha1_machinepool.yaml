@@ -4,7 +4,7 @@ metadata:
   name: machinepool-sample1
 spec:
   clusterName: "dscott"
-  displayName: "test6"
+  displayName: "test7"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge

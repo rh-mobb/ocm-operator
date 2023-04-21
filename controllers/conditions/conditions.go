@@ -42,7 +42,7 @@ func Reconciled(trigger triggers.Trigger) *metav1.Condition {
 		Type:               conditionTypeReconciling,
 		LastTransitionTime: metav1.Now(),
 		Status:             metav1.ConditionFalse,
-		Reason:             triggers.Delete.String(),
+		Reason:             trigger.String(),
 		Message:            conditionMessageReconcilingStop,
 	}
 }

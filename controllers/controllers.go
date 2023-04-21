@@ -21,7 +21,7 @@ const (
 //
 //nolint:unparam
 func requeueAfter(seconds time.Duration) ctrl.Result {
-	return ctrl.Result{RequeueAfter: seconds}
+	return ctrl.Result{Requeue: true, RequeueAfter: seconds}
 }
 
 // noRequeue returns a blank result to prevent a requeue.

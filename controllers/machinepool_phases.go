@@ -36,6 +36,8 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 		if err := request.updateStatusCluster(); err != nil {
 			return requeueAfter(defaultMachinePoolRequeue), err
 		}
+
+		clusterID = request.Original.Status.ClusterID
 	}
 
 	// retrieve the machine pool
@@ -95,6 +97,7 @@ func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result,
 	)
 
 	// build the request
+	request.Desired.Status.AvailabilityZoneCount = request.Original.Status.AvailabilityZoneCount
 	builder := request.Desired.Builder()
 
 	// if no machine pool exists, create it and return
