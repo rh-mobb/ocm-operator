@@ -14,16 +14,10 @@ const (
 	defaultFinalizerSuffix = "finalizer"
 )
 
-// requeue returns the default controller result when a custom one
-// is not needed.
-func requeue() ctrl.Result {
-	return ctrl.Result{Requeue: true}
-}
-
 // requeueAfter returns a requeue result to requeue after a specific
 // number of seconds.
 func requeueAfter(seconds time.Duration) ctrl.Result {
-	return ctrl.Result{Requeue: true, RequeueAfter: seconds * time.Second}
+	return ctrl.Result{RequeueAfter: seconds}
 }
 
 // noRequeue returns a blank result to prevent a requeue.

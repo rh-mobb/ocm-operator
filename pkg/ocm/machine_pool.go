@@ -3,7 +3,6 @@ package ocm
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
@@ -12,9 +11,6 @@ import (
 const (
 	LabelPrefixManaged = "ocm.mobb.redhat.com/managed"
 	LabelPrefixName    = "ocm.mobb.redhat.com/name"
-
-	createRetries  = 5
-	createInterval = 5 * time.Second
 )
 
 type machinePoolClient struct {
@@ -61,39 +57,6 @@ func (mpc *machinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder)
 	}
 
 	return response.Body(), nil
-
-	// // create the machine pool in ocm
-	// // NOTE: we run this on a loop because the ocm api occasionally returns a nil response
-	// ticker := time.NewTicker(createInterval)
-	// defer ticker.Stop()
-
-	// var retries int
-
-	// for {
-	// 	select {
-	// 	case <-ticker.C:
-	// 		if retries == createRetries {
-	// 			return machinePool, fmt.Errorf("exceeded create retries - %w", err)
-	// 		}
-
-	// 		response, err := mpc.connection.Add().Body(object).Send()
-	// 		// retry if we have no response
-	// 		if response == nil {
-	// 			retries++
-
-	// 			continue
-	// 		}
-
-	// 		if err != nil {
-	// 			return machinePool, fmt.Errorf("error in create request - %w", err)
-	// 		}
-
-	// 		// return the response
-	// 		return response.Body(), nil
-	// 	default:
-	// 		break
-	// 	}
-	// }
 }
 
 func (mpc *machinePoolClient) Update(builder *clustersmgmtv1.MachinePoolBuilder) (machinePool *clustersmgmtv1.MachinePool, err error) {

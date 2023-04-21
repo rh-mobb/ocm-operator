@@ -18,7 +18,7 @@ const (
 	conditionMessageReconcilingStop  = "ending reconciliation"
 )
 
-// Reconciling returns a reconciling conditon based up on a trigger.  This
+// Reconciling returns a reconciling condition based up on a trigger.  This
 // is the condition that is set upon entry to reconciliation.
 func Reconciling(trigger triggers.Trigger) metav1.Condition {
 	return metav1.Condition{
@@ -78,30 +78,30 @@ func IsSet(condition metav1.Condition, on request.Workload) bool {
 	return false
 }
 
-func addCondition(current []metav1.Condition, new metav1.Condition) []metav1.Condition {
-	if len(current) < 1 {
-		return []metav1.Condition{new}
+func addCondition(existing []metav1.Condition, newCondition metav1.Condition) []metav1.Condition {
+	if len(existing) < 1 {
+		return []metav1.Condition{newCondition}
 	}
 
-	for condition := range current {
-		if current[condition].Type == new.Type {
-			if equalCondition(current[condition], new) {
-				return current
+	for condition := range existing {
+		if existing[condition].Type == newCondition.Type {
+			if equalCondition(existing[condition], newCondition) {
+				return existing
 			}
 
-			current[condition] = new
+			existing[condition] = newCondition
 
-			return current
+			return existing
 		}
 	}
 
-	return append(current, new)
+	return append(existing, newCondition)
 }
 
-func equalCondition(current metav1.Condition, new metav1.Condition) bool {
+func equalCondition(existing metav1.Condition, newCondition metav1.Condition) bool {
 	// ignore the last transition time and observed generation
-	current.LastTransitionTime = new.LastTransitionTime
-	current.ObservedGeneration = new.ObservedGeneration
+	existing.LastTransitionTime = newCondition.LastTransitionTime
+	existing.ObservedGeneration = newCondition.ObservedGeneration
 
-	return reflect.DeepEqual(current, new)
+	return reflect.DeepEqual(existing, newCondition)
 }

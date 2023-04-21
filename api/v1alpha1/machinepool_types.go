@@ -28,7 +28,9 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // +kubebuilder:validation:XValidation:message="maximumNodesPerZone must be greater than or equal to minimumNodesPerZone",rule=(self.maximumNodesPerZone == 0 || self.minimumNodesPerZone <= self.maximumNodesPerZone)
-// MachinePoolSpec defines the desired state of MachinePool
+// MachinePoolSpec defines the desired state of MachinePool.
+//
+//nolint:lll
 type MachinePoolSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
