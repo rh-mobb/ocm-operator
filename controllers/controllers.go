@@ -12,10 +12,14 @@ import (
 
 const (
 	defaultFinalizerSuffix = "finalizer"
+
+	logLevelDebug = 5
 )
 
 // requeueAfter returns a requeue result to requeue after a specific
 // number of seconds.
+//
+//nolint:unparam
 func requeueAfter(seconds time.Duration) ctrl.Result {
 	return ctrl.Result{RequeueAfter: seconds}
 }

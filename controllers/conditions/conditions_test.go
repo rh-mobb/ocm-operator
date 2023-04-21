@@ -10,7 +10,7 @@ import (
 func Test_addCondition(t *testing.T) {
 	t.Parallel()
 
-	testCondition := metav1.Condition{
+	testCondition := &metav1.Condition{
 		Type:               "Test",
 		Reason:             "TestReason",
 		Status:             metav1.ConditionTrue,
@@ -20,7 +20,7 @@ func Test_addCondition(t *testing.T) {
 
 	type args struct {
 		current []metav1.Condition
-		new     metav1.Condition
+		new     *metav1.Condition
 	}
 
 	tests := []struct {
@@ -34,23 +34,23 @@ func Test_addCondition(t *testing.T) {
 				current: []metav1.Condition{},
 				new:     testCondition,
 			},
-			want: []metav1.Condition{testCondition},
+			want: []metav1.Condition{*testCondition},
 		},
 		{
 			name: "ensure existing conditions is not added",
 			args: args{
-				current: []metav1.Condition{testCondition},
+				current: []metav1.Condition{*testCondition},
 				new:     testCondition,
 			},
-			want: []metav1.Condition{testCondition},
+			want: []metav1.Condition{*testCondition},
 		},
 		{
 			name: "ensure new condition is added",
 			args: args{
-				current: []metav1.Condition{testCondition},
-				new:     metav1.Condition{Type: "Empty"},
+				current: []metav1.Condition{*testCondition},
+				new:     &metav1.Condition{Type: "Empty"},
 			},
-			want: []metav1.Condition{testCondition, {Type: "Empty"}},
+			want: []metav1.Condition{*testCondition, {Type: "Empty"}},
 		},
 	}
 

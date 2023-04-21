@@ -21,11 +21,11 @@ const (
 )
 
 const (
-	triggerUnknownString = "Unknown"
-	triggerCreateString  = "Create"
-	triggerUpdateString  = "Update"
-	triggerDeleteString  = "Delete"
-	triggerRequeueString = "Requeue"
+	UnknownString = "Unknown"
+	CreateString  = "Create"
+	UpdateString  = "Update"
+	DeleteString  = "Delete"
+	RequeueString = "Requeue"
 )
 
 // GetTrigger returns the GetTrigger that caused the reconciliation event.
@@ -44,10 +44,10 @@ func GetTrigger(object request.Workload) Trigger {
 // String returns the string value of a controller trigger.
 func (trigger Trigger) String() string {
 	return map[Trigger]string{
-		Unknown: triggerUnknownString,
-		Create:  triggerCreateString,
-		Update:  triggerUpdateString,
-		Delete:  triggerDeleteString,
-		Requeue: triggerRequeueString,
+		Unknown: UnknownString,
+		Create:  CreateString,
+		Update:  UpdateString,
+		Delete:  DeleteString,
+		Requeue: RequeueString,
 	}[trigger]
 }

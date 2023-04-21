@@ -116,7 +116,7 @@ type MachinePoolProviderAWSSpotInstances struct {
 	MaximumPrice int `json:"maximumPrice,omitempty"`
 }
 
-// MachinePoolStatus defines the observed state of MachinePool
+// MachinePoolStatus defines the observed state of MachinePool.
 type MachinePoolStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
@@ -131,7 +131,7 @@ type MachinePoolStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// MachinePool is the Schema for the machinepools API
+// MachinePool is the Schema for the machinepools API.
 type MachinePool struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -142,7 +142,7 @@ type MachinePool struct {
 
 //+kubebuilder:object:root=true
 
-// MachinePoolList contains a list of MachinePool
+// MachinePoolList contains a list of MachinePool.
 type MachinePoolList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

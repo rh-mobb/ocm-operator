@@ -3,15 +3,16 @@ package controllers
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	"github.com/rh-mobb/ocm-operator/pkg/utils"
-	corev1 "k8s.io/api/core/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // Begin begins the reconciliation state once we get the object (the desired state) from the cluster.
@@ -81,7 +82,7 @@ func (r *MachinePoolReconciler) GetCurrentState(request *MachinePoolRequest) (ct
 func (r *MachinePoolReconciler) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
-		request.Log.V(5).Info("machine pool already in desired state", request.logValues()...)
+		request.Log.V(logLevelDebug).Info("machine pool already in desired state", request.logValues()...)
 
 		return noRequeue(), nil
 	}

@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -42,16 +41,14 @@ const (
 )
 
 var (
-	ErrMachinePoolReservedLabel = errors.New(
-		fmt.Sprintf(
-			"problem with system reserved labels: %s, %s",
-			ocm.LabelPrefixManaged,
-			ocm.LabelPrefixName,
-		),
+	ErrMachinePoolReservedLabel = fmt.Errorf(
+		"problem with system reserved labels: %s, %s",
+		ocm.LabelPrefixManaged,
+		ocm.LabelPrefixName,
 	)
 )
 
-// MachinePoolReconciler reconciles a MachinePool object
+// MachinePoolReconciler reconciles a MachinePool object.
 type MachinePoolReconciler struct {
 	client.Client
 
@@ -79,12 +76,12 @@ func (r *MachinePoolReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// run the reconciliation loop based on the type of request
-	switch request.Trigger {
-	case triggers.Create:
+	switch request.Trigger.String() {
+	case triggers.CreateString:
 		return r.ReconcileCreateOrUpdate(&request)
-	case triggers.Update:
+	case triggers.UpdateString:
 		return r.ReconcileCreateOrUpdate(&request)
-	case triggers.Delete:
+	case triggers.DeleteString:
 		return r.ReconcileDelete(&request)
 	default:
 		return noRequeue(), reconcilerError(
@@ -167,6 +164,8 @@ func (r *MachinePoolReconciler) RegisterDeleteHooks(request *MachinePoolRequest)
 }
 
 // SetupWithManager sets up the controller with the Manager.
+//
+//nolint:wrapcheck
 func (r *MachinePoolReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithEventFilter(predicates.WorkloadPredicates()).

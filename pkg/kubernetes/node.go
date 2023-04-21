@@ -29,6 +29,9 @@ func GetLabeledNodes(ctx context.Context, c Client, nodeLabels map[string]string
 	return &nodeList, nil
 }
 
+// NodesAreReady determines if nodes are in a ready state.
+//
+//nolint:gocritic
 func NodesAreReady(nodes ...corev1.Node) bool {
 	if len(nodes) < 1 {
 		return false

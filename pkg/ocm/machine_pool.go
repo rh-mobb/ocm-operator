@@ -30,7 +30,7 @@ func (mpc *machinePoolClient) For(machinePoolName string) *clustersmgmtv1.Machin
 }
 
 func (mpc *machinePoolClient) Get() (machinePool *clustersmgmtv1.MachinePool, err error) {
-	// retrive the machine pool from ocm
+	// retrieve the machine pool from ocm
 	response, err := mpc.For(mpc.name).Get().Send()
 	if err != nil {
 		if response.Status() == http.StatusNotFound {

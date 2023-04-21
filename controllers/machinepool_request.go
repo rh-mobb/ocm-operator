@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -16,6 +17,10 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
+)
+
+var (
+	ErrMissingClusterID = errors.New("unable to find cluster id")
 )
 
 // MachinePoolRequest is an object that is unique to each reconciliation
@@ -38,6 +43,7 @@ func NewRequest(r *MachinePoolReconciler, ctx context.Context, req ctrl.Request)
 	original := &ocmv1alpha1.MachinePool{}
 
 	// get the object (desired state) from the cluster
+	//nolint:wrapcheck
 	if err := r.Get(ctx, req.NamespacedName, original); err != nil {
 		if !apierrs.IsNotFound(err) {
 			return MachinePoolRequest{}, fmt.Errorf("unable to fetch cluster object - %w", err)
@@ -82,7 +88,7 @@ func (request *MachinePoolRequest) desired() bool {
 	)
 }
 
-func (request *MachinePoolRequest) updateCondition(condition metav1.Condition) error {
+func (request *MachinePoolRequest) updateCondition(condition *metav1.Condition) error {
 	if err := conditions.Update(
 		request.Context,
 		request.Reconciler,
@@ -119,7 +125,7 @@ func (request *MachinePoolRequest) updateClusterID() error {
 
 	// if the cluster id is missing return an error
 	if cluster.ID() == "" {
-		return fmt.Errorf("missing cluster id in response")
+		return fmt.Errorf("missing cluster id in response - %w", ErrMissingClusterID)
 	}
 
 	// keep track of the original object

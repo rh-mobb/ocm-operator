@@ -3,8 +3,9 @@ package controllers
 import (
 	"testing"
 
-	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+
+	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 )
 
 func TestMachinePoolRequest_desired(t *testing.T) {

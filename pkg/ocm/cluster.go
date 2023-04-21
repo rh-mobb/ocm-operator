@@ -1,10 +1,15 @@
 package ocm
 
 import (
+	"errors"
 	"fmt"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+)
+
+var (
+	ErrClusterResponse = errors.New("invalid cluster response")
 )
 
 type clusterClient struct {
@@ -29,9 +34,10 @@ func (cc *clusterClient) Get() (cluster *clustersmgmtv1.Cluster, err error) {
 	// return an error if we did not find exactly 1 cluster
 	if len(clusterList.Items().Slice()) != 1 {
 		return cluster, fmt.Errorf(
-			"expected 1 cluster with name [%s] but found [%d]",
+			"expected 1 cluster with name [%s] but found [%d] - %w",
 			cc.Name,
 			len(clusterList.Items().Slice()),
+			ErrClusterResponse,
 		)
 	}
 

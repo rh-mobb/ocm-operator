@@ -1,8 +1,9 @@
 package conditions
 
 import (
-	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 )
 
 const (
@@ -12,8 +13,8 @@ const (
 
 // MachinePoolDeleted return a condition indicating that the machine pool has
 // been deleted from OpenShift Cluster Manager.
-func MachinePoolDeleted() metav1.Condition {
-	return metav1.Condition{
+func MachinePoolDeleted() *metav1.Condition {
+	return &metav1.Condition{
 		Type:               machinePoolConditionTypeDeleted,
 		LastTransitionTime: metav1.Now(),
 		Status:             metav1.ConditionTrue,
