@@ -18,7 +18,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: MachinePool is the Schema for the machinepools API
+        description: MachinePool is the Schema for the machinepools API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,7 +33,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: MachinePoolSpec defines the desired state of MachinePool
+            description: MachinePoolSpec defines the desired state of MachinePool.
             properties:
               aws:
                 description: Represents the AWS provider specific configuration options.
@@ -152,7 +152,7 @@ spec:
               rule: (self.maximumNodesPerZone == 0 || self.minimumNodesPerZone <=
                 self.maximumNodesPerZone)
           status:
-            description: MachinePoolStatus defines the observed state of MachinePool
+            description: MachinePoolStatus defines the observed state of MachinePool.
             properties:
               clusterID:
                 description: Represents the programmatic cluster ID of the cluster,
