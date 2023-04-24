@@ -163,7 +163,7 @@ func (r *MachinePoolReconciler) Destroy(request *MachinePoolRequest) (ctrl.Resul
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to delete machine pool - %w", err)
 	}
 
-	// create an event indicating that the machine pool has been created
+	// create an event indicating that the machine pool has been deleted
 	r.Recorder.Event(
 		request.Original,
 		corev1.EventTypeNormal,
