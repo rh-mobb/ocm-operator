@@ -261,6 +261,7 @@ func (r *MachinePoolReconciler) Complete(request *MachinePoolRequest) (ctrl.Resu
 	}
 
 	request.Log.Info("completed machine pool reconciliation", request.logValues()...)
+	request.Log.Info(fmt.Sprintf("reconciling again in %d minutes", r.Interval), request.logValues()...)
 
 	return requeueAfter(r.Interval), nil
 }
