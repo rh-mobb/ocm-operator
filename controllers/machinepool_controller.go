@@ -55,6 +55,7 @@ type MachinePoolReconciler struct {
 	Scheme     *runtime.Scheme
 	Connection *sdk.Connection
 	Recorder   record.EventRecorder
+	Interval   time.Duration
 }
 
 //+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=machinepools,verbs=get;list;watch;create;update;patch;delete

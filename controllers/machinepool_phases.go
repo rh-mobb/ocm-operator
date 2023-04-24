@@ -252,7 +252,9 @@ func (r *MachinePoolReconciler) CompleteDestroy(request *MachinePoolRequest) (ct
 	return noRequeue(), nil
 }
 
-// Complete will perform all actions required to successful complete a reconciliation request.
+// Complete will perform all actions required to successful complete a reconciliation request.  It will
+// requeue after the interval value requested by the controller configuration to ensure that the
+// object remains in its desired state at a specific interval.
 func (r *MachinePoolReconciler) Complete(request *MachinePoolRequest) (ctrl.Result, error) {
 	if err := request.updateCondition(conditions.Reconciled(request.Trigger)); err != nil {
 		return requeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciled condition - %w", err)
@@ -260,5 +262,5 @@ func (r *MachinePoolReconciler) Complete(request *MachinePoolRequest) (ctrl.Resu
 
 	request.Log.Info("completed machine pool reconciliation", request.logValues()...)
 
-	return noRequeue(), nil
+	return requeueAfter(r.Interval), nil
 }
