@@ -1,48 +1,62 @@
-# ocm-machine-pool-operator
-// TODO(user): Add simple overview of use/purpose
+# ocm-operator
+
+Manage OpenShift Cluster Manager Machine Pools in a Kubernetes-native fashion using 
+an operator.
+
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+
+This operator allows you to manage OCM Machine Pools from a Kubernetes cluster using 
+native Kubernetes CRDs.  This allows you to plugin to more modern workflows such 
+as GitOps.
+
+**NOTE:** current limitation is that the cluster with the operator may only manage 
+machine pools for itself.  See https://github.com/rh-mobb/ocm-operator/issues/1.
+
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 
-### Running on the cluster
-1. Install Instances of Custom Resources:
+You will need a cluster that supports managing Machine Pools from OCM (e.g. ROSA).  Please 
+see https://mobb.ninja/docs/quickstart-rosa/ for a quick start guide.
 
-```sh
-kubectl apply -f config/samples/
+
+### Running Outside of the Cluster (Development/Testing)
+
+1. [Retrieve your access token](https://mobb.ninja/docs/quickstart-rosa/#get-a-red-hat-offline-access-token) and 
+place the token at `/tmp/ocm.json`
+
+2. To install the custom resources for this operator, make sure you have [logged into 
+your test cluster](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa-sts-accessing-cluster.html) and run the following:
+
+```bash
+make install
 ```
 
-2. Build and push your image to the location specified by `IMG`:
+3. To run the controller locally against a test cluster:
 
-```sh
-make docker-build docker-push IMG=<some-registry>/ocm-machine-pool-operator:tag
+```bash
+make run
 ```
 
-3. Deploy the controller to the cluster with the image specified by `IMG`:
+4. You can then test the operator by creating the sample manifests:
 
-```sh
-make deploy IMG=<some-registry>/ocm-machine-pool-operator:tag
+**NOTE:** other samples available for different use cases at `config/samples/sample_*.yaml`
+
+```bash
+oc apply -f config/samples/sample_simple.yaml
 ```
 
-### Uninstall CRDs
-To delete the CRDs from the cluster:
+5. To clean up:
 
-```sh
+```bash
 make uninstall
 ```
 
-### Undeploy controller
-UnDeploy the controller from the cluster:
 
-```sh
-make undeploy
-```
+### Running on the Cluster
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+TODO: will be installed via OperatorHub
+
 
 ### How it works
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
@@ -50,31 +64,6 @@ This project aims to follow the Kubernetes [Operator pattern](https://kubernetes
 It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/),
 which provide a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
 
-### Test It Out
-1. Install the CRDs into the cluster:
-
-```sh
-make install
-```
-
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`
-
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make manifests
-```
-
-**NOTE:** Run `make --help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ## License
 
