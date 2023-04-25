@@ -63,8 +63,8 @@ func TestMachinePoolRequest_desired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			request := &MachinePoolRequest{
-				Current:  tt.fields.Current,
-				Original: tt.fields.Desired,
+				Current: tt.fields.Current,
+				Desired: tt.fields.Desired,
 			}
 			if got := request.desired(); got != tt.want {
 				t.Errorf("MachinePoolRequest.desired() = %v, want %v", got, tt.want)
