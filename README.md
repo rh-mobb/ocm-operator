@@ -10,9 +10,8 @@ This operator allows you to manage OCM objects from a Kubernetes cluster using
 native Kubernetes CRDs.  This allows you to plugin to more modern workflows such 
 as GitOps.
 
-* [Machine Pools](https://docs.openshift.com/rosa/rosa_cluster_admin/rosa_nodes/rosa-nodes-machinepools-about.html#machine-pools)
-
-**NOTE:** current limitation is that the cluster with the operator may only manage 
+* [Machine Pools](https://docs.openshift.com/rosa/rosa_cluster_admin/rosa_nodes/rosa-nodes-machinepools-about.html#machine-pools): 
+current limitation is that the cluster with the operator may only manage 
 machine pools for itself.  See https://github.com/rh-mobb/ocm-operator/issues/1.
 
 
