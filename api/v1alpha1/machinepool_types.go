@@ -288,6 +288,9 @@ func (machinePool *MachinePool) convertAWSMachinePool() (builder *clustersmgmtv1
 					clustersmgmtv1.NewAWSSpotMarketOptions().
 						MaxPrice(float64(machinePool.Spec.AWS.SpotInstances.MaximumPrice)),
 				)
+		} else {
+			return clustersmgmtv1.NewAWSMachinePool().
+				SpotMarketOptions(&clustersmgmtv1.AWSSpotMarketOptionsBuilder{})
 		}
 	}
 
@@ -327,7 +330,7 @@ func copyMaximumNodesPerZone(source *clustersmgmtv1.MachinePool) int {
 }
 
 func copyAWSConfig(source *clustersmgmtv1.AWSMachinePool) MachinePoolProviderAWS {
-	if source.SpotMarketOptions().Empty() {
+	if source == nil {
 		return MachinePoolProviderAWS{}
 	}
 

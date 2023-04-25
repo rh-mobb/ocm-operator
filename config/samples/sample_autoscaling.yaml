@@ -1,0 +1,9 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: MachinePool
+metadata:
+  name: autoscaling
+spec:
+  clusterName: "dscott"
+  minimumNodesPerZone: 1
+  maximumNodesPerZone: 2
+  instanceType: m5.xlarge

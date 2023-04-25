@@ -1,19 +1,15 @@
 apiVersion: ocm.mobb.redhat.com/v1alpha1
 kind: MachinePool
 metadata:
-  name: machinepool-sample1
+  name: spot
 spec:
   clusterName: "dscott"
-  #displayName: "new-test"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge
   labels:
     this: that
-  # taints:
-  #   - key: this
-  #     value: that
-  #     effect: NoSchedule
   aws:
     spotInstances:
       enabled: true
+      maximumPrice: 5
