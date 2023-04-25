@@ -22,7 +22,7 @@ func (fake *FakeClient) Status() client.SubResourceWriter {
 // interface.
 type fakeStatusWriter struct{}
 
-func (w *fakeStatusWriter) Create(_ context.Context, _ client.Object, _ client.Object, _ ...client.SubResourceCreateOption) error {
+func (w *fakeStatusWriter) Create(_ context.Context, _, _ client.Object, _ ...client.SubResourceCreateOption) error {
 	return nil
 }
 
