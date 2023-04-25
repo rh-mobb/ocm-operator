@@ -39,6 +39,10 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
+const (
+	defaultPollerIntervalMinutes = 5
+)
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -60,8 +64,8 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&config.TokenFile, "ocm-token-file", "/tmp/ocm.json", "The OCM JSON Token file to use for the OCM Connection")
-	flag.IntVar(&config.PollerIntervalMinutes, "poller-interval", 5, "Default interval in which the controller should reconcile "+
-		"desired state.")
+	flag.IntVar(&config.PollerIntervalMinutes, "poller-interval", defaultPollerIntervalMinutes, "Default interval, in minutes, by "+
+		"which the controller should reconcile desired state.")
 	opts := zap.Options{
 		Development: true,
 	}
