@@ -1,14 +1,16 @@
 # ocm-operator
 
-Manage OpenShift Cluster Manager Machine Pools in a Kubernetes-native fashion using 
+Manage OpenShift Cluster Manager objects in a Kubernetes-native fashion using 
 an operator.
 
 
 ## Description
 
-This operator allows you to manage OCM Machine Pools from a Kubernetes cluster using 
+This operator allows you to manage OCM objects from a Kubernetes cluster using 
 native Kubernetes CRDs.  This allows you to plugin to more modern workflows such 
 as GitOps.
+
+* [Machine Pools](https://docs.openshift.com/rosa/rosa_cluster_admin/rosa_nodes/rosa-nodes-machinepools-about.html#machine-pools)
 
 **NOTE:** current limitation is that the cluster with the operator may only manage 
 machine pools for itself.  See https://github.com/rh-mobb/ocm-operator/issues/1.
@@ -21,6 +23,12 @@ see https://mobb.ninja/docs/quickstart-rosa/ for a quick start guide.
 
 
 ### Running Outside of the Cluster (Development/Testing)
+
+Prerequisite tooling:
+
+* Make
+* [Go => 1.20](https://go.dev/doc/install)
+* [oc](https://docs.openshift.com/container-platform/4.12/cli_reference/openshift_cli/getting-started-cli.html)
 
 1. [Retrieve your access token](https://mobb.ninja/docs/quickstart-rosa/#get-a-red-hat-offline-access-token) and 
 place the token at `/tmp/ocm.json`
@@ -38,15 +46,22 @@ make install
 make run
 ```
 
-4. You can then test the operator by creating the sample manifests:
+4. You can then test the operator creation workflow by creating a sample manifest (
+this may take a few minutes until you see the `completed *** reconciliation message`):
 
-**NOTE:** other samples available for different use cases at `config/samples/sample_*.yaml`
+* Machine Pool: `oc apply -f config/samples/machinepool/sample_simple.yaml`
 
-```bash
-oc apply -f config/samples/sample_simple.yaml
-```
+**NOTE:** other samples available for different use cases at `config/samples/<object>/sample_*.yaml`
 
-5. To clean up:
+5. You can then test the operator deletion workflow by deleting a sample manifest (
+this may take a few minutes until the finalizer is deleted and the object is cleaned
+up):
+
+* Machine Pool: `oc delete -f config/samples/machinepool/sample_simple.yaml`
+
+**NOTE:** other samples available for different use cases at `config/samples/<object>/sample_*.yaml`
+
+6. To clean up CRDs from the cluster:
 
 ```bash
 make uninstall

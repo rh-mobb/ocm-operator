@@ -21,3 +21,6 @@ spec:
   aws:
     spotInstances:
       enabled: false
+
+# NOTE: this is simply used to test the validating CRD CEL portion
+#       to test input validation

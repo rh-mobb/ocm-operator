@@ -1,4 +1,4 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
-- ocm_v1alpha1_machinepool.yaml
+- machinepool/sample_simple.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
