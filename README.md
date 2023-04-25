@@ -45,15 +45,13 @@ make install
 make run
 ```
 
-4. You can then test the operator creation workflow by creating a sample manifest (
-this may take a few minutes until you see the `completed *** reconciliation message`):
+4. You can then test the operator creation workflow by creating a sample manifest (this may take a few minutes until you see the `completed *** reconciliation message`):
 
 * Machine Pool: `oc apply -f config/samples/machinepool/sample_simple.yaml`
 
 **NOTE:** other samples available for different use cases at `config/samples/<object>/sample_*.yaml`
 
-5. You can then test the operator deletion workflow by deleting a sample manifest (
-this may take a few minutes until the finalizer is deleted and the object is cleaned
+5. You can then test the operator deletion workflow by deleting a sample manifest (this may take a few minutes until the finalizer is deleted and the object is cleaned
 up):
 
 * Machine Pool: `oc delete -f config/samples/machinepool/sample_simple.yaml`
