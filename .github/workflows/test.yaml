@@ -1,0 +1,60 @@
+---
+name: Test
+on:
+  - pull_request
+  - push
+
+jobs:
+  #
+  # unit testing
+  #
+  unit-test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - go-version: "1.20"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run Test
+        uses: ./.github/common-actions/unit-test
+
+  #
+  # build docker image
+  #
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: unit-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - go-version: "1.20"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Build Image
+        run: make docker-build
+
+      - name: Build Bundle
+        run: make bundle-build

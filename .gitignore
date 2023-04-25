@@ -26,3 +26,6 @@ Dockerfile.cross
 *~
 .vscode
 __debug_bin
+
+# exclude build directory
+build

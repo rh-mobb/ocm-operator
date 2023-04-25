@@ -1,0 +1,66 @@
+---
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: "{{ .ProjectName }}"
+    skip: true
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  name_template: "{{ .Version }}-snapshot-{{ .ShortCommit }}"
+
+changelog:
+  sort: "asc"
+  use: "github"
+  filters:
+    exclude:
+      - '^docs(\(.*\))?:'
+      - '^test(\(.*\))?:'
+      - '^ci(\(.*\))?:'
+      - '^chore(\(.*\))?:'
+      - '^build(\(.*\))?:'
+
+dockers:
+  - image_templates:
+      - "ghcr.io/{{ .Env.REPO_NAME }}:v{{ .Version }}"
+      - "ghcr.io/{{ .Env.REPO_NAME }}:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.name={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.licenses=Apache"
+      - "--label=VERSION={{ .Version }}"
+      - "--platform=linux/amd64"
+    # NOTE: we must explicitly include the files we need to copy in to the 
+    #       docker image, as goreleaser expects to only be copying its own
+    #       binary into the image.  because we do not build and release the
+    #       binary in an earlier step, this is necessary.
+    extra_files:
+      - "go.mod"
+      - "go.sum"
+      - "main.go"
+      - "api/"
+      - "controllers/"
+      - "pkg/"
+
+# NOTE: earlier versions of goreleaser seemed to automatically include the docker images
+#       that were uploaded.  in the case that this behavior regresses, this may cause
+#       duplication in the release notes.
+release:
+  extra_files:
+    - glob: "build/deploy.yaml"
+  footer: |
+    ## OpenShift Manifests
+
+    * `oc apply -f https://github.com/{{ .Env.REPO_NAME }}/releases/download/v{{ .Version }}/deploy.yaml`
+
+    ## Docker Images
+
+    * `docker pull ghcr.io/{{ .Env.REPO_NAME }}:v{{ .Version }}`
