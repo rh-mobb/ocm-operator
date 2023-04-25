@@ -198,6 +198,11 @@ func (machinePool *MachinePool) GetDisplayName() string {
 
 // SetMachinePoolLabels sets the required labels on the object.
 func (machinePool *MachinePool) SetMachinePoolLabels() {
+	// create the labels if unset
+	if machinePool.Spec.Labels == nil {
+		machinePool.Spec.Labels = map[string]string{}
+	}
+
 	// set the managed label
 	machinePool.Spec.Labels[ocm.LabelPrefixManaged] = "true"
 

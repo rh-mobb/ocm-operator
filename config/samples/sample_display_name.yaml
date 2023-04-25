@@ -1,0 +1,13 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: MachinePool
+metadata:
+  name: override
+spec:
+  displayName: override-display-name
+  clusterName: "dscott"
+  minimumNodesPerZone: 1
+  maximumNodesPerZone: 2
+  instanceType: m5.xlarge
+  aws:
+    spotInstances:
+      enabled: true
