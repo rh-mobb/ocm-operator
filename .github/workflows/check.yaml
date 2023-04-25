@@ -10,6 +10,17 @@ on:
       - reopened
 
 jobs:
+  check-latest-commit:
+    name: Check Latest Commit Message
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Check Latest Commit Message
+        run: test/scripts/commit-check-latest.sh
+
   check-commits:
     name: Check Commit Messages
     runs-on: ubuntu-latest
