@@ -38,6 +38,9 @@ func (r *Controller) Begin(request *MachinePoolRequest) (ctrl.Result, error) {
 // GetCurrentState gets the current state of the MachinePool resoruce.  The current state of the MachinePool resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
+// TODO: needs refactor
+//
+//nolint:cyclop
 func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, error) {
 	// retrieve the cluster id
 	clusterID := request.Original.Status.ClusterID
@@ -116,6 +119,8 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 
 // Apply will create an OpenShift Cluster Manager machine pool if it does not exist,
 // or update an OpenShift Cluster Manager machine pool if it does exist.
+//
+//nolint:forcetypeassert
 func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
@@ -146,6 +151,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	request.Desired.Status.Subnets = request.Original.Status.Subnets
 
 	// if no machine pool exists, create it and return
+	//nolint:nestif
 	if request.Current == nil {
 		var createErr error
 
@@ -197,6 +203,8 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 }
 
 // Destroy will destroy an OpenShift Cluster Manager machine pool.
+//
+//nolint:forcetypeassert
 func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the machine pool
 	if conditions.IsSet(conditions.MachinePoolDeleted(), request.Original) {

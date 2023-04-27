@@ -80,6 +80,7 @@ linters:
     - godot
     - goerr113
     - goheader
+    - goimports
     - gofmt
     - gomnd
     - gomoddirectives
@@ -116,7 +117,6 @@ linters:
     # ISSUES: the following have global issues and are disabled.
     # - exhaustruct:      too restrictive on how to define structures
     # - gci:              many incorrect errors found different between CI pipeline and locally
-    - goimports #:   many incorrect errors found different between CI pipeline and locally
     # - godox:            allow TODOs in code
     # - revive:           allow const type = value format for defining constants and variables
     # - gochecknoglobals: kubebuilder uses globals by default; be consistent
@@ -127,15 +127,6 @@ linters:
     # - sqlclosecheck
     # - wastedassign
     # - wsl
-
-    # DEPRECATED: the following have been deprecated and disabled
-    # - deadcode
-    # - exhaustivestruct
-    # - golint
-    # - ifshort
-    # - interfacer
-    # - structcheck
-    # - varcheck
 
 issues:
   # excluding configuration per-path, per-linter, per-text and per-source
@@ -148,6 +139,12 @@ issues:
         - dupl
         - gochecknoglobals
         - testpackage
+    - path: pkg/ocm/machine_pool\.go
+      linters:
+        - dupl
+    - path: pkg/ocm/node_pool\.go
+      linters:
+        - dupl
 
 run:
   skip-dirs: []

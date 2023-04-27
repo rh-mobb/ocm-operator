@@ -87,7 +87,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	// See https://github.com/rh-mobb/ocm-operator/issues/3
 	desired := original.DesiredState()
 
-	if len(desired.Spec.DisplayName) > 15 {
+	if len(desired.Spec.DisplayName) > maximumNameLength {
 		return &MachinePoolRequest{}, fmt.Errorf(
 			"requested name [%s] is invalid - %w",
 			desired.Spec.DisplayName,
@@ -118,6 +118,9 @@ func (request *MachinePoolRequest) GetObject() controllers.Workload {
 	return request.Original
 }
 
+// execute executes a variety of different phases for the request.
+//
+//nolint:wrapcheck
 func (request *MachinePoolRequest) execute(phases ...Phase) (ctrl.Result, error) {
 	for execute := range phases {
 		// run each phase function and return if we receive any errors

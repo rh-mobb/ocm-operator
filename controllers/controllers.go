@@ -67,6 +67,7 @@ func Reconcile(ctx context.Context, controller Controller, req ctrl.Request) (ct
 	trigger := triggers.GetTrigger(request.GetObject())
 
 	// run the reconciliation loop based on the event trigger
+	//nolint:wrapcheck
 	switch trigger.String() {
 	case triggers.CreateString:
 		return controller.ReconcileCreate(request)
