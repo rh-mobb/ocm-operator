@@ -8,9 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
-	"github.com/rh-mobb/ocm-operator/controllers/request"
-	"github.com/rh-mobb/ocm-operator/controllers/triggers"
+	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
+	"github.com/rh-mobb/ocm-operator/pkg/triggers"
 )
 
 func testConditionReconciling(at metav1.Time) *metav1.Condition {
@@ -117,7 +117,7 @@ func TestUpdate(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		reconciler kubernetes.Client
-		object     request.Workload
+		object     controllers.Workload
 		condition  *metav1.Condition
 	}
 

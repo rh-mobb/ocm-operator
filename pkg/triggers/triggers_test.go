@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
-	"github.com/rh-mobb/ocm-operator/controllers/request"
 )
 
 func TestGetTrigger(t *testing.T) {
@@ -15,7 +15,7 @@ func TestGetTrigger(t *testing.T) {
 	now := metav1.Now()
 
 	type args struct {
-		object request.Workload
+		object client.Object
 	}
 
 	tests := []struct {

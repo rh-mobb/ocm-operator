@@ -37,11 +37,12 @@ type MachinePoolSpec struct {
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=4
-	// +kubebuilder:validation:MaxLength=64
+	// +kubebuilder:validation:MaxLength=15
 	// +kubebuilder:validation:XValidation:message="displayName is immutable",rule=(self == oldSelf)
 	// Friendly display name of the machine pool as displayed in the OpenShift Cluster Manager
 	// console.  If this is empty, the metadata.name field of the parent resource is used
-	// to construct the display name.
+	// to construct the display name.  This is limited to 15 characters as per the backend
+	// API limitation.
 	DisplayName string `json:"displayName,omitempty"`
 
 	// +kubebuilder:validation:Required
@@ -96,7 +97,9 @@ type MachinePoolSpec struct {
 // MachinePoolProviderAWS represents the provider specific configuration for an AWS provider.
 type MachinePoolProviderAWS struct {
 	// +kubebuilder:validation:Optional
-	// Configuration of AWS Spot Instances for this MachinePool.
+	// Configuration of AWS Spot Instances for this MachinePool.  This section
+	// is not valid and is ignored if the cluster is using hosted
+	// control plane.
 	SpotInstances MachinePoolProviderAWSSpotInstances `json:"spotInstances,omitempty"`
 }
 
@@ -130,11 +133,20 @@ type MachinePoolStatus struct {
 	// +kubebuilder:validation:XValidation:message="status.AvailabilityZoneCount is immutable",rule=(self == oldSelf)
 	// Represents the number of availability zones that the cluster
 	// resides in.  Used to calculate the total number of replicas.
-	AvailabilityZoneCount int `json:"availabilityZoneCount,omitempty"`
+	AvailabilityZones []string `json:"availabilityZones,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.Subnets is immutable",rule=(self == oldSelf)
+	// Represents the subnets where the cluster is provisioned.
+	Subnets []string `json:"subnets,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.Hosted is immutable",rule=(self == oldSelf)
+	// Whether this cluster is using a hosted control plane.
+	Hosted bool `json:"hosted,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:validation:XValidation:message="metadata.name limited to 15 characters",rule=(self.metadata.name.size() <= 15)
 
 // MachinePool is the Schema for the machinepools API.
 type MachinePool struct {
@@ -225,23 +237,40 @@ func (machinePool *MachinePool) HasManagedLabels() bool {
 	return true
 }
 
-// CopyFrom copies an OCM MachinePool object into a MachinePool object that is recognizable by this
+// CopyFromMachinePool copies an OCM MachinePool object into a MachinePool object that is recognizable by this
 // controller.
-func (machinePool *MachinePool) CopyFrom(source *clustersmgmtv1.MachinePool, clusterName string) error {
+func (machinePool *MachinePool) CopyFromMachinePool(source *clustersmgmtv1.MachinePool, clusterName string) error {
 	machinePool.Spec.ClusterName = clusterName
 	machinePool.Spec.DisplayName = source.ID()
 	machinePool.Spec.InstanceType = source.InstanceType()
 	machinePool.Spec.Labels = source.Labels()
 	machinePool.Spec.Taints = copyTaints(source.Taints())
-	machinePool.Spec.MinimumNodesPerZone = copyMinimumNodesPerZone(source)
-	machinePool.Spec.MaximumNodesPerZone = copyMaximumNodesPerZone(source)
+	machinePool.Spec.MinimumNodesPerZone = copyMachinePoolMinimumNodesPerZone(source)
+	machinePool.Spec.MaximumNodesPerZone = copyMachinePoolMaximumNodesPerZone(source)
 	machinePool.Spec.AWS = copyAWSConfig(source.AWS())
 
 	return nil
 }
 
-// Builder builds an OCM MachinePoolBuilder object.
-func (machinePool *MachinePool) Builder() *clustersmgmtv1.MachinePoolBuilder {
+// CopyFromNodePool copies an OCM NodePool object into a MachinePool object that is recognizable by this
+// controller.
+func (machinePool *MachinePool) CopyFromNodePool(source *clustersmgmtv1.NodePool, clusterName string) error {
+	machinePool.Spec.ClusterName = clusterName
+	machinePool.Spec.DisplayName = source.ID()
+	machinePool.Spec.InstanceType = source.AWSNodePool().InstanceType()
+	machinePool.Spec.Labels = source.Labels()
+	machinePool.Spec.Taints = copyTaints(source.Taints())
+	machinePool.Spec.MinimumNodesPerZone = copyNodePoolMinimumNodesPerZone(source)
+	machinePool.Spec.MaximumNodesPerZone = copyNodePoolMaximumNodesPerZone(source)
+
+	// spot instances for node pools are not an option
+	machinePool.Spec.AWS = MachinePoolProviderAWS{}
+
+	return nil
+}
+
+// MachinePoolBuilder builds an OCM MachinePoolBuilder object.
+func (machinePool *MachinePool) MachinePoolBuilder() *clustersmgmtv1.MachinePoolBuilder {
 	builder := clustersmgmtv1.NewMachinePool().
 		ID(machinePool.Spec.DisplayName).
 		InstanceType(machinePool.Spec.InstanceType).
@@ -250,7 +279,24 @@ func (machinePool *MachinePool) Builder() *clustersmgmtv1.MachinePoolBuilder {
 		AWS(machinePool.convertAWSMachinePool())
 
 	if machinePool.Spec.MaximumNodesPerZone > 0 {
-		builder = builder.Autoscaling(machinePool.convertAutoscaling())
+		builder = builder.Autoscaling(machinePool.convertMachinePoolAutoscaling())
+	} else {
+		builder = builder.Replicas(machinePool.Spec.MinimumNodesPerZone)
+	}
+
+	return builder
+}
+
+// NodePoolBuilder builds an OCM NodePoolBuilder object.
+func (machinePool *MachinePool) NodePoolBuilder() *clustersmgmtv1.NodePoolBuilder {
+	builder := clustersmgmtv1.NewNodePool().
+		ID(machinePool.Spec.DisplayName).
+		Labels(machinePool.Spec.Labels).
+		Taints(machinePool.convertTaints()...).
+		AWSNodePool(clustersmgmtv1.NewAWSNodePool().InstanceType(machinePool.Spec.InstanceType))
+
+	if machinePool.Spec.MaximumNodesPerZone > 0 {
+		builder = builder.Autoscaling(machinePool.convertNodePoolAutoscaling())
 	} else {
 		builder = builder.Replicas(machinePool.Spec.MinimumNodesPerZone)
 	}
@@ -275,14 +321,24 @@ func (machinePool *MachinePool) convertTaints() (builders []*clustersmgmtv1.Tain
 	return taints
 }
 
-func (machinePool *MachinePool) convertAutoscaling() (builder *clustersmgmtv1.MachinePoolAutoscalingBuilder) {
+func (machinePool *MachinePool) convertMachinePoolAutoscaling() (builder *clustersmgmtv1.MachinePoolAutoscalingBuilder) {
 	if machinePool.Spec.MaximumNodesPerZone > 0 {
 		return clustersmgmtv1.NewMachinePoolAutoscaling().
-			MinReplicas(machinePool.Spec.MinimumNodesPerZone * machinePool.Status.AvailabilityZoneCount).
-			MaxReplicas(machinePool.Spec.MaximumNodesPerZone * machinePool.Status.AvailabilityZoneCount)
+			MinReplicas(machinePool.Spec.MinimumNodesPerZone * machinePool.availabilityZoneCount()).
+			MaxReplicas(machinePool.Spec.MaximumNodesPerZone * machinePool.availabilityZoneCount())
 	}
 
 	return clustersmgmtv1.NewMachinePoolAutoscaling()
+}
+
+func (machinePool *MachinePool) convertNodePoolAutoscaling() (builder *clustersmgmtv1.NodePoolAutoscalingBuilder) {
+	if machinePool.Spec.MaximumNodesPerZone > 0 {
+		return clustersmgmtv1.NewNodePoolAutoscaling().
+			MinReplica(machinePool.Spec.MinimumNodesPerZone * machinePool.availabilityZoneCount()).
+			MaxReplica(machinePool.Spec.MaximumNodesPerZone * machinePool.availabilityZoneCount())
+	}
+
+	return clustersmgmtv1.NewNodePoolAutoscaling()
 }
 
 func (machinePool *MachinePool) convertAWSMachinePool() (builder *clustersmgmtv1.AWSMachinePoolBuilder) {
@@ -302,6 +358,10 @@ func (machinePool *MachinePool) convertAWSMachinePool() (builder *clustersmgmtv1
 	return builder
 }
 
+func (machinePool *MachinePool) availabilityZoneCount() int {
+	return len(machinePool.Status.AvailabilityZones)
+}
+
 func copyTaints(source []*clustersmgmtv1.Taint) (taints []corev1.Taint) {
 	if len(source) < 1 {
 		return taints
@@ -318,17 +378,37 @@ func copyTaints(source []*clustersmgmtv1.Taint) (taints []corev1.Taint) {
 	return taints
 }
 
-func copyMinimumNodesPerZone(source *clustersmgmtv1.MachinePool) int {
+func copyMachinePoolMinimumNodesPerZone(source *clustersmgmtv1.MachinePool) int {
 	if source.Autoscaling().MaxReplicas() > 0 {
-		return source.Autoscaling().MinReplicas()
+		return (source.Autoscaling().MinReplicas() / len(source.AvailabilityZones()))
+	}
+
+	return (source.Replicas() / len(source.AvailabilityZones()))
+}
+
+func copyMachinePoolMaximumNodesPerZone(source *clustersmgmtv1.MachinePool) int {
+	if source.Autoscaling().MaxReplicas() > 0 {
+		return (source.Autoscaling().MaxReplicas() / len(source.AvailabilityZones()))
+	}
+
+	return 0
+}
+
+func copyNodePoolMinimumNodesPerZone(source *clustersmgmtv1.NodePool) int {
+	if source.Autoscaling().MaxReplica() > 0 {
+		// TODO: if node pools are provisioned in multiple azs, this will break.  does
+		// not seem possible today.
+		return source.Autoscaling().MinReplica()
 	}
 
 	return source.Replicas()
 }
 
-func copyMaximumNodesPerZone(source *clustersmgmtv1.MachinePool) int {
-	if source.Autoscaling().MaxReplicas() > 0 {
-		return source.Autoscaling().MaxReplicas()
+func copyNodePoolMaximumNodesPerZone(source *clustersmgmtv1.NodePool) int {
+	if source.Autoscaling().MaxReplica() > 0 {
+		// TODO: if node pools are provisioned in multiple azs, this will break.  does
+		// not seem possible today.
+		return source.Autoscaling().MaxReplica()
 	}
 
 	return 0

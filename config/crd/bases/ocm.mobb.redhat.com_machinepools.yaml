@@ -39,7 +39,9 @@ spec:
                 description: Represents the AWS provider specific configuration options.
                 properties:
                   spotInstances:
-                    description: Configuration of AWS Spot Instances for this MachinePool.
+                    description: Configuration of AWS Spot Instances for this MachinePool.  This
+                      section is not valid and is ignored if the cluster is using
+                      hosted control plane.
                     properties:
                       enabled:
                         description: Request spot instances when scaling up this MachinePool.  If
@@ -75,8 +77,9 @@ spec:
                 description: Friendly display name of the machine pool as displayed
                   in the OpenShift Cluster Manager console.  If this is empty, the
                   metadata.name field of the parent resource is used to construct
-                  the display name.
-                maxLength: 64
+                  the display name.  This is limited to 15 characters as per the backend
+                  API limitation.
+                maxLength: 15
                 minLength: 4
                 type: string
                 x-kubernetes-validations:
@@ -154,10 +157,12 @@ spec:
           status:
             description: MachinePoolStatus defines the observed state of MachinePool.
             properties:
-              availabilityZoneCount:
+              availabilityZones:
                 description: Represents the number of availability zones that the
                   cluster resides in.  Used to calculate the total number of replicas.
-                type: integer
+                items:
+                  type: string
+                type: array
                 x-kubernetes-validations:
                 - message: status.AvailabilityZoneCount is immutable
                   rule: (self == oldSelf)
@@ -238,8 +243,25 @@ spec:
                   - type
                   type: object
                 type: array
+              hosted:
+                description: Whether this cluster is using a hosted control plane.
+                type: boolean
+                x-kubernetes-validations:
+                - message: status.Hosted is immutable
+                  rule: (self == oldSelf)
+              subnets:
+                description: Represents the subnets where the cluster is provisioned.
+                items:
+                  type: string
+                type: array
+                x-kubernetes-validations:
+                - message: status.Subnets is immutable
+                  rule: (self == oldSelf)
             type: object
         type: object
+        x-kubernetes-validations:
+        - message: metadata.name limited to 15 characters
+          rule: (self.metadata.name.size() <= 15)
     served: true
     storage: true
     subresources:

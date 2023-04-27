@@ -1,6 +1,7 @@
 package ocm
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -8,28 +9,29 @@ import (
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 )
 
-const (
-	LabelPrefixManaged = "ocm.mobb.redhat.com/managed"
-	LabelPrefixName    = "ocm.mobb.redhat.com/name"
+var (
+	ErrConvertMachinePool = errors.New("error converting to machine pool object")
 )
 
-type machinePoolClient struct {
+// MachinePoolClient represents the client used to interact with a Machine Pool API object.  Machine
+// pools are associated with clusters that are not using hosted control plane.
+type MachinePoolClient struct {
 	name       string
 	connection *clustersmgmtv1.MachinePoolsClient
 }
 
-func NewMachinePoolClient(connection *sdk.Connection, name, clusterID string) *machinePoolClient {
-	return &machinePoolClient{
+func NewMachinePoolClient(connection *sdk.Connection, name, clusterID string) *MachinePoolClient {
+	return &MachinePoolClient{
 		name:       name,
 		connection: connection.ClustersMgmt().V1().Clusters().Cluster(clusterID).MachinePools(),
 	}
 }
 
-func (mpc *machinePoolClient) For(machinePoolName string) *clustersmgmtv1.MachinePoolClient {
+func (mpc *MachinePoolClient) For(machinePoolName string) *clustersmgmtv1.MachinePoolClient {
 	return mpc.connection.MachinePool(machinePoolName)
 }
 
-func (mpc *machinePoolClient) Get() (machinePool *clustersmgmtv1.MachinePool, err error) {
+func (mpc *MachinePoolClient) Get() (machinePool *clustersmgmtv1.MachinePool, err error) {
 	// retrieve the machine pool from ocm
 	response, err := mpc.For(mpc.name).Get().Send()
 	if err != nil {
@@ -43,7 +45,7 @@ func (mpc *machinePoolClient) Get() (machinePool *clustersmgmtv1.MachinePool, er
 	return response.Body(), nil
 }
 
-func (mpc *machinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder) (machinePool *clustersmgmtv1.MachinePool, err error) {
+func (mpc *MachinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder) (machinePool *clustersmgmtv1.MachinePool, err error) {
 	// build the object to create
 	object, err := builder.Build()
 	if err != nil {
@@ -59,7 +61,7 @@ func (mpc *machinePoolClient) Create(builder *clustersmgmtv1.MachinePoolBuilder)
 	return response.Body(), nil
 }
 
-func (mpc *machinePoolClient) Update(builder *clustersmgmtv1.MachinePoolBuilder) (machinePool *clustersmgmtv1.MachinePool, err error) {
+func (mpc *MachinePoolClient) Update(builder *clustersmgmtv1.MachinePoolBuilder) (machinePool *clustersmgmtv1.MachinePool, err error) {
 	// build the object to update
 	object, err := builder.Build()
 	if err != nil {
@@ -75,7 +77,7 @@ func (mpc *machinePoolClient) Update(builder *clustersmgmtv1.MachinePoolBuilder)
 	return response.Body(), nil
 }
 
-func (mpc *machinePoolClient) Delete(id string) error {
+func (mpc *MachinePoolClient) Delete(id string) error {
 	// delete the machine pool in ocm
 	response, err := mpc.For(id).Delete().Send()
 	if err != nil {

@@ -1,10 +1,10 @@
 apiVersion: ocm.mobb.redhat.com/v1alpha1
 kind: MachinePool
 metadata:
-  name: fail-test
+  name: fail-test-too-long
 spec:
   clusterName: "dscott"
-  displayName: "test6"
+  displayName: "fail-test-too-long"
   # maximum must exceed minimum
   minimumNodesPerZone: 2
   maximumNodesPerZone: 1

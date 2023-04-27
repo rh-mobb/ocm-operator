@@ -1,4 +1,4 @@
-package controllers
+package machinepool
 
 import (
 	"testing"

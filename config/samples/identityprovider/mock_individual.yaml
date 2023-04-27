@@ -1,0 +1,18 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: GitLabIdentityProvider
+metadata:
+  name: individual
+spec:
+  clusterName: "dscott"
+  displayName: "gitlab"
+  clusterAdmins:
+    - dscott
+  dedicatedAdmins:
+    - jdoe
+  url: https://www.gitlab.com
+  mappingMethod: "claim"
+  secretRef:
+    oauth: my-oauth-secret
+    caCert: my-gitlab-cert
+    api: my-api-credentials
+

@@ -3,7 +3,7 @@ package triggers
 import (
 	"errors"
 
-	"github.com/rh-mobb/ocm-operator/controllers/request"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -29,7 +29,7 @@ const (
 )
 
 // GetTrigger returns the GetTrigger that caused the reconciliation event.
-func GetTrigger(object request.Workload) Trigger {
+func GetTrigger(object client.Object) Trigger {
 	if object.GetCreationTimestamp().Time.IsZero() {
 		return Create
 	}

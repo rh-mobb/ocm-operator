@@ -3,7 +3,7 @@ kind: MachinePool
 metadata:
   name: autoscaling
 spec:
-  clusterName: "dscott"
+  clusterName: "dscott-test"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 2
   instanceType: m5.xlarge

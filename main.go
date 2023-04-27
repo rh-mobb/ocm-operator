@@ -35,6 +35,7 @@ import (
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
+	"github.com/rh-mobb/ocm-operator/controllers/machinepool"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	//+kubebuilder:scaffold:imports
 )
@@ -114,7 +115,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.MachinePoolReconciler{
+	if err = (&machinepool.Controller{
 		Connection: connection,
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),

@@ -3,7 +3,7 @@ package conditions
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rh-mobb/ocm-operator/controllers/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/triggers"
 )
 
 const (
