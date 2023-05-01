@@ -3,7 +3,7 @@ kind: MachinePool
 metadata:
   name: simple
 spec:
-  clusterName: "dscott"
+  clusterName: "mobb-infra-test"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge

@@ -3,12 +3,17 @@ package kubernetes
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // FakeClient represents a fake client used to satisfy the Client interface.  This is
 // used only for testing purposes.
 type FakeClient struct{}
+
+func (fake *FakeClient) Get(_ context.Context, _ types.NamespacedName, _ client.Object, _ ...client.GetOption) error {
+	return nil
+}
 
 func (fake *FakeClient) List(_ context.Context, _ client.ObjectList, _ ...client.ListOption) error {
 	return nil

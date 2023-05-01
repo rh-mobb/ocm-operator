@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -13,6 +14,7 @@ const (
 )
 
 type Client interface {
+	Get(context.Context, types.NamespacedName, client.Object, ...client.GetOption) error
 	List(context.Context, client.ObjectList, ...client.ListOption) error
 	Status() client.SubResourceWriter
 }

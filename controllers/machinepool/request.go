@@ -128,7 +128,7 @@ func (request *MachinePoolRequest) execute(phases ...Phase) (ctrl.Result, error)
 		if err != nil || result.Requeue {
 			return result, controllers.ReconcileError(
 				request.ControllerRequest,
-				fmt.Sprintf("%s phase reconciliation error in create or update", phases[execute].Name),
+				fmt.Sprintf("%s phase reconciliation error", phases[execute].Name),
 				err,
 			)
 		}

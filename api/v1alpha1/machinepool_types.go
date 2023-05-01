@@ -35,23 +35,23 @@ type MachinePoolSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinLength=4
-	// +kubebuilder:validation:MaxLength=15
-	// +kubebuilder:validation:XValidation:message="displayName is immutable",rule=(self == oldSelf)
-	// Friendly display name of the machine pool as displayed in the OpenShift Cluster Manager
-	// console.  If this is empty, the metadata.name field of the parent resource is used
-	// to construct the display name.  This is limited to 15 characters as per the backend
-	// API limitation.
-	DisplayName string `json:"displayName,omitempty"`
-
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:message="clusterName is immutable",rule=(self == oldSelf)
-	// Cluster ID in OpenShift Cluster Manager by which this MachinePool should be managed for.  The cluster ID
+	// Cluster ID in OpenShift Cluster Manager by which this should be managed for.  The cluster ID
 	// can be obtained on the Clusters page for the individual cluster.  It may also be known as the
 	// 'External ID' in some CLI clients.  It shows up in the format of 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
 	// where the 'x' represents any alphanumeric character.
 	ClusterName string `json:"clusterName,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=4
+	// +kubebuilder:validation:MaxLength=15
+	// +kubebuilder:validation:XValidation:message="displayName is immutable",rule=(self == oldSelf)
+	// Friendly display name as displayed in the OpenShift Cluster Manager
+	// console.  If this is empty, the metadata.name field of the parent resource is used
+	// to construct the display name.  This is limited to 15 characters as per the backend
+	// API limitation.
+	DisplayName string `json:"displayName,omitempty"`
 
 	// +kubebuilder:validation:Required
 	// Minimum amount of nodes allowed per availability zone.  For single availability zone

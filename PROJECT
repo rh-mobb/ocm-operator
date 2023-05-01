@@ -20,4 +20,13 @@ resources:
   kind: MachinePool
   path: github.com/rh-mobb/ocm-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: mobb.redhat.com
+  group: ocm
+  kind: GitLabIdentityProvider
+  path: github.com/rh-mobb/ocm-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

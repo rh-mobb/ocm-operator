@@ -49,6 +49,11 @@ type Controller interface {
 	SetupWithManager(mgr ctrl.Manager) error
 }
 
+// Access to create and patch events are needed so the operator can create events and register
+// them with the custom resources.
+
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+
 // Reconcile is a centralized, reusable reconciliation loop by which all controllers can
 // use as their reconciliation function.  It requires that a new request for each reconciliation
 // loop is created to track that status throughout each request.

@@ -31,6 +31,32 @@ rules:
 - apiGroups:
   - ocm.mobb.redhat.com
   resources:
+  - gitlabidentityproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - gitlabidentityproviders/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - gitlabidentityproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
   - machinepools
   verbs:
   - create

@@ -1,0 +1,9 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: GitLabIdentityProvider
+metadata:
+  name: gitlab
+spec:
+  clusterName: skynet
+  displayName: gitlab-test
+  url: https://gitlab.consulting.redhat.com
+  accessTokenSecret: gitlab-access-token
