@@ -16,6 +16,7 @@ const (
 type Client interface {
 	Get(context.Context, types.NamespacedName, client.Object, ...client.GetOption) error
 	List(context.Context, client.ObjectList, ...client.ListOption) error
+	Patch(context.Context, client.Object, client.Patch, ...client.PatchOption) error
 	Status() client.SubResourceWriter
 }
 

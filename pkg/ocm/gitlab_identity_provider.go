@@ -13,7 +13,7 @@ var (
 	ErrConvertGitLabIdentityProvider = errors.New("error converting to gitlab identity provider object")
 )
 
-// GitLabIdentityProviderClient represents the client used to interact with a Machine Pool API object.  Machine
+// GitLabIdentityProviderClient represents the client used to interact with a GitLab Identity Provider API object.  Machine
 // pools are associated with clusters that are not using hosted control plane.
 type GitLabIdentityProviderClient struct {
 	name       string

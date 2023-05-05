@@ -27,7 +27,7 @@ var (
 	ErrMissingAccessToken                   = errors.New("unable to locate gitlab api access token data")
 	ErrMissingClientSecret                  = errors.New("unable to locate client secret data")
 	ErrMissingCA                            = errors.New("ca specified but unable to locate ca data")
-	ErrGitLabIdentityProviderRequestConvert = errors.New("unable to convert generic request to machine pool request")
+	ErrGitLabIdentityProviderRequestConvert = errors.New("unable to convert generic request to gitlab identity provider request")
 )
 
 // GitLabIdentityProviderRequest is an object that is unique to each reconciliation
@@ -64,7 +64,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	}
 
 	// get the secret access token data from the cluster
-	accessToken, err := kubernetes.GetSecretData(ctx, r, original.Spec.AccessTokenSecret, req.Namespace, ocmv1alpha1.AccessTokenKey)
+	accessToken, err := kubernetes.GetSecretData(ctx, r, original.Spec.AccessTokenSecret, req.Namespace, ocmv1alpha1.GitLabAccessTokenKey)
 	if accessToken == "" {
 		if err == nil {
 			return &GitLabIdentityProviderRequest{}, accessTokenError(original, ErrMissingAccessToken)
@@ -137,7 +137,7 @@ func (request *GitLabIdentityProviderRequest) updateCondition(condition *metav1.
 	return nil
 }
 
-// updateStatusCluster updates fields related to the cluster in which the machine pool resides in.
+// updateStatusCluster updates fields related to the cluster in which the gitlab identity provider resides in.
 // TODO: centralize this function into controllers or conditions package.
 func (request *GitLabIdentityProviderRequest) updateStatusCluster() error {
 	// retrieve the cluster id
@@ -199,7 +199,7 @@ func accessTokenError(from *ocmv1alpha1.GitLabIdentityProvider, err error) error
 		"unable to retrieve access token from [%s/%s] at key [%s] - %w",
 		from.Namespace,
 		from.Spec.AccessTokenSecret,
-		ocmv1alpha1.AccessTokenKey,
+		ocmv1alpha1.GitLabAccessTokenKey,
 		err,
 	)
 }

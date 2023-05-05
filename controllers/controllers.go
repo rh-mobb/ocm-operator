@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,9 +11,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/utils"
+)
+
+var (
+	ErrConvertClientObject = errors.New("unable to convert to client object")
 )
 
 const (
@@ -124,4 +132,45 @@ func FinalizerName(object client.Object) string {
 		object.GetObjectKind().GroupVersionKind().Group,
 		defaultFinalizerSuffix,
 	))
+}
+
+// AddFinalizer adds finalizers to the object so that the delete lifecycle can be run
+// before the object is deleted.
+func AddFinalizer(ctx context.Context, r kubernetes.Client, object client.Object) error {
+	// The object is not being deleted, so if it does not have our finalizer,
+	// then lets add the finalizer and update the object. This is equivalent
+	// registering our finalizer.
+	if !utils.ContainsString(object.GetFinalizers(), FinalizerName(object)) {
+		original, ok := object.DeepCopyObject().(client.Object)
+		if !ok {
+			return ErrConvertClientObject
+		}
+
+		controllerutil.AddFinalizer(object, FinalizerName(object))
+
+		if err := r.Patch(ctx, object, client.MergeFrom(original)); err != nil {
+			return fmt.Errorf("unable to add finalizer - %w", err)
+		}
+	}
+
+	return nil
+}
+
+// RemoveFinalizer removes finalizers from the object.  It is intended to be run after an
+// external object is deleted so that the delete lifecycle may continue reconciliation.
+func RemoveFinalizer(ctx context.Context, r kubernetes.Client, object client.Object) error {
+	if utils.ContainsString(object.GetFinalizers(), FinalizerName(object)) {
+		original, ok := object.DeepCopyObject().(client.Object)
+		if !ok {
+			return ErrConvertClientObject
+		}
+
+		controllerutil.RemoveFinalizer(object, FinalizerName(object))
+
+		if err := r.Patch(ctx, object, client.MergeFrom(original)); err != nil {
+			return fmt.Errorf("unable to remove finalizer - %w", err)
+		}
+	}
+
+	return nil
 }

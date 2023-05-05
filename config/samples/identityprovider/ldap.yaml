@@ -1,0 +1,16 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: LDAPIdentityProvider
+metadata:
+  name: ldap
+spec:
+  clusterName: skynet
+  displayName: ldap-test
+  mappingMethod: claim
+  url: ldap://test.example.com:389
+  bindDN: CN=test,OU=Users,DC=example,DC=com
+  bindPassword:
+    name: test
+  # ca:
+  #   name: test
+  insecure: true
+  attributes: {}

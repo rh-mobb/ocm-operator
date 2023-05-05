@@ -27,11 +27,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
-	"github.com/rh-mobb/ocm-operator/pkg/utils"
 )
 
 const (
@@ -69,9 +67,9 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), ErrMachinePoolRequestConvert
 	}
 
-	// register the delete hooks
-	if err := r.RegisterDeleteHooks(request); err != nil {
-		return controllers.NoRequeue(), fmt.Errorf("unable to register delete hooks - %w", err)
+	// add the finalizer
+	if err := controllers.AddFinalizer(request.Context, r, request.Original); err != nil {
+		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to register delete hooks - %w", err)
 	}
 
 	// execute the phases
@@ -107,27 +105,6 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 		{Name: "waitUntilMissing", Function: r.WaitUntilMissing},
 		{Name: "complete", Function: r.CompleteDestroy},
 	}...)
-}
-
-// RegisterDeleteHooks adds finializers to the machine pool so that the delete lifecycle can be run
-// before the object is deleted.
-func (r *Controller) RegisterDeleteHooks(request *MachinePoolRequest) error {
-	if request.Original.GetDeletionTimestamp().IsZero() {
-		// The object is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object. This is equivalent
-		// registering our finalizer.
-		if !utils.ContainsString(request.Original.GetFinalizers(), controllers.FinalizerName(request.Original)) {
-			original := request.Original.DeepCopy()
-
-			controllerutil.AddFinalizer(request.Original, controllers.FinalizerName(request.Original))
-
-			if err := r.Patch(request.Context, request.Original, client.MergeFrom(original)); err != nil {
-				return fmt.Errorf("unable to register delete hook - %w", err)
-			}
-		}
-	}
-
-	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

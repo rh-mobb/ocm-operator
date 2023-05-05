@@ -19,6 +19,10 @@ func (fake *FakeClient) List(_ context.Context, _ client.ObjectList, _ ...client
 	return nil
 }
 
+func (fake *FakeClient) Patch(_ context.Context, _ client.Object, _ client.Patch, _ ...client.PatchOption) error {
+	return nil
+}
+
 func (fake *FakeClient) Status() client.SubResourceWriter {
 	return &fakeStatusWriter{}
 }

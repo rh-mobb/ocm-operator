@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	AccessTokenKey = "accessToken"
-	CAKey          = "ca.crt"
+	GitLabAccessTokenKey = "accessToken"
+	GitLabCAKey          = "ca.crt"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gitlabidentityprovider
+package ldapidentityprovider
 
 import (
 	"context"
@@ -32,11 +32,7 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers"
 )
 
-const (
-	defaultGitLabIdentityProviderRequeue = 30 * time.Second
-)
-
-// Controller reconciles a GitLabIdentityProvider object
+// Controller reconciles a LDAPIdentityProvider object
 type Controller struct {
 	client.Client
 
@@ -46,9 +42,9 @@ type Controller struct {
 	Interval   time.Duration
 }
 
-//+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=gitlabidentityproviders,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=gitlabidentityproviders/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=gitlabidentityproviders/finalizers,verbs=update
+//+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=ldapidentityproviders,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=ldapidentityproviders/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=ldapidentityproviders/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -61,23 +57,22 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to a gitlab identity provider request
-	request, ok := req.(*GitLabIdentityProviderRequest)
+	// type cast the request to a ldap identity provider request
+	request, ok := req.(*LDAPIdentityProviderRequest)
 	if !ok {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), ErrGitLabIdentityProviderRequestConvert
+		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), ErrLDAPIdentityProviderRequestConvert
 	}
 
 	// add the finalizer
 	if err := controllers.AddFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf("unable to register delete hooks - %w", err)
+		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf("unable to register delete hooks - %w", err)
 	}
 
 	// execute the phases
 	return request.execute([]Phase{
 		{Name: "begin", Function: r.Begin},
 		{Name: "getCurrentState", Function: r.GetCurrentState},
-		{Name: "applyGitLab", Function: r.ApplyGitLab},
-		{Name: "applyIdentityProvider", Function: r.ApplyIdentityProvider},
+		{Name: "applyOCM", Function: r.ApplyIdentityProvider},
 		{Name: "complete", Function: r.Complete},
 	}...)
 }
@@ -92,17 +87,17 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to a gitlab identity provider request
-	request, ok := req.(*GitLabIdentityProviderRequest)
+	// type cast the request to a ldap identity provider request
+	request, ok := req.(*LDAPIdentityProviderRequest)
 	if !ok {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), ErrGitLabIdentityProviderRequestConvert
+		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), ErrLDAPIdentityProviderRequestConvert
 	}
 
 	// execute the phases
 	return request.execute([]Phase{
 		{Name: "begin", Function: r.Begin},
-		{Name: "destroy", Function: r.Destroy},
-		{Name: "complete", Function: r.Complete},
+		// {Name: "destroy", Function: r.Destroy},
+		// {Name: "complete", Function: r.Complete},
 	}...)
 }
 
@@ -110,6 +105,6 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithEventFilter(predicates.WorkloadPredicates()).
-		For(&ocmv1alpha1.GitLabIdentityProvider{}).
+		For(&ocmv1alpha1.LDAPIdentityProvider{}).
 		Complete(r)
 }

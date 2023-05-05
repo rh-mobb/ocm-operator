@@ -1,0 +1,12 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: LDAPIdentityProvider
+metadata:
+  labels:
+    app.kubernetes.io/name: ldapidentityprovider
+    app.kubernetes.io/instance: ldapidentityprovider-sample
+    app.kubernetes.io/part-of: ocm-machine-pool-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: ocm-machine-pool-operator
+  name: ldapidentityprovider-sample
+spec:
+  # TODO(user): Add fields here

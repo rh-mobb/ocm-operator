@@ -7,15 +7,12 @@ import (
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
-	"github.com/rh-mobb/ocm-operator/pkg/utils"
 )
 
 // Phase defines an individual phase in the controller reconciliation process.
@@ -306,15 +303,8 @@ func (r *Controller) WaitUntilMissing(request *MachinePoolRequest) (ctrl.Result,
 
 // CompleteDestroy will perform all actions required to successful complete a reconciliation request.
 func (r *Controller) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, error) {
-	if utils.ContainsString(request.Original.GetFinalizers(), controllers.FinalizerName(request.Original)) {
-		// remove our finalizer from the list and update it.
-		original := request.Original.DeepCopy()
-
-		controllerutil.RemoveFinalizer(request.Original, controllers.FinalizerName(request.Original))
-
-		if err := r.Patch(request.Context, request.Original, client.MergeFrom(original)); err != nil {
-			return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to remove finalizer - %w", err)
-		}
+	if err := controllers.RemoveFinalizer(request.Context, r, request.Original); err != nil {
+		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
 	}
 
 	request.Log.Info("completed machine pool deletion", request.logValues()...)

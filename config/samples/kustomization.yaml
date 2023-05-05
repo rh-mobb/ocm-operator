@@ -2,4 +2,5 @@
 resources:
 - machinepool/sample_simple.yaml
 - ocm_v1alpha1_gitlabidentityprovider.yaml
+- ocm_v1alpha1_ldapidentityprovider.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

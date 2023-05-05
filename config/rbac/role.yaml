@@ -8,10 +8,26 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - events
   verbs:
   - create
   - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -50,6 +66,32 @@ rules:
   - ocm.mobb.redhat.com
   resources:
   - gitlabidentityproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - ldapidentityproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - ldapidentityproviders/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - ldapidentityproviders/status
   verbs:
   - get
   - patch

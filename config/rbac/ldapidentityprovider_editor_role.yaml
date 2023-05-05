@@ -1,0 +1,31 @@
+# permissions for end users to edit ldapidentityproviders.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: ldapidentityprovider-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: ocm-machine-pool-operator
+    app.kubernetes.io/part-of: ocm-machine-pool-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: ldapidentityprovider-editor-role
+rules:
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - ldapidentityproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - ldapidentityproviders/status
+  verbs:
+  - get
