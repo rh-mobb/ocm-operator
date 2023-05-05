@@ -260,18 +260,3 @@ func (request *MachinePoolRequest) deleteNodePool(poolClient *ocm.NodePoolClient
 
 	return nil
 }
-
-// registerEvent creates an event resource and registers it with the object.
-func (request *MachinePoolRequest) registerEvent(event Event) {
-	request.Reconciler.Recorder.Event(
-		request.Original,
-		event.Type(),
-		fmt.Sprintf("MachinePool%s", event.String()),
-		fmt.Sprintf(
-			"%s Machine Pool '%s' in cluster '%s'",
-			event.String(),
-			request.Desired.Spec.DisplayName,
-			request.Desired.Spec.ClusterName,
-		),
-	)
-}

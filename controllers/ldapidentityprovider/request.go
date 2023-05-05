@@ -49,7 +49,6 @@ type LDAPIdentityProviderRequest struct {
 	CurrentCA           string
 	DesiredBindPassword string
 	DesiredCA           string
-	ProviderID          string
 }
 
 // This controller must have the ability to pull secrets and configmaps which store the
@@ -155,41 +154,6 @@ func (request *LDAPIdentityProviderRequest) updateCondition(condition *metav1.Co
 		condition,
 	); err != nil {
 		return fmt.Errorf("unable to update condition - %w", err)
-	}
-
-	return nil
-}
-
-// updateStatusCluster updates fields related to the cluster in which the ldap identity provider resides in.
-// TODO: centralize this function into controllers or conditions package.
-func (request *LDAPIdentityProviderRequest) updateStatusCluster() error {
-	// retrieve the cluster id
-	clusterClient := ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.ClusterName)
-	cluster, err := clusterClient.Get()
-	if err != nil {
-		return fmt.Errorf(
-			"unable to retrieve cluster from ocm [name=%s] - %w",
-			request.Desired.Spec.ClusterName,
-			err,
-		)
-	}
-
-	// if the cluster id is missing return an error
-	if cluster.ID() == "" {
-		return fmt.Errorf("missing cluster id in response - %w", ErrMissingClusterID)
-	}
-
-	// keep track of the original object
-	original := request.Original.DeepCopy()
-	request.Original.Status.ClusterID = cluster.ID()
-
-	// store the cluster id in the status
-	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
-		return fmt.Errorf(
-			"unable to update status.clusterID=%s - %w",
-			cluster.ID(),
-			err,
-		)
 	}
 
 	return nil

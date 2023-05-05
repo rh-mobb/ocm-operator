@@ -48,7 +48,9 @@ func (idpClient *IdentityProviderClient) Get() (idp *clustersmgmtv1.IdentityProv
 		}
 	}
 
-	return idp, fmt.Errorf("missing identity provider with name [%s] - %w", idpClient.name, ErrIdentityProviderMissing)
+	// return a nil idp and nil error here and let the caller determine how to handle
+	// a missing identity provider
+	return idp, nil
 }
 
 func (idpClient *IdentityProviderClient) Create(builder *clustersmgmtv1.IdentityProviderBuilder) (gitLab *clustersmgmtv1.IdentityProvider, err error) {

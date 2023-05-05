@@ -72,6 +72,13 @@ type LDAPIdentityProviderStatus struct {
 	// the number of API calls to look up a cluster ID based on
 	// the cluster name.
 	ClusterID string `json:"clusterID,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.providerID is immutable",rule=(self == oldSelf)
+	// Represents the programmatic identity provider ID of the IDP, as
+	// determined during reconciliation.  This is used to reduce
+	// the number of API calls to look up a cluster ID based on
+	// the identity provider name.
+	ProviderID string `json:"providerID,omitempty"`
 }
 
 // +kubebuilder:resource:categories=idps;identityproviders

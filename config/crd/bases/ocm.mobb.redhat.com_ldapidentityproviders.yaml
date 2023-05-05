@@ -235,6 +235,15 @@ spec:
                   - type
                   type: object
                 type: array
+              providerID:
+                description: Represents the programmatic identity provider ID of the
+                  IDP, as determined during reconciliation.  This is used to reduce
+                  the number of API calls to look up a cluster ID based on the identity
+                  provider name.
+                type: string
+                x-kubernetes-validations:
+                - message: status.providerID is immutable
+                  rule: (self == oldSelf)
             type: object
         type: object
     served: true

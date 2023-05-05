@@ -3,7 +3,9 @@ kind: MachinePool
 metadata:
   name: autoscaling
 spec:
-  clusterName: "dscott-test"
+  clusterName: "skynet"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 2
   instanceType: m5.xlarge
+  labels:
+    this: that

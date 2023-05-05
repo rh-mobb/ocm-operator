@@ -96,8 +96,8 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	// execute the phases
 	return request.execute([]Phase{
 		{Name: "begin", Function: r.Begin},
-		// {Name: "destroy", Function: r.Destroy},
-		// {Name: "complete", Function: r.Complete},
+		{Name: "destroy", Function: r.Destroy},
+		{Name: "complete", Function: r.CompleteDestroy},
 	}...)
 }
 

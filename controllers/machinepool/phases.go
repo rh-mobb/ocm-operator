@@ -11,6 +11,7 @@ import (
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
+	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
@@ -174,7 +175,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 		}
 
 		// create an event indicating that the machine pool has been created
-		request.registerEvent(EventCreated)
+		events.RegisterAction(events.Created, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
 		return controllers.NoRequeue(), nil
 	}
@@ -194,7 +195,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	}
 
 	// create an event indicating that the machine pool has been updated
-	request.registerEvent(EventUpdated)
+	events.RegisterAction(events.Updated, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
 	return controllers.NoRequeue(), nil
 }
@@ -240,7 +241,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	}
 
 	// create an event indicating that the machine pool has been deleted
-	request.registerEvent(EventDeleted)
+	events.RegisterAction(events.Deleted, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
 	// set the deleted condition
 	if err := request.updateCondition(conditions.MachinePoolDeleted()); err != nil {
@@ -301,17 +302,6 @@ func (r *Controller) WaitUntilMissing(request *MachinePoolRequest) (ctrl.Result,
 	return controllers.NoRequeue(), nil
 }
 
-// CompleteDestroy will perform all actions required to successful complete a reconciliation request.
-func (r *Controller) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, error) {
-	if err := controllers.RemoveFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
-	}
-
-	request.Log.Info("completed machine pool deletion", request.logValues()...)
-
-	return controllers.NoRequeue(), nil
-}
-
 // Complete will perform all actions required to successful complete a reconciliation request.  It will
 // requeue after the interval value requested by the controller configuration to ensure that the
 // object remains in its desired state at a specific interval.
@@ -324,4 +314,15 @@ func (r *Controller) Complete(request *MachinePoolRequest) (ctrl.Result, error) 
 	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), request.logValues()...)
 
 	return controllers.RequeueAfter(r.Interval), nil
+}
+
+// CompleteDestroy will perform all actions required to successful complete a reconciliation request.
+func (r *Controller) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, error) {
+	if err := controllers.RemoveFinalizer(request.Context, r, request.Original); err != nil {
+		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
+	}
+
+	request.Log.Info("completed machine pool deletion", request.logValues()...)
+
+	return controllers.NoRequeue(), nil
 }

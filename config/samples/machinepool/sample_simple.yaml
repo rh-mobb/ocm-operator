@@ -3,7 +3,7 @@ kind: MachinePool
 metadata:
   name: simple
 spec:
-  clusterName: "mobb-infra-test"
+  clusterName: "skynet"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge
