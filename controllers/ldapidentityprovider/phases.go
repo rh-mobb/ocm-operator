@@ -41,26 +41,11 @@ func (r *Controller) GetCurrentState(request *LDAPIdentityProviderRequest) (ctrl
 	// retrieve the cluster id
 	clusterID := request.Original.Status.ClusterID
 	if clusterID == "" {
-		// retrieve the cluster id
-		clusterClient := ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.ClusterName)
-		cluster, err := clusterClient.Get()
-		if err != nil {
-			return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
-				"unable to retrieve cluster from ocm [name=%s] - %w",
-				request.Desired.Spec.ClusterName,
-				err,
-			)
+		if err := request.updateStatusCluster(); err != nil {
+			return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), err
 		}
 
-		// if the cluster id is missing return an error
-		if cluster.ID() == "" {
-			return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
-				"missing cluster id in response - %w",
-				ErrMissingClusterID,
-			)
-		}
-
-		clusterID = cluster.ID()
+		clusterID = request.Original.Status.ClusterID
 	}
 
 	// get the generic identity provider object from ocm
@@ -77,19 +62,6 @@ func (r *Controller) GetCurrentState(request *LDAPIdentityProviderRequest) (ctrl
 	// return if there is no identity provider found
 	if idp == nil {
 		return controllers.NoRequeue(), nil
-	}
-
-	// store the required configuration data in the status
-	original := request.Original.DeepCopy()
-	request.Original.Status.ClusterID = clusterID
-	request.Original.Status.ProviderID = idp.ID()
-
-	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
-		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
-			"unable to update status.providerID=%s - %w",
-			idp.ID(),
-			err,
-		)
 	}
 
 	// store the current state
@@ -118,10 +90,22 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 	// create the identity provider if it does not exist
 	if request.Current == nil {
 		request.Log.Info("creating ldap identity provider", request.logValues()...)
-		_, err := request.OCMClient.Create(builder)
+		idp, err := request.OCMClient.Create(builder)
 		if err != nil {
 			return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
 				"unable to create ldap identity provider in ocm - %w",
+				err,
+			)
+		}
+
+		// store the required provider data in the status
+		original := request.Original.DeepCopy()
+		request.Original.Status.ProviderID = idp.ID()
+
+		if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
+			return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
+				"unable to update status providerID=%s - %w",
+				idp.ID(),
 				err,
 			)
 		}

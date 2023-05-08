@@ -1,10 +1,10 @@
 apiVersion: ocm.mobb.redhat.com/v1alpha1
 kind: LDAPIdentityProvider
 metadata:
-  name: ldap
+  name: ldap2
 spec:
   clusterName: skynet
-  displayName: ldap-test
+  displayName: ldap-test2
   mappingMethod: claim
   url: ldap://test.example.com:389
   bindDN: CN=test,OU=Users,DC=example,DC=com
