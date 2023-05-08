@@ -28,6 +28,7 @@ Prerequisite tooling:
 * Make
 * [Go => 1.20](https://go.dev/doc/install)
 * [oc](https://docs.openshift.com/container-platform/4.12/cli_reference/openshift_cli/getting-started-cli.html)
+* [operator-sdk](https://sdk.operatorframework.io/docs/installation/)
 
 1. [Retrieve your access token](https://mobb.ninja/docs/quickstart-rosa/#get-a-red-hat-offline-access-token) and 
 place the token at `/tmp/ocm.json`
