@@ -58,6 +58,7 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+//nolint:funlen,cyclop
 func main() {
 	config := controllers.Config{}
 

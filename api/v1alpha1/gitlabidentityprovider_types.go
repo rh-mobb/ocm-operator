@@ -29,7 +29,9 @@ const (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// GitLabIdentityProviderSpec defines the desired state of GitLabIdentityProvider
+// GitLabIdentityProviderSpec defines the desired state of GitLabIdentityProvider.
+//
+//nolint:lll
 type GitLabIdentityProviderSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:message="url is immutable",rule=(self == oldSelf)
@@ -84,7 +86,7 @@ type GitLabIdentityProviderSpec struct {
 	AccessTokenSecret string `json:"accessTokenSecret,omitempty"`
 }
 
-// GitLabIdentityProviderStatus defines the observed state of GitLabIdentityProvider
+// GitLabIdentityProviderStatus defines the observed state of GitLabIdentityProvider.
 type GitLabIdentityProviderStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
@@ -106,7 +108,7 @@ type GitLabIdentityProviderStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:validation:XValidation:message="metadata.name limited to 15 characters",rule=(self.metadata.name.size() <= 15)
 
-// GitLabIdentityProvider is the Schema for the gitlabidentityproviders API
+// GitLabIdentityProvider is the Schema for the gitlabidentityproviders API.
 type GitLabIdentityProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -117,7 +119,7 @@ type GitLabIdentityProvider struct {
 
 //+kubebuilder:object:root=true
 
-// GitLabIdentityProviderList contains a list of GitLabIdentityProvider
+// GitLabIdentityProviderList contains a list of GitLabIdentityProvider.
 type GitLabIdentityProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

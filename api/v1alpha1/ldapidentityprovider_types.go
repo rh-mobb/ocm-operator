@@ -19,8 +19,9 @@ package v1alpha1
 import (
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
 const (
@@ -31,7 +32,9 @@ const (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// LDAPIdentityProviderSpec defines the desired state of LDAPIdentityProvider
+// LDAPIdentityProviderSpec defines the desired state of LDAPIdentityProvider.
+//
+//nolint:lll
 type LDAPIdentityProviderSpec struct {
 	configv1.LDAPIdentityProvider `json:",inline"`
 
@@ -62,7 +65,7 @@ type LDAPIdentityProviderSpec struct {
 	MappingMethod string `json:"mappingMethod,omitempty"`
 }
 
-// LDAPIdentityProviderStatus defines the observed state of LDAPIdentityProvider
+// LDAPIdentityProviderStatus defines the observed state of LDAPIdentityProvider.
 type LDAPIdentityProviderStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
@@ -85,7 +88,7 @@ type LDAPIdentityProviderStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// LDAPIdentityProvider is the Schema for the ldapidentityproviders API
+// LDAPIdentityProvider is the Schema for the ldapidentityproviders API.
 type LDAPIdentityProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -96,7 +99,7 @@ type LDAPIdentityProvider struct {
 
 //+kubebuilder:object:root=true
 
-// LDAPIdentityProviderList contains a list of LDAPIdentityProvider
+// LDAPIdentityProviderList contains a list of LDAPIdentityProvider.
 type LDAPIdentityProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

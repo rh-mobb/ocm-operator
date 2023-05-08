@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -139,11 +140,18 @@ func (r *Controller) Destroy(request *LDAPIdentityProviderRequest) (ctrl.Result,
 		return controllers.NoRequeue(), nil
 	}
 
-	ocmClient := ocm.NewIdentityProviderClient(request.Reconciler.Connection, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
+	ocmClient := ocm.NewIdentityProviderClient(
+		request.Reconciler.Connection,
+		request.Desired.Spec.DisplayName,
+		request.Original.Status.ClusterID,
+	)
 
 	// delete the object
 	if err := ocmClient.Delete(request.Original.Status.ProviderID); err != nil {
-		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), nil
+		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
+			"unable to create ldap identity provider in ocm - %w",
+			err,
+		)
 	}
 
 	// create an event indicating that the ldap identity provider has been deleted
