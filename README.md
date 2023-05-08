@@ -30,8 +30,7 @@ Prerequisite tooling:
 * [oc](https://docs.openshift.com/container-platform/4.12/cli_reference/openshift_cli/getting-started-cli.html)
 * [operator-sdk](https://sdk.operatorframework.io/docs/installation/)
 
-1. [Retrieve your access token](https://mobb.ninja/docs/quickstart-rosa/#get-a-red-hat-offline-access-token) and 
-place the token at `/tmp/ocm.json`
+1. [Retrieve your access token](https://mobb.ninja/docs/quickstart-rosa/#get-a-red-hat-offline-access-token) and set the `OCM_TOKEN` environment variable to its value.
 
 2. To install the custom resources for this operator, make sure you have [logged into 
 your test cluster](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa-sts-accessing-cluster.html) and run the following:
