@@ -264,6 +264,11 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 // WaitUntilReady will requeue until the reconciler determines that the current state of the
 // resource in the cluster is ready.
 func (r *Controller) WaitUntilReady(request *MachinePoolRequest) (ctrl.Result, error) {
+	// skip the wait check if we are not requesting to wait for readiness
+	if !request.Original.Spec.Wait {
+		return controllers.NoRequeue(), nil
+	}
+
 	nodes, err := kubernetes.GetLabeledNodes(request.Context, r, request.Desired.Spec.Labels)
 	if err != nil {
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to get labeled nodes - %w", err)
@@ -287,6 +292,11 @@ func (r *Controller) WaitUntilReady(request *MachinePoolRequest) (ctrl.Result, e
 // WaitUntilMissing will requeue until the reconciler determines that the nodes
 // no longer exist in the cluster.
 func (r *Controller) WaitUntilMissing(request *MachinePoolRequest) (ctrl.Result, error) {
+	// skip the wait check if we are not requesting to wait for readiness
+	if !request.Original.Spec.Wait {
+		return controllers.NoRequeue(), nil
+	}
+
 	nodes, err := kubernetes.GetLabeledNodes(request.Context, r, request.Desired.Spec.Labels)
 	if err != nil {
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to get labeled nodes - %w", err)

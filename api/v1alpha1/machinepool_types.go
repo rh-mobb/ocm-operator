@@ -90,6 +90,16 @@ type MachinePoolSpec struct {
 	Taints []corev1.Taint `json:"taints,omitempty"`
 
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=true
+	// Wait for the machine pool to enter a ready state.  If this is set to true, it is
+	// assumed that the operator is running in the cluster that machine pools are
+	// being controlled for.  This is due to a limitation in the OCM API which does
+	// not expose the ready state of a machine pool.  If this is set to false, the
+	// reconciler will perform a "fire and forget" approach and assume if the object
+	// is created, it will eventually be correctly reconciled.
+	Wait bool `json:"wait,omitempty"`
+
+	// +kubebuilder:validation:Optional
 	// Represents the AWS provider specific configuration options.
 	AWS MachinePoolProviderAWS `json:"aws,omitempty"`
 }
