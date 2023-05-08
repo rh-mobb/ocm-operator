@@ -21,18 +21,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
+	sdk "github.com/openshift-online/ocm-sdk-go"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
-	sdk "github.com/openshift-online/ocm-sdk-go"
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 )
 
-// Controller reconciles a LDAPIdentityProvider object
+// Controller reconciles a LDAPIdentityProvider object.
 type Controller struct {
 	client.Client
 
@@ -102,6 +102,8 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 }
 
 // SetupWithManager sets up the controller with the Manager.
+//
+//nolint:wrapcheck
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithEventFilter(predicates.WorkloadPredicates()).

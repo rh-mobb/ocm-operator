@@ -53,7 +53,9 @@ func (idpClient *IdentityProviderClient) Get() (idp *clustersmgmtv1.IdentityProv
 	return idp, nil
 }
 
-func (idpClient *IdentityProviderClient) Create(builder *clustersmgmtv1.IdentityProviderBuilder) (gitLab *clustersmgmtv1.IdentityProvider, err error) {
+func (idpClient *IdentityProviderClient) Create(
+	builder *clustersmgmtv1.IdentityProviderBuilder,
+) (gitLab *clustersmgmtv1.IdentityProvider, err error) {
 	// build the object to create
 	object, err := builder.Build()
 	if err != nil {
@@ -69,7 +71,9 @@ func (idpClient *IdentityProviderClient) Create(builder *clustersmgmtv1.Identity
 	return response.Body(), nil
 }
 
-func (idpClient *IdentityProviderClient) Update(builder *clustersmgmtv1.IdentityProviderBuilder) (gitLab *clustersmgmtv1.IdentityProvider, err error) {
+func (idpClient *IdentityProviderClient) Update(
+	builder *clustersmgmtv1.IdentityProviderBuilder,
+) (gitLab *clustersmgmtv1.IdentityProvider, err error) {
 	// build the object to update
 	object, err := builder.Build()
 	if err != nil {

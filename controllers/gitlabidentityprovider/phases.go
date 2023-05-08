@@ -37,9 +37,6 @@ func (r *Controller) Begin(request *GitLabIdentityProviderRequest) (ctrl.Result,
 // GetCurrentState gets the current state of the GitLabIdentityProvider resoruce.  The current state of the GitLabIdentityProvider resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
-// TODO: needs refactor
-//
-//nolint:cyclop
 func (r *Controller) GetCurrentState(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
 	// retrieve the cluster id
 	clusterID := request.Original.Status.ClusterID
@@ -93,7 +90,7 @@ func (r *Controller) ApplyGitLab(request *GitLabIdentityProviderRequest) (ctrl.R
 	// create the application if it does not exist
 	request.Log.Info(fmt.Sprintf("creating oauth application in gitlab [%s]", request.Desired.Spec.DisplayName))
 	if application == nil {
-		application, err := request.GitLabClient.CreateApplication(request.Desired.Spec.DisplayName, request.Original.Status.CallbackURL)
+		application, err = request.GitLabClient.CreateApplication(request.Desired.Spec.DisplayName, request.Original.Status.CallbackURL)
 		if err != nil {
 			return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
 				"unable to create oauth application in gitlab - %w",
@@ -157,8 +154,6 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 }
 
 // Destroy will destroy an OpenShift Cluster Manager GitLab Identity Provider.
-//
-//nolint:forcetypeassert
 func (r *Controller) Destroy(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the gitlab identity provider
 	if conditions.IsSet(conditions.IdentityProviderDeleted(), request.Original) {

@@ -23,9 +23,9 @@ func GetConfigMapData(ctx context.Context, c Client, name, namespace, key string
 		)
 	}
 
-	if configMap.Data == nil || len(configMap.Data[key]) == 0 {
+	if configMap.Data == nil || configMap.Data[key] == "" {
 		return "", nil
 	}
 
-	return string(configMap.Data[key]), nil
+	return configMap.Data[key], nil
 }

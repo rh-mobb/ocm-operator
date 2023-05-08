@@ -212,12 +212,12 @@ func (request *LDAPIdentityProviderRequest) desired() bool {
 	//        or CA data from the API likely due to security constraints, so we cannot
 	//        compare them.  this means that the fields can be updated at create time
 	//        but may not be updated (unless the object is changed by some other means)
-
+	//
 	// // ensure the passwords match
 	// if request.DesiredBindPassword != request.CurrentBindPassword {
 	// 	return false
 	// }
-
+	//
 	// // ensure the ca data matches
 	// if request.DesiredCA != request.CurrentCA {
 	// 	return false

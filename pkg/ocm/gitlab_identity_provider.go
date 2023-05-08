@@ -45,7 +45,9 @@ func (glc *GitLabIdentityProviderClient) Get() (gitLab *clustersmgmtv1.GitlabIde
 	return response.Body().Gitlab(), nil
 }
 
-func (glc *GitLabIdentityProviderClient) Create(builder *clustersmgmtv1.GitlabIdentityProviderBuilder) (gitLab *clustersmgmtv1.GitlabIdentityProvider, err error) {
+func (glc *GitLabIdentityProviderClient) Create(
+	builder *clustersmgmtv1.GitlabIdentityProviderBuilder,
+) (gitLab *clustersmgmtv1.GitlabIdentityProvider, err error) {
 	body := clustersmgmtv1.NewIdentityProvider().Gitlab(builder)
 
 	// build the object to create
@@ -63,7 +65,9 @@ func (glc *GitLabIdentityProviderClient) Create(builder *clustersmgmtv1.GitlabId
 	return response.Body().Gitlab(), nil
 }
 
-func (glc *GitLabIdentityProviderClient) Update(builder *clustersmgmtv1.GitlabIdentityProviderBuilder) (gitLab *clustersmgmtv1.GitlabIdentityProvider, err error) {
+func (glc *GitLabIdentityProviderClient) Update(
+	builder *clustersmgmtv1.GitlabIdentityProviderBuilder,
+) (gitLab *clustersmgmtv1.GitlabIdentityProvider, err error) {
 	body := clustersmgmtv1.NewIdentityProvider().Gitlab(builder)
 
 	// build the object to update
