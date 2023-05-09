@@ -98,14 +98,17 @@ lint: golangci-lint ## Run all linters, controlled by .golangci.yml
 # Setting GOPATH is a workaround for https://github.com/golangci/golangci-lint/issues/3828
 	GOPATH=`go env GOPATH` $(GOLANGCI_LINT) run
 
+.PHONY: test-nolint
+test-nolint: manifests generate envtest
+
 .PHONY: test
-test: manifests generate lint envtest ## Run tests.
+test: test-nolint lint ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
 .PHONY: build
-build: manifests generate lint ## Build manager binary.
+build: manifests generate ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
@@ -116,7 +119,7 @@ run: manifests generate lint ## Run a controller from your host.
 # (i.e. docker build --platform linux/arm64 ). However, you must enable docker buildKit for it.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
+docker-build: ## Build docker image with the manager.
 	docker build -t ${IMG} .
 
 .PHONY: docker-push

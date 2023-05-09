@@ -13,4 +13,4 @@ runs:
   steps:
     - name: Run Test
       shell: bash
-      run: go test ${{ inputs.working-directory }}/...
+      run: make test-nolint
