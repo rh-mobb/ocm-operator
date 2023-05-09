@@ -32,8 +32,7 @@ import (
 //
 //nolint:lll
 type MachinePoolSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	DefaultMachinePoolFields `json:",inline"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:message="clusterName is immutable",rule=(self == oldSelf)
@@ -53,6 +52,30 @@ type MachinePoolSpec struct {
 	// API limitation.
 	DisplayName string `json:"displayName,omitempty"`
 
+	// +kubebuilder:validation:Optional
+	// Taints that should be applied to this machine pool.  For information please see
+	// https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/.
+	Taints []corev1.Taint `json:"taints,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=true
+	// Wait for the machine pool to enter a ready state.  If this is set to true, it is
+	// assumed that the operator is running in the cluster that machine pools are
+	// being controlled for.  This is due to a limitation in the OCM API which does
+	// not expose the ready state of a machine pool.  If this is set to false, the
+	// reconciler will perform a "fire and forget" approach and assume if the object
+	// is created, it will eventually be correctly reconciled.
+	Wait bool `json:"wait,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// Represents the AWS provider specific configuration options.
+	AWS MachinePoolProviderAWS `json:"aws,omitempty"`
+}
+
+// DefaultMachinePoolFields represents the fields relevant to the default machine pool.  It
+// is broken out as a separate object to allow other types of machine pools to use this
+// struct inheritance as well.
+type DefaultMachinePoolFields struct {
 	// +kubebuilder:validation:Required
 	// Minimum amount of nodes allowed per availability zone.  For single availability zone
 	// clusters, the minimum allowed is 2 per zone.  For multiple availability zone clusters,
@@ -83,25 +106,6 @@ type MachinePoolSpec struct {
 	// as 'ocm.mobb.redhat.com/name' = spec.displayName.  Both of these labels
 	// are reserved and cannot be used as part of the spec.labels field.
 	Labels map[string]string `json:"labels,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	// Taints that should be applied to this machine pool.  For information please see
-	// https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/.
-	Taints []corev1.Taint `json:"taints,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=true
-	// Wait for the machine pool to enter a ready state.  If this is set to true, it is
-	// assumed that the operator is running in the cluster that machine pools are
-	// being controlled for.  This is due to a limitation in the OCM API which does
-	// not expose the ready state of a machine pool.  If this is set to false, the
-	// reconciler will perform a "fire and forget" approach and assume if the object
-	// is created, it will eventually be correctly reconciled.
-	Wait bool `json:"wait,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	// Represents the AWS provider specific configuration options.
-	AWS MachinePoolProviderAWS `json:"aws,omitempty"`
 }
 
 // MachinePoolProviderAWS represents the provider specific configuration for an AWS provider.

@@ -1,0 +1,221 @@
+package ocm
+
+import (
+	"errors"
+	"fmt"
+	"io/ioutil"
+
+	sdk "github.com/openshift-online/ocm-sdk-go"
+	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+	rosa "github.com/openshift/rosa/pkg/aws"
+	rosatags "github.com/openshift/rosa/pkg/aws/tags"
+	rosahelper "github.com/openshift/rosa/pkg/helper"
+	"github.com/sirupsen/logrus"
+
+	"github.com/rh-mobb/ocm-operator/pkg/aws"
+)
+
+const (
+	operatorRolesPolicyType = "OperatorRole"
+)
+
+var (
+	ErrCredentialRequestsEmpty = errors.New("unable to retrieve credential requests; empty response")
+	ErrPolicyARNEmpty          = errors.New("unable to find policy arn")
+)
+
+type STSClient struct {
+	Prefix             string
+	AccountID          string
+	CredentialRequest  *clustersmgmtv1.STSCredentialRequestsInquiryListRequest
+	PolicyRequest      *clustersmgmtv1.AWSSTSPoliciesInquiryListRequest
+	HostedControlPlane bool
+	OIDCEndpointURL    string
+	ManagedPolicies    bool
+}
+
+type STSCredentialRequest struct {
+	ID        string
+	Namespace string
+	Operator  *clustersmgmtv1.STSOperator
+	Role      *clustersmgmtv1.OperatorIAMRole
+}
+
+func NewSTSClient(
+	connection *sdk.Connection,
+	hostedControlPlane, managedPolicies bool,
+	prefix, accountID, oidcEndpointURL string,
+) *STSClient {
+	return &STSClient{
+		Prefix:          prefix,
+		AccountID:       accountID,
+		OIDCEndpointURL: oidcEndpointURL,
+		CredentialRequest: connection.ClustersMgmt().
+			V1().
+			AWSInquiries().
+			STSCredentialRequests().
+			List().
+			Parameter("is_hypershift", hostedControlPlane),
+		PolicyRequest: connection.ClustersMgmt().
+			V1().
+			AWSInquiries().
+			STSPolicies().
+			List().
+			Search(fmt.Sprintf("policy_type = '%s'", operatorRolesPolicyType)),
+		HostedControlPlane: hostedControlPlane,
+		ManagedPolicies:    managedPolicies,
+	}
+}
+
+func (stsClient *STSClient) GetCredentialRequests() ([]*STSCredentialRequest, error) {
+	var requests []*STSCredentialRequest
+
+	stsCredentialResponse, err := stsClient.CredentialRequest.Send()
+	if err != nil {
+		return requests, fmt.Errorf("error retrieving sts credential requests - %w", err)
+	}
+
+	// return an error if we found no items in the response
+	if len(stsCredentialResponse.Items().Slice()) == 0 {
+		return requests, ErrCredentialRequestsEmpty
+	}
+
+	// append the request for each response item
+	for _, req := range stsCredentialResponse.Items().Slice() {
+		request := &STSCredentialRequest{
+			ID:        req.Name(),
+			Namespace: req.Operator().Namespace(),
+			Operator:  req.Operator(),
+		}
+
+		role, err := clustersmgmtv1.NewOperatorIAMRole().
+			Name(req.Name()).
+			Namespace(req.Operator().Namespace()).
+			RoleARN(aws.GetOperatorRoleArn(request.Operator.Name(), request.Namespace, stsClient.AccountID, stsClient.Prefix)).
+			Build()
+		if err != nil {
+			return requests, fmt.Errorf("unable to build iam operator roles - %w", err)
+		}
+
+		request.Role = role
+
+		requests = append(requests, request)
+	}
+
+	return requests, nil
+}
+
+func (stsClient *STSClient) CreateOperatorRoles(rawVersion string, requests ...*STSCredentialRequest) error {
+	// get the list of policies
+	policyResponse, err := stsClient.PolicyRequest.Send()
+	if err != nil {
+		return fmt.Errorf("unable to retrieve sts policies - %w", err)
+	}
+	policies := policyResponse.Items().Slice()
+
+	// get the version
+	version, err := GetVersion(rawVersion)
+	if err != nil {
+		return err
+	}
+
+	// create the client
+	awsClient, err := rosa.NewClient().Logger(&logrus.Logger{Out: ioutil.Discard}).Build()
+	if err != nil {
+		return fmt.Errorf("unable to create aws client - %w", err)
+	}
+
+	for i := range requests {
+		// retrieve the role name for this request
+		roleName, err := rosa.GetResourceIdFromARN(requests[i].Role.RoleARN())
+		if err != nil || roleName == "" {
+			return fmt.Errorf("unable to find role name from role arn [%s] - %w", requests[i].Role.RoleARN(), err)
+		}
+
+		// retrieve the policy arn for this request
+		policyID := rosa.GetOperatorPolicyKey(requests[i].ID, stsClient.HostedControlPlane)
+
+		// set the tags
+		tagsList := map[string]string{
+			rosatags.OperatorNamespace: requests[i].Namespace,
+			rosatags.OperatorName:      requests[i].Operator.Name(),
+			rosatags.RedHatManaged:     rosahelper.True,
+			rosatags.RolePrefix:        stsClient.Prefix,
+			rosatags.OpenShiftVersion:  version,
+		}
+
+		if stsClient.ManagedPolicies {
+			tagsList[rosatags.ManagedPolicies] = rosahelper.True
+		}
+
+		if stsClient.HostedControlPlane {
+			tagsList[rosatags.HypershiftPolicies] = rosahelper.True
+		}
+
+		var policyARN string
+
+		if stsClient.ManagedPolicies {
+			policyARN = getPolicyARNByID(policyID, policies...)
+			if policyARN == "" {
+				return fmt.Errorf("error retrieving policy id [%s] - %w", policyID, ErrPolicyARNEmpty)
+			}
+		} else {
+			policyARN = rosa.GetOperatorPolicyARN(
+				stsClient.AccountID,
+				stsClient.Prefix,
+				requests[i].Namespace,
+				requests[i].ID,
+				"",
+			)
+
+			// ensure the policy exists
+			_, err = awsClient.EnsurePolicy(policyARN, getPolicyDetails(policyID, policies...), version, tagsList, "")
+			if err != nil {
+				return fmt.Errorf("unable to create policy [%s] - %w", policyID, err)
+			}
+		}
+
+		// ensure the role exists
+		policy, err := rosa.GenerateOperatorRolePolicyDocByOidcEndpointUrl(
+			stsClient.OIDCEndpointURL,
+			stsClient.AccountID,
+			requests[i].Operator,
+			getPolicyDetails("operator_iam_role_policy", policies...),
+		)
+		if err != nil {
+			return fmt.Errorf("error retrieving iam role policy details - %w", err)
+		}
+
+		_, err = awsClient.EnsureRole(roleName, policy, "", "", tagsList, "", stsClient.ManagedPolicies)
+		if err != nil {
+			return fmt.Errorf("unable to create aws iam role [%s] - %w", roleName, err)
+		}
+
+		// attach the policy to the role
+		if err := awsClient.AttachRolePolicy(roleName, policyARN); err != nil {
+			return fmt.Errorf("unable to attach iam policy [%s] to iam role [%s] - %w", policyARN, roleName, err)
+		}
+	}
+
+	return nil
+}
+
+func getPolicyARNByID(id string, existing ...*clustersmgmtv1.AWSSTSPolicy) string {
+	for policy := range existing {
+		if existing[policy].ID() == id {
+			return existing[policy].ARN()
+		}
+	}
+
+	return ""
+}
+
+func getPolicyDetails(id string, existing ...*clustersmgmtv1.AWSSTSPolicy) string {
+	for policy := range existing {
+		if existing[policy].ID() == id {
+			return existing[policy].Details()
+		}
+	}
+
+	return ""
+}

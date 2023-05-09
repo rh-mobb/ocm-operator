@@ -35,10 +35,10 @@ import (
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
-	"github.com/rh-mobb/ocm-operator/controllers/cluster"
 	"github.com/rh-mobb/ocm-operator/controllers/gitlabidentityprovider"
 	"github.com/rh-mobb/ocm-operator/controllers/ldapidentityprovider"
 	"github.com/rh-mobb/ocm-operator/controllers/machinepool"
+	"github.com/rh-mobb/ocm-operator/controllers/rosacluster"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -148,11 +148,12 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "LDAPIdentityProvider")
 		os.Exit(1)
 	}
-	if err = (&cluster.Controller{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("cluster-controller"),
-		Interval: time.Duration(config.PollerIntervalMinutes) * time.Minute,
+	if err = (&rosacluster.Controller{
+		Connection: connection,
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Recorder:   mgr.GetEventRecorderFor("rosa-cluster-controller"),
+		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Cluster")
 		os.Exit(1)

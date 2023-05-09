@@ -5,7 +5,7 @@ resources:
 - bases/ocm.mobb.redhat.com_machinepools.yaml
 - bases/ocm.mobb.redhat.com_gitlabidentityproviders.yaml
 - bases/ocm.mobb.redhat.com_ldapidentityproviders.yaml
-- bases/ocm.mobb.redhat.com_clusters.yaml
+- bases/ocm.mobb.redhat.com_rosaclusters.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

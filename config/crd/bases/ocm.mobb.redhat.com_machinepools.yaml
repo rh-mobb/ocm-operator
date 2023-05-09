@@ -147,6 +147,16 @@ spec:
                   - key
                   type: object
                 type: array
+              wait:
+                default: true
+                description: Wait for the machine pool to enter a ready state.  If
+                  this is set to true, it is assumed that the operator is running
+                  in the cluster that machine pools are being controlled for.  This
+                  is due to a limitation in the OCM API which does not expose the
+                  ready state of a machine pool.  If this is set to false, the reconciler
+                  will perform a "fire and forget" approach and assume if the object
+                  is created, it will eventually be correctly reconciled.
+                type: boolean
             type: object
             x-kubernetes-validations:
             - message: maximumNodesPerZone must be greater than or equal to minimumNodesPerZone

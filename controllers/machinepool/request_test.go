@@ -13,13 +13,15 @@ func TestMachinePoolRequest_desired(t *testing.T) {
 
 	object := &ocmv1alpha1.MachinePool{
 		Spec: ocmv1alpha1.MachinePoolSpec{
-			DisplayName:         "test",
-			ClusterName:         "test",
-			MinimumNodesPerZone: 1,
-			MaximumNodesPerZone: 1,
-			InstanceType:        "m5.xlarge",
-			Labels: map[string]string{
-				"this": "that",
+			DisplayName: "test",
+			ClusterName: "test",
+			DefaultMachinePoolFields: ocmv1alpha1.DefaultMachinePoolFields{
+				MinimumNodesPerZone: 1,
+				MaximumNodesPerZone: 1,
+				InstanceType:        "m5.xlarge",
+				Labels: map[string]string{
+					"this": "that",
+				},
 			},
 			Taints: []corev1.Taint{
 				{

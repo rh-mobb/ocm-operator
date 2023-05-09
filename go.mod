@@ -6,13 +6,14 @@ require (
 	github.com/onsi/ginkgo/v2 v2.6.0
 	github.com/onsi/gomega v1.24.1
 	github.com/openshift/api v0.0.0-20230417092139-1b2161d23365
-	k8s.io/apimachinery v0.26.1
+	k8s.io/apimachinery v0.26.2
 	k8s.io/client-go v0.26.0
 	sigs.k8s.io/controller-runtime v0.14.1
 )
 
 require (
 	emperror.dev/errors v0.8.1 // indirect
+	github.com/aws/aws-sdk-go v1.39.3 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/banzaicloud/k8s-objectmatcher v1.8.0 // indirect
 	github.com/banzaicloud/operator-tools v0.28.4 // indirect
@@ -27,13 +28,20 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.2 // indirect
+	github.com/hashicorp/go-version v1.3.0 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.23 // indirect
 	github.com/nukleros/desired v0.1.0 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
+	github.com/spf13/cobra v1.6.0 // indirect
 	github.com/wayneashleyberry/terminal-dimensions v1.1.0 // indirect
+	github.com/zgalor/weberr v0.6.0 // indirect
+	gitlab.com/c0b/go-ordered-json v0.0.0-20171130231205-49bbdab258c2 // indirect
 )
 
 require (
@@ -64,7 +72,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nukleros/operator-builder-tools v0.3.1
-	github.com/openshift-online/ocm-sdk-go v0.1.334
+	github.com/openshift-online/ocm-sdk-go v0.1.338
+	github.com/openshift/rosa v1.2.21
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
@@ -75,11 +84,11 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/term v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

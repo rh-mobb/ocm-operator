@@ -143,7 +143,7 @@ func (request *GitLabIdentityProviderRequest) updateStatusCluster() error {
 	// retrieve the cluster id
 	clusterClient := ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.ClusterName)
 	cluster, err := clusterClient.Get()
-	if err != nil {
+	if err != nil || cluster == nil {
 		return fmt.Errorf(
 			"unable to retrieve cluster from ocm [name=%s] - %w",
 			request.Desired.Spec.ClusterName,
