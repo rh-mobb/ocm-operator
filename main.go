@@ -38,7 +38,6 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/gitlabidentityprovider"
 	"github.com/rh-mobb/ocm-operator/controllers/ldapidentityprovider"
 	"github.com/rh-mobb/ocm-operator/controllers/machinepool"
-	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -67,7 +66,6 @@ func main() {
 	flag.BoolVar(&config.EnableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&config.TokenFile, "ocm-token-file", "/tmp/ocm.json", "The OCM JSON Token file to use for the OCM Connection")
 	flag.IntVar(&config.PollerIntervalMinutes, "poller-interval", defaultPollerIntervalMinutes, "Default interval, in minutes, by "+
 		"which the controller should reconcile desired state.")
 	opts := zap.Options{
@@ -103,18 +101,19 @@ func main() {
 	}
 
 	// load the token and create the ocm client
-	token, err := ocm.NewToken(config.TokenFile)
-	if err != nil {
-		setupLog.Error(err, "unable to load token", "file", config.TokenFile)
+	tokenEnvKey := "OCM_TOKEN"
+	token, tokenExists := os.LookupEnv(tokenEnvKey)
+	if !tokenExists {
+		setupLog.Error(err, "unable to load token", "environment variable", tokenEnvKey)
 		os.Exit(1)
 	}
 
 	// create the connection
 	connection, err := sdk.NewConnectionBuilder().
-		Tokens(token.RefreshToken).
+		Tokens(token).
 		Build()
 	if err != nil {
-		setupLog.Error(err, "unable to create ocm client", "file", config.TokenFile)
+		setupLog.Error(err, "unable to create ocm client", "environment variable", tokenEnvKey)
 		os.Exit(1)
 	}
 
