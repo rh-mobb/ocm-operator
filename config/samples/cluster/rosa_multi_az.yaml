@@ -1,0 +1,33 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: ROSACluster
+metadata:
+  name: rosa-multi-az
+spec:
+  multiAZ: true
+  disableUserWorkloadMonitoring: true
+  displayName: dscott-multi-test
+  openshiftVersion: "4.12.13"
+  accountID: "660250927410"
+  region: us-east-2
+  tags:
+    owner: dscott
+  iam:
+    userRole: "arn:aws:iam::660250927410:role/ManagedOpenShift-User-dscott_mobb-Role"
+    enableManagedPolicies: false
+    operatorRolesPrefix: dscott-test
+    accountRolesPrefix: dscott
+  defaultMachinePool:
+    minimumNodesPerZone: 1
+    maximumNodesPerZone: 2
+    instanceType: m5.xlarge
+    labels:
+      this: that
+  encryption:
+    ebs:
+      kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
+  network:
+    hostPrefix: 24
+    machineCIDR: "10.1.0.0/16"
+    podCIDR: "10.128.0.0/16"
+    privateLink: false
+    serviceCIDR: "172.40.0.0/16"
