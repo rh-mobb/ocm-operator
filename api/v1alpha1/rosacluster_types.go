@@ -74,24 +74,25 @@ type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:XValidation:message="hostedControlPlane is immutable",rule=(self == oldSelf)
-	// Provision a hosted control plane outside of the AWS account that this is being managed for.
+	// Provision a hosted control plane outside of the AWS account that this is being managed for (default: false).
 	// Must have hosted control plane enabled for your OCM organization.  Be aware of
 	// valid region differences in the '.spec.region' field.
 	HostedControlPlane bool `json:"hostedControlPlane,omitempty"`
 
-	// +kubebuilder:validation:Required
-	// +kubebuilder:default="4.12.14"
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="openshiftVersion is immutable",rule=(self == oldSelf)
-	// OpenShift version used to provision the cluster with (default: 4.12.14).  This is only used for initial provisioning
-	// and ignored for future updates.  Version must be in format of x.y.z.
+	// OpenShift version used to provision the cluster with.  This is only used for initial provisioning
+	// and ignored for future updates.  Version must be in format of x.y.z.  If this is empty, the latest
+	// available and supportable version is selected.  If this is used, the version must be a part of
+	// the 'stable' channel group.
 	OpenShiftVersion string `json:"openshiftVersion,omitempty"`
 
 	// TODO: validate openshift version in x.y.z format
 
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:default=true
+	// +kubebuilder:default=false
 	// +kubebuilder:validation:XValidation:message="multiAZ is immutable",rule=(self == oldSelf)
-	// Whether the control plane should be provisioned across multiple availability zones.  Only
+	// Whether the control plane should be provisioned across multiple availability zones (default: false).  Only
 	// applicable when hostedControlPlane is set to false as hostedControlPlane is always
 	// provisioned across multiple availability zones.
 	MultiAZ bool `json:"multiAZ,omitempty"`
@@ -133,8 +134,12 @@ type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="tags is immutable",rule=(self == oldSelf)
 	// +kubebuilder:validation:XValidation:message="tags is limited to 10",rule=(self.size() <= 10)
+	// +kubebuilder:validation:XValidation:message="red-hat-managed is a reserved tag",rule=!('red-hat-managed' in self)
+	// +kubebuilder:validation:XValidation:message="red-hat-clustertype is a reserved tag",rule=!('red-hat-clustertype' in self)
 	// Additional tags to apply to all AWS objects. Tags
-	// are limited to 10 tags in total.
+	// are limited to 10 tags in total.  It should be noted that
+	// there are reserved tags that may not be overwritted.  These
+	// tags are as follows: red-hat-managed, red-hat-clustertype.
 	Tags map[string]string `json:"tags,omitempty"`
 
 	// +kubebuilder:validation:Optional
@@ -309,9 +314,14 @@ type ROSAClusterStatus struct {
 	// +kubebuilder:validation:XValidation:message="status.operatorRolesCreated is immutable",rule=(self == oldSelf)
 	// Represents whether the operator roles have been created or not.
 	OperatorRolesCreated bool `json:"operatorRolesCreated,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.operatorRolesPrefix is immutable",rule=(self == oldSelf)
+	// The operator roles prefix.  if 'spec.iam.operatorRolesPrefix' is
+	// unset, this is the derived value containing a unique id.
+	OperatorRolesPrefix string `json:"operatorRolesPrefix,omitempty"`
 }
 
-// +kubebuilder:resource:categories=clusters
+// +kubebuilder:resource:categories=cluster;clusters
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:validation:XValidation:message="metadata.name limited to 32 characters",rule=(self.metadata.name.size() <= 32)
@@ -369,8 +379,8 @@ func (cluster *ROSACluster) CopyFrom(source *clustersmgmtv1.Cluster) {
 	// machine pool settings
 	cluster.Spec.DefaultMachinePool.InstanceType = source.Nodes().ComputeMachineType().ID()
 	cluster.Spec.DefaultMachinePool.Labels = source.Nodes().ComputeLabels()
-	cluster.Spec.DefaultMachinePool.MinimumNodesPerZone = source.Nodes().AutoscaleCompute().MinReplicas() / len(source.Nodes().AvailabilityZones())
-	cluster.Spec.DefaultMachinePool.MaximumNodesPerZone = source.Nodes().AutoscaleCompute().MaxReplicas() / len(source.Nodes().AvailabilityZones())
+	cluster.Spec.DefaultMachinePool.MinimumNodesPerZone = source.Nodes().AutoscaleCompute().MinReplicas() / cluster.GetAvailabilityZoneCount()
+	cluster.Spec.DefaultMachinePool.MaximumNodesPerZone = source.Nodes().AutoscaleCompute().MaxReplicas() / cluster.GetAvailabilityZoneCount()
 
 	// network settings
 	cluster.Spec.Network.PrivateLink = source.AWS().PrivateLink()
@@ -421,7 +431,7 @@ func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig) *clus
 
 	// add specific openshift version if specified
 	if cluster.Spec.OpenShiftVersion != "" {
-		builder.Version(clustersmgmtv1.NewVersion().RawID(cluster.Spec.OpenShiftVersion))
+		builder.Version(clustersmgmtv1.NewVersion().ID(cluster.Status.OpenShiftVersionID))
 	}
 
 	// only add the proxy builder if we have proxy settings
@@ -548,6 +558,20 @@ func (cluster *ROSACluster) HasProxy() bool {
 	}
 
 	return false
+}
+
+func (cluster *ROSACluster) GetAvailabilityZoneCount() int {
+	// we return the single az because machine pools for a
+	// hosted control plan exist only within a single availability zone
+	if cluster.Spec.HostedControlPlane {
+		return rosaSingleAZCount
+	}
+
+	if cluster.Spec.MultiAZ {
+		return rosaMultiAZCount
+	}
+
+	return rosaSingleAZCount
 }
 
 func (cluster *ROSACluster) GetControlPlaneCount() int {

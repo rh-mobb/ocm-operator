@@ -58,9 +58,23 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		desired.Spec.DisplayName = desired.Name
 	}
 
-	// set the prefix to the cluster name with a random id if it is unset
-	if desired.Spec.IAM.OperatorRolesPrefix == "" {
-		desired.Spec.IAM.OperatorRolesPrefix = aws.GetOperatorRolesPrefixForCluster(desired.Spec.DisplayName)
+	// set the prefix to the cluster name with a random id if it is unset.  additionally
+	// store the prefix in the status so that the user knows what their prefix was
+	// which is important if the prefix was auto-generated.
+	if original.Status.OperatorRolesPrefix != "" {
+		desired.Spec.IAM.OperatorRolesPrefix = original.Status.OperatorRolesPrefix
+	} else {
+		if desired.Spec.IAM.OperatorRolesPrefix == "" {
+			desired.Spec.IAM.OperatorRolesPrefix = aws.GetOperatorRolesPrefixForCluster(desired.Spec.DisplayName)
+		}
+
+		patched := original.DeepCopy()
+
+		original.Status.OperatorRolesPrefix = desired.Spec.IAM.OperatorRolesPrefix
+
+		if err := kubernetes.PatchStatus(ctx, r, patched, original); err != nil {
+			return &ROSAClusterRequest{}, fmt.Errorf("unable to update status operatorRolesCreated=true - %w", err)
+		}
 	}
 
 	// set the network config defaults if subnets are not provided
@@ -89,7 +103,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		if desired.Spec.OpenShiftVersion == "" {
 			version, err := ocm.GetDefaultVersion(r.Connection)
 			if err != nil {
-				return &ROSAClusterRequest{}, fmt.Errorf("unable to retrieve default version - %w", err)
+				return request, fmt.Errorf("unable to retrieve default version - %w", err)
 			}
 
 			desired.Spec.OpenShiftVersion = version.RawID()
@@ -97,7 +111,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		} else {
 			version, err := ocm.GetVersionObject(r.Connection, desired.Spec.OpenShiftVersion)
 			if err != nil {
-				return &ROSAClusterRequest{}, fmt.Errorf(
+				return request, fmt.Errorf(
 					"found invalid version [%s] - %w",
 					desired.Spec.OpenShiftVersion,
 					err,
@@ -164,6 +178,16 @@ func (request *ROSAClusterRequest) desired() bool {
 
 	// ignore the account id as it does not show up in the api request
 	request.Current.Spec.AccountID = request.Desired.Spec.AccountID
+
+	// ignore the tags as there are red hat managed tags that get added
+	// that are not a part of the spec.  only compare the tags that are
+	// in our desired spec.
+	for desiredKey, desiredValue := range request.Desired.Spec.Tags {
+		if request.Current.Spec.Tags[desiredKey] != desiredValue {
+			return false
+		}
+	}
+	request.Current.Spec.Tags = request.Desired.Spec.Tags
 
 	return reflect.DeepEqual(
 		request.Desired.Spec,

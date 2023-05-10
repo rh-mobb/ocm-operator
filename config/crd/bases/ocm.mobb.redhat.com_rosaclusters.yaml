@@ -10,6 +10,7 @@ spec:
   group: ocm.mobb.redhat.com
   names:
     categories:
+    - cluster
     - clusters
     kind: ROSACluster
     listKind: ROSAClusterList
@@ -154,10 +155,10 @@ spec:
                 type: object
               hostedControlPlane:
                 default: false
-                description: Provision a hosted control plane outside of the AWS account
-                  that this is being managed for. Must have hosted control plane enabled
-                  for your OCM organization.  Be aware of valid region differences
-                  in the '.spec.region' field.
+                description: 'Provision a hosted control plane outside of the AWS
+                  account that this is being managed for (default: false). Must have
+                  hosted control plane enabled for your OCM organization.  Be aware
+                  of valid region differences in the ''.spec.region'' field.'
                 type: boolean
                 x-kubernetes-validations:
                 - message: hostedControlPlane is immutable
@@ -172,7 +173,7 @@ spec:
                       the prerequisite ''rosa create account-roles'' step.'
                     type: string
                     x-kubernetes-validations:
-                    - message: accountRolesPrefix is immutable
+                    - message: iam.accountRolesPrefix is immutable
                       rule: (self == oldSelf)
                     - message: accountRolesPrefix may not be blank
                       rule: (self != "")
@@ -185,7 +186,7 @@ spec:
                     - false
                     type: boolean
                     x-kubernetes-validations:
-                    - message: enableManagedPolicies is immutable
+                    - message: iam.enableManagedPolicies is immutable
                       rule: (self == oldSelf)
                   operatorRolesPrefix:
                     description: Prefix used for provisioned operator roles.  Defaults
@@ -193,7 +194,7 @@ spec:
                       ID.  These will be created as part of the cluster creation process.
                     type: string
                     x-kubernetes-validations:
-                    - message: operatorRolesPrefix is immutable
+                    - message: iam.operatorRolesPrefix is immutable
                       rule: (self == oldSelf)
                   userRole:
                     description: User role created with the prerequisite 'rosa create
@@ -201,15 +202,15 @@ spec:
                       for the cluster.
                     type: string
                     x-kubernetes-validations:
-                    - message: operatorRolesPrefix is immutable
+                    - message: iam.userRole is immutable
                       rule: (self == oldSelf)
                 type: object
               multiAZ:
-                default: true
-                description: Whether the control plane should be provisioned across
-                  multiple availability zones.  Only applicable when hostedControlPlane
-                  is set to false as hostedControlPlane is always provisioned across
-                  multiple availability zones.
+                default: false
+                description: 'Whether the control plane should be provisioned across
+                  multiple availability zones (default: false).  Only applicable when
+                  hostedControlPlane is set to false as hostedControlPlane is always
+                  provisioned across multiple availability zones.'
                 type: boolean
                 x-kubernetes-validations:
                 - message: multiAZ is immutable
@@ -336,10 +337,11 @@ spec:
                   rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.hostPrefix
                     != 0))
               openshiftVersion:
-                default: 4.12.14
-                description: 'OpenShift version used to provision the cluster with
-                  (default: 4.12.14).  This is only used for initial provisioning
-                  and ignored for future updates.  Version must be in format of x.y.z.'
+                description: OpenShift version used to provision the cluster with.  This
+                  is only used for initial provisioning and ignored for future updates.  Version
+                  must be in format of x.y.z.  If this is empty, the latest available
+                  and supportable version is selected.  If this is used, the version
+                  must be a part of the 'stable' channel group.
                 type: string
                 x-kubernetes-validations:
                 - message: openshiftVersion is immutable
@@ -357,14 +359,20 @@ spec:
               tags:
                 additionalProperties:
                   type: string
-                description: Additional tags to apply to all AWS objects. Tags are
-                  limited to 10 tags in total.
+                description: 'Additional tags to apply to all AWS objects. Tags are
+                  limited to 10 tags in total.  It should be noted that there are
+                  reserved tags that may not be overwritted.  These tags are as follows:
+                  red-hat-managed, red-hat-clustertype.'
                 type: object
                 x-kubernetes-validations:
                 - message: tags is immutable
                   rule: (self == oldSelf)
                 - message: tags is limited to 10
                   rule: (self.size() <= 10)
+                - message: red-hat-managed is a reserved tag
+                  rule: '!(''red-hat-managed'' in self)'
+                - message: red-hat-clustertype is a reserved tag
+                  rule: '!(''red-hat-clustertype'' in self)'
             type: object
           status:
             description: ROSAClusterStatus defines the observed state of ROSACluster.
@@ -461,6 +469,28 @@ spec:
                 type: string
                 x-kubernetes-validations:
                 - message: status.OIDCProviderARN is immutable
+                  rule: (self == oldSelf)
+              openshiftVersionID:
+                description: Represents the OpenShift OCM Version ID which was used
+                  to provision the cluster.  This ID is different in format for the
+                  'spec.openshiftVersion' field.
+                type: string
+                x-kubernetes-validations:
+                - message: status.openshiftVersionID is immutable
+                  rule: (self == oldSelf)
+              operatorRolesCreated:
+                description: Represents whether the operator roles have been created
+                  or not.
+                type: boolean
+                x-kubernetes-validations:
+                - message: status.operatorRolesCreated is immutable
+                  rule: (self == oldSelf)
+              operatorRolesPrefix:
+                description: The operator roles prefix.  if 'spec.iam.operatorRolesPrefix'
+                  is unset, this is the derived value containing a unique id.
+                type: string
+                x-kubernetes-validations:
+                - message: status.operatorRolesPrefix is immutable
                   rule: (self == oldSelf)
             type: object
         type: object

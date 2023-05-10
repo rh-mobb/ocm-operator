@@ -39,7 +39,9 @@ var (
 )
 
 const (
-	defaultClusterRequeue = 30 * time.Second
+	defaultClusterRequeue                     = 30 * time.Second
+	defaultClusterRequeueHostedPostProvision  = 60 * time.Second
+	defaultClusterRequeueClassicPostProvision = 300 * time.Second
 )
 
 // Controller reconciles a Cluster object.
@@ -83,6 +85,7 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 		{Name: "begin", Function: r.Begin},
 		{Name: "getCurrentState", Function: r.GetCurrentState},
 		{Name: "applyOCM", Function: r.ApplyCluster},
+		{Name: "waitUntilReady", Function: r.WaitUntilReady},
 		{Name: "complete", Function: r.Complete},
 	}...)
 }

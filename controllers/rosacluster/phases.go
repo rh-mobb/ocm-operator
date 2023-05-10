@@ -2,7 +2,9 @@ package rosacluster
 
 import (
 	"fmt"
+	"time"
 
+	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
@@ -85,6 +87,44 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 			err,
 		)
 	}
+
+	return controllers.NoRequeue(), nil
+}
+
+// WaitUntilReady will requeue until the reconciler determines that the current state of the
+// resource in the cluster is ready.
+func (r *Controller) WaitUntilReady(request *ROSAClusterRequest) (ctrl.Result, error) {
+	// change the requeue time based on whether we have a hosted control plane or
+	// not. this is because hosted control plane comes up much faster and should
+	// be reconciled more frequently.
+	var requeueTime time.Duration
+	if request.Desired.Spec.HostedControlPlane {
+		requeueTime = defaultClusterRequeueHostedPostProvision
+	} else {
+		requeueTime = defaultClusterRequeueClassicPostProvision
+	}
+
+	// get the cluster and see what the status of the cluster is
+	request.OCMClient = ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.DisplayName)
+
+	cluster, err := request.OCMClient.Get()
+	if err != nil {
+		return controllers.RequeueAfter(requeueTime), fmt.Errorf(
+			"unable to retrieve cluster from ocm [name=%s] - %w",
+			request.Desired.Spec.DisplayName,
+			err,
+		)
+	}
+
+	// return if the cluster is not in a ready state
+	if cluster.State() != clustersmgmtv1.ClusterStateReady {
+		request.Log.Info("cluster is not ready", request.logValues()...)
+		request.Log.Info(fmt.Sprintf("checking again in %s", requeueTime.String()), request.logValues()...)
+
+		return controllers.RequeueAfter(requeueTime), nil
+	}
+
+	request.Log.Info("cluster is ready", request.logValues()...)
 
 	return controllers.NoRequeue(), nil
 }
