@@ -197,6 +197,41 @@ func (stsClient *STSClient) CreateOperatorRoles(ver *clustersmgmtv1.Version, req
 	return nil
 }
 
+func (stsClient *STSClient) DeleteOperatorRoles(requests ...*STSCredentialRequest) error {
+	// create the client
+	awsClient, err := rosa.NewClient().Logger(&logrus.Logger{Out: ioutil.Discard}).Build()
+	if err != nil {
+		return fmt.Errorf("unable to create aws client - %w", err)
+	}
+
+	// turn our requests into a format understood by the underlying library
+	requestsMap := make(map[string]*clustersmgmtv1.STSOperator)
+
+	for i := range requests {
+		requestsMap[requests[i].ID] = requests[i].Operator
+	}
+
+	// get the operator roles
+	operatorRoles, err := awsClient.GetOperatorRolesFromAccountByPrefix(stsClient.Prefix, requestsMap)
+	if err != nil {
+		return fmt.Errorf("unable to retrieve operator roles - %w", err)
+	}
+
+	// return if there are no roles to delete
+	if len(operatorRoles) == 0 {
+		return nil
+	}
+
+	// delete the operator roles
+	for _, role := range operatorRoles {
+		if err := awsClient.DeleteOperatorRole(role, stsClient.ManagedPolicies); err != nil {
+			return fmt.Errorf("unable to delete role [%s] - %w", role, err)
+		}
+	}
+
+	return nil
+}
+
 func getPolicyARNByID(id string, existing ...*clustersmgmtv1.AWSSTSPolicy) string {
 	for policy := range existing {
 		if existing[policy].ID() == id {

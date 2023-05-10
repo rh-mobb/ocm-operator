@@ -100,7 +100,7 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to a ldap identity provider request
+	// type cast the request to an ldap identity provider request
 	request, ok := req.(*ROSAClusterRequest)
 	if !ok {
 		return controllers.RequeueAfter(defaultClusterRequeue), ErrClusterRequestConvert
@@ -109,8 +109,11 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	// execute the phases
 	return request.execute([]Phase{
 		{Name: "begin", Function: r.Begin},
-		// {Name: "destroy", Function: r.Destroy},
-		// {Name: "complete", Function: r.CompleteDestroy},
+		{Name: "destroy", Function: r.DestroyCluster},
+		{Name: "destroy", Function: r.WaitUntilMissing},
+		{Name: "destroy", Function: r.DestroyOperatorRoles},
+		{Name: "destroy", Function: r.DestroyOIDC},
+		{Name: "complete", Function: r.CompleteDestroy},
 	}...)
 }
 

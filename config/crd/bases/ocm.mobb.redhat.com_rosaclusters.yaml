@@ -374,6 +374,9 @@ spec:
                 - message: red-hat-clustertype is a reserved tag
                   rule: '!(''red-hat-clustertype'' in self)'
             type: object
+            x-kubernetes-validations:
+            - message: singleAZ clusters require a minimum of 2 nodes
+              rule: (self.defaultMachinePool.minimumNodesPerZone >= 2)
           status:
             description: ROSAClusterStatus defines the observed state of ROSACluster.
             properties:
@@ -470,24 +473,35 @@ spec:
                 x-kubernetes-validations:
                 - message: status.OIDCProviderARN is immutable
                   rule: (self == oldSelf)
-              openshiftVersionID:
-                description: Represents the OpenShift OCM Version ID which was used
-                  to provision the cluster.  This ID is different in format for the
-                  'spec.openshiftVersion' field.
+              openshiftVersion:
+                description: Represents the OpenShift OCM Version Raw ID which was
+                  used to provision the cluster.  This is useful if the version is
+                  unset to reduce the amount of calls to the OCM API.
                 type: string
                 x-kubernetes-validations:
-                - message: status.openshiftVersionID is immutable
+                - message: status.openshiftVersion is immutable
+                  rule: (self == oldSelf)
+              openshiftVersionID:
+                description: Represents the OpenShift OCM Version ID which was used
+                  to provision the cluster.  This is used to reduce the number of
+                  API calls to the OCM API.  This will differ from the 'spec.openshiftVersion'
+                  field.
+                type: string
+                x-kubernetes-validations:
+                - message: status.openshiftVersion is immutable
                   rule: (self == oldSelf)
               operatorRolesCreated:
                 description: Represents whether the operator roles have been created
-                  or not.
+                  or not. This is used to ensure that we do not attempt to recreate
+                  operator roles once they have already been created.
                 type: boolean
                 x-kubernetes-validations:
                 - message: status.operatorRolesCreated is immutable
                   rule: (self == oldSelf)
               operatorRolesPrefix:
                 description: The operator roles prefix.  if 'spec.iam.operatorRolesPrefix'
-                  is unset, this is the derived value containing a unique id.
+                  is unset, this is the derived value containing a unique id which
+                  will be unknown to the requester.
                 type: string
                 x-kubernetes-validations:
                 - message: status.operatorRolesPrefix is immutable

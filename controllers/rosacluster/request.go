@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
@@ -36,6 +37,7 @@ type ROSAClusterRequest struct {
 	OCMClient         *ocm.ClusterClient
 
 	// data obtained during request reconciliation
+	Cluster *clustersmgmtv1.Cluster
 	Version *clustersmgmtv1.Version
 }
 
@@ -97,29 +99,9 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		Reconciler:        r,
 	}
 
-	// set the default version as the latest if unset.  additionally validate that the version
-	// passed in is valid.  only store this if we have not previously stored the version information.
-	if request.Original.Status.OpenShiftVersionID == "" {
-		if desired.Spec.OpenShiftVersion == "" {
-			version, err := ocm.GetDefaultVersion(r.Connection)
-			if err != nil {
-				return request, fmt.Errorf("unable to retrieve default version - %w", err)
-			}
-
-			desired.Spec.OpenShiftVersion = version.RawID()
-			request.Version = version
-		} else {
-			version, err := ocm.GetVersionObject(r.Connection, desired.Spec.OpenShiftVersion)
-			if err != nil {
-				return request, fmt.Errorf(
-					"found invalid version [%s] - %w",
-					desired.Spec.OpenShiftVersion,
-					err,
-				)
-			}
-
-			request.Version = version
-		}
+	// set the version
+	if err := request.setVersion(); err != nil {
+		return request, fmt.Errorf("unable to determine openshift version - %w", err)
 	}
 
 	return request, nil
@@ -195,6 +177,58 @@ func (request *ROSAClusterRequest) desired() bool {
 	)
 }
 
+// setVersion sets the desired requested OpenShift version for the request.  If
+// a version is requested in the spec, it is validated against a list of versions
+// from the OCM API.  If one is not requested in the spec, the latest available
+// version is automatically selected.
+func (request *ROSAClusterRequest) setVersion() (err error) {
+	// ensure the desired version is set on the spec
+	if request.Desired.Spec.OpenShiftVersion == "" {
+		// get the default version if we have not stored a valid version
+		// in the status.
+		if request.Desired.Status.OpenShiftVersion == "" {
+			version, err := ocm.GetDefaultVersion(request.Reconciler.Connection)
+			if err != nil {
+				return fmt.Errorf("unable to retrieve default version - %w", err)
+			}
+
+			request.Desired.Spec.OpenShiftVersion = version.RawID()
+			request.Version = version
+		} else {
+			// get the version from the status.  at this point we know the version has
+			// been validated if it is stored on the status.
+			request.Desired.Spec.OpenShiftVersion = request.Desired.Status.OpenShiftVersion
+		}
+	}
+
+	// get the version object from our desired version
+	if request.Version == nil {
+		version, err := ocm.GetVersionObject(request.Reconciler.Connection, request.Desired.Spec.OpenShiftVersion)
+		if err != nil {
+			return fmt.Errorf(
+				"found invalid version [%s] - %w",
+				request.Desired.Spec.OpenShiftVersion,
+				err,
+			)
+		}
+
+		request.Version = version
+	}
+
+	// set the id needed for the api call in the status.
+	if request.Original.Status.OpenShiftVersionID == "" {
+		// update the status to include the proper version id and the desired version id
+		original := request.Original.DeepCopy()
+		request.Original.Status.OpenShiftVersion = request.Desired.Spec.OpenShiftVersion
+		request.Original.Status.OpenShiftVersionID = request.Version.ID()
+		if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
+			return fmt.Errorf("unable to update status operatorRolesCreated=true - %w", err)
+		}
+	}
+
+	return nil
+}
+
 // createCluster performs all operations necessary for creating a ROSA cluster.
 func (request *ROSAClusterRequest) createCluster() error {
 	original := request.Original.DeepCopy()
@@ -215,13 +249,14 @@ func (request *ROSAClusterRequest) createCluster() error {
 
 	// create the cluster
 	request.Log.Info("creating rosa cluster", request.logValues()...)
-	cluster, err := request.OCMClient.Create(request.Desired.Builder(oidc))
+	cluster, err := request.OCMClient.Create(request.Desired.Builder(oidc, request.Original.Status.OpenShiftVersionID))
 	if err != nil {
 		return fmt.Errorf("unable to create rosa cluster in ocm - %w", err)
 	}
 
 	// store the required provider data in the status
 	request.Original.Status.ClusterID = cluster.ID()
+	request.Cluster = cluster
 
 	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
 		return fmt.Errorf("unable to update status providerID=%s - %w", cluster.ID(), err)
@@ -249,10 +284,14 @@ func (request *ROSAClusterRequest) updateCluster() error {
 
 	// update the rosa cluster if it does exist
 	request.Log.Info("updating rosa cluster", request.logValues()...)
-	_, err = request.OCMClient.Update(request.Desired.Builder(oidc))
+	cluster, err := request.OCMClient.Update(request.Desired.Builder(oidc, request.Original.Status.OpenShiftVersionID).
+		ID(request.Original.Status.ClusterID),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to update rosa cluster in ocm - %w", err)
 	}
+
+	request.Cluster = cluster
 
 	// create an event indicating that the rosa cluster has been updated
 	events.RegisterAction(
@@ -273,7 +312,7 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 	// create oidc config only if we have not created it already
 	if request.Original.Status.OIDCConfigID == "" {
 		request.Log.Info("creating oidc config", request.logValues()...)
-		config, err := ocm.NewOIDCConfigClient(request.Reconciler.Connection).Create()
+		config, err = ocm.NewOIDCConfigClient(request.Reconciler.Connection).Create()
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc config - %w", err)
 		}
@@ -332,13 +371,53 @@ func (request *ROSAClusterRequest) createOperatorRoles(oidc *clustersmgmtv1.Oidc
 		return fmt.Errorf("unable to create operator roles - %w", err)
 	}
 
-	// update the status indicating the operator roles have been created
+	// update the status indicating the operator roles have been created.  additionally
+	// update the status for the openshift id needed on both the desired and original
+	// objects.
 	original := request.Original.DeepCopy()
 	request.Original.Status.OperatorRolesCreated = true
-	request.Original.Status.OpenShiftVersionID = request.Version.ID()
 	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
 		return fmt.Errorf("unable to update status operatorRolesCreated=true - %w", err)
 	}
 
 	return nil
+}
+
+// destroyOperatorRoles deletes the operator roles in AWS.
+func (request *ROSAClusterRequest) destroyOperatorRoles() error {
+	// create the sts client
+	stsClient := ocm.NewSTSClient(
+		request.Reconciler.Connection,
+		request.Desired.Spec.HostedControlPlane,
+		request.Desired.Spec.IAM.EnableManagedPolicies,
+		request.Desired.Spec.IAM.OperatorRolesPrefix,
+		request.Desired.Spec.AccountID,
+		"",
+	)
+
+	// retrieve the credential requests
+	requests, err := stsClient.GetCredentialRequests()
+	if err != nil {
+		return fmt.Errorf("unable to retrieve sts credential requests - %w", err)
+	}
+
+	// delete the operator roles
+	if err := stsClient.DeleteOperatorRoles(requests...); err != nil {
+		return fmt.Errorf("unable to delete operator roles - %w", err)
+	}
+
+	return nil
+}
+
+// provisionRequeueTime determines the requeue time when the cluster prior to the cluster being ready.
+func (request *ROSAClusterRequest) provisionRequeueTime() time.Duration {
+	// change the requeue time based on whether we have a hosted control plane or
+	// not. this is because hosted control plane comes up much faster and should
+	// be reconciled more frequently.
+	if request.Desired.Spec.HostedControlPlane {
+		return defaultClusterRequeueHostedPostProvision
+	}
+
+	return defaultClusterRequeueClassicPostProvision
+
 }

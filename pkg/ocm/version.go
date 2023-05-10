@@ -56,7 +56,7 @@ func GetAvailableVersions(connection *sdk.Connection) (versions []*clustersmgmtv
 	collection := connection.ClustersMgmt().V1().Versions()
 	page := 1
 	size := 100
-	filter := "enabled = 'true' AND rosa_enabled = 'true'"
+	filter := "enabled = 'true' AND rosa_enabled = 'true' AND channel_group = 'stable' AND default = 'true'"
 
 	for {
 		var response *clustersmgmtv1.VersionsListResponse

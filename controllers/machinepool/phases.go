@@ -245,7 +245,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 
 	// set the deleted condition
 	if err := request.updateCondition(conditions.MachinePoolDeleted()); err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
+		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating deleted condition - %w", err)
 	}
 
 	return controllers.NoRequeue(), nil

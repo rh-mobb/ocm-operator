@@ -52,7 +52,7 @@ func (cc *ClusterClient) Create(
 		return cluster, fmt.Errorf("unable to build object for cluster creation - %w", err)
 	}
 
-	// create the identity provider in ocm
+	// create the cluster in ocm
 	response, err := cc.Connection.Add().Body(object).Send()
 	if err != nil {
 		return cluster, fmt.Errorf("error in create request - %w", err)
@@ -70,7 +70,7 @@ func (cc *ClusterClient) Update(
 		return cluster, fmt.Errorf("unable to build object for cluster update - %w", err)
 	}
 
-	// update the identity provider in ocm
+	// update the cluster in ocm
 	response, err := cc.For(object.ID()).Update().Body(object).Send()
 	if err != nil {
 		return cluster, fmt.Errorf("error in update request - %w", err)
@@ -80,7 +80,7 @@ func (cc *ClusterClient) Update(
 }
 
 func (cc *ClusterClient) Delete(id string) error {
-	// delete the identity provider in ocm
+	// delete the cluster in ocm
 	response, err := cc.For(id).Delete().Send()
 	if err != nil {
 		if response.Status() == http.StatusNotFound {

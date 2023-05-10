@@ -9,8 +9,7 @@ spec:
   iam:
     userRole: "arn:aws:iam::660250927410:role/ManagedOpenShift-User-dscott_mobb-Role"
   defaultMachinePool:
-    minimumNodesPerZone: 1
-    maximumNodesPerZone: 1
+    minimumNodesPerZone: 2
     instanceType: m5.xlarge
     labels:
       this: that

@@ -55,6 +55,7 @@ const (
 
 // TODO: validate additionalTrustBundle only supplied with subnets
 
+// +kubebuilder:validation:XValidation:message="singleAZ clusters require a minimum of 2 nodes",rule=(self.defaultMachinePool.minimumNodesPerZone >= 2)
 // ROSAClusterSpec defines the desired state of ROSACluster.
 type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
@@ -81,17 +82,17 @@ type ROSAClusterSpec struct {
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="openshiftVersion is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="openshiftVersion must be in x.y.z format",rule=(self.matches('^\d+\.\d+\.\d+$'))
 	// OpenShift version used to provision the cluster with.  This is only used for initial provisioning
 	// and ignored for future updates.  Version must be in format of x.y.z.  If this is empty, the latest
 	// available and supportable version is selected.  If this is used, the version must be a part of
 	// the 'stable' channel group.
 	OpenShiftVersion string `json:"openshiftVersion,omitempty"`
 
-	// TODO: validate openshift version in x.y.z format
-
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:XValidation:message="multiAZ is immutable",rule=(self == oldSelf)
+	//
 	// Whether the control plane should be provisioned across multiple availability zones (default: false).  Only
 	// applicable when hostedControlPlane is set to false as hostedControlPlane is always
 	// provisioned across multiple availability zones.
@@ -305,19 +306,29 @@ type ROSAClusterStatus struct {
 	// set after the provider is created.
 	OIDCProviderARN string `json:"oidcProviderARN,omitempty"`
 
-	// +kubebuilder:validation:XValidation:message="status.openshiftVersionID is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="status.openshiftVersion is immutable",rule=(self == oldSelf)
+	// Represents the OpenShift OCM Version Raw ID which was used
+	// to provision the cluster.  This is useful if the version
+	// is unset to reduce the amount of calls to the OCM API.
+	OpenShiftVersion string `json:"openshiftVersion,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.openshiftVersion is immutable",rule=(self == oldSelf)
 	// Represents the OpenShift OCM Version ID which was used
-	// to provision the cluster.  This ID is different in format
-	// for the 'spec.openshiftVersion' field.
+	// to provision the cluster.  This is used to reduce
+	// the number of API calls to the OCM API.  This will differ
+	// from the 'spec.openshiftVersion' field.
 	OpenShiftVersionID string `json:"openshiftVersionID,omitempty"`
 
 	// +kubebuilder:validation:XValidation:message="status.operatorRolesCreated is immutable",rule=(self == oldSelf)
 	// Represents whether the operator roles have been created or not.
+	// This is used to ensure that we do not attempt to recreate operator
+	// roles once they have already been created.
 	OperatorRolesCreated bool `json:"operatorRolesCreated,omitempty"`
 
 	// +kubebuilder:validation:XValidation:message="status.operatorRolesPrefix is immutable",rule=(self == oldSelf)
 	// The operator roles prefix.  if 'spec.iam.operatorRolesPrefix' is
-	// unset, this is the derived value containing a unique id.
+	// unset, this is the derived value containing a unique id which
+	// will be unknown to the requester.
 	OperatorRolesPrefix string `json:"operatorRolesPrefix,omitempty"`
 }
 
@@ -379,8 +390,13 @@ func (cluster *ROSACluster) CopyFrom(source *clustersmgmtv1.Cluster) {
 	// machine pool settings
 	cluster.Spec.DefaultMachinePool.InstanceType = source.Nodes().ComputeMachineType().ID()
 	cluster.Spec.DefaultMachinePool.Labels = source.Nodes().ComputeLabels()
-	cluster.Spec.DefaultMachinePool.MinimumNodesPerZone = source.Nodes().AutoscaleCompute().MinReplicas() / cluster.GetAvailabilityZoneCount()
-	cluster.Spec.DefaultMachinePool.MaximumNodesPerZone = source.Nodes().AutoscaleCompute().MaxReplicas() / cluster.GetAvailabilityZoneCount()
+
+	if source.Nodes().AutoscaleCompute().MaxReplicas() > 0 {
+		cluster.Spec.DefaultMachinePool.MinimumNodesPerZone = source.Nodes().AutoscaleCompute().MinReplicas() / cluster.GetAvailabilityZoneCount()
+		cluster.Spec.DefaultMachinePool.MaximumNodesPerZone = source.Nodes().AutoscaleCompute().MaxReplicas() / cluster.GetAvailabilityZoneCount()
+	} else {
+		cluster.Spec.DefaultMachinePool.MinimumNodesPerZone = source.Nodes().Compute()
+	}
 
 	// network settings
 	cluster.Spec.Network.PrivateLink = source.AWS().PrivateLink()
@@ -400,7 +416,7 @@ func (cluster *ROSACluster) CopyFrom(source *clustersmgmtv1.Cluster) {
 }
 
 // Builder builds an object that is used for create and update operations.
-func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig) *clustersmgmtv1.ClusterBuilder {
+func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig, versionID string) *clustersmgmtv1.ClusterBuilder {
 	// create the base builder
 	builder := clustersmgmtv1.NewCluster().
 		// openshift/rosa settings
@@ -414,11 +430,11 @@ func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig) *clus
 				rosaPropertyProvisioner: rosaPropertyProvisionerOperator,
 			},
 		).
+		Version(clustersmgmtv1.NewVersion().ID(versionID)).
 
 		// basic aws settings
 		MultiAZ(cluster.Spec.MultiAZ).
 		Region(clustersmgmtv1.NewCloudRegion().ID(cluster.Spec.Region)).
-		// ByoOidc(clustersmgmtv1.NewByoOidc().Enabled(true)).
 
 		// encryption/cryptography settings
 		FIPS(cluster.Spec.EnableFIPS).
@@ -427,11 +443,6 @@ func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig) *clus
 	// add trust bundle if specified
 	if cluster.Spec.AdditonalTrustBundle != "" {
 		builder.AdditionalTrustBundle(cluster.Spec.AdditonalTrustBundle)
-	}
-
-	// add specific openshift version if specified
-	if cluster.Spec.OpenShiftVersion != "" {
-		builder.Version(clustersmgmtv1.NewVersion().ID(cluster.Status.OpenShiftVersionID))
 	}
 
 	// only add the proxy builder if we have proxy settings
