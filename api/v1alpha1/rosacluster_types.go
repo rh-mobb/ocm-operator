@@ -25,7 +25,9 @@ import (
 )
 
 const (
-	rosaProductId                   = "rosa"
+	rosaProductId = "rosa"
+
+	// iam defaults
 	rosaAccountRolePrefix           = "ManagedOpenShift"
 	rosaSupportRolePrefix           = "Support"
 	rosaInstallerRolePrefix         = "Installer"
@@ -34,6 +36,18 @@ const (
 	rosaPropertyUserRole            = "rosa_creator_arn"
 	rosaPropertyProvisioner         = "rosa_provisioner"
 	rosaPropertyProvisionerOperator = "ocm-operator"
+
+	// network defaults
+	rosaDefaultMachineCIDR = "10.0.0.0/16"
+	rosaDefaultPodCIDR     = "10.128.0.0/14"
+	rosaDefaultServiceCIDR = "172.30.0.0/16"
+	rosaDefaultHostPrefix  = 23
+
+	// count defaults based on type and configuration
+	rosaSingleAZCount                = 1
+	rosaMultiAZCount                 = 3
+	rosaHostedControlPlaneCount      = 0
+	rosaHostedControlPlaneInfraCount = 0
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -171,37 +185,37 @@ type ROSANetwork struct {
 	// Enable PrivateLink (default: false).  Forces Red Hat SREs to connect to the cluster over an AWS PrivateLink
 	// endpoint.  Requires a pre-existing network configuration and subnets configured
 	// via the 'spec.network.subnets' field.
-	PrivateLink bool `json:"privateLink" default:"false"`
+	PrivateLink bool `json:"privateLink,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// ROSA Proxy configuration.
-	Proxy ROSAProxy `json:"proxy,omitempty"`
+	Proxy ROSAProxy `json:"proxy,omitempty,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="network.subnets are immutable",rule=(self == oldSelf)
 	// Pre-existing subnets used for provisioning a ROSA cluster.
-	Subnets []string `json:"subnets,omitempty"`
+	Subnets []string `json:"subnets,omitempty,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="172.30.0.0/16"
 	// +kubebuilder:validation:XValidation:message="network.serviceCIDR is immutable",rule=(self == oldSelf)
 	// CIDR to use for the internal cluster service network (default: 172.30.0.0/16).  Required if
 	// subnets are not set so that the provisioner may create the network architecture.
-	ServiceCIDR string `json:"serviceCIDR"`
+	ServiceCIDR string `json:"serviceCIDR,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="10.128.0.0/14"
 	// +kubebuilder:validation:XValidation:message="network.podCIDR is immutable",rule=(self == oldSelf)
 	// CIDR to use for the internal pod network (default: 10.128.0.0/14).  Required if
 	// subnets are not set so that the provisioner may create the network architecture.
-	PodCIDR string `json:"podCIDR"`
+	PodCIDR string `json:"podCIDR,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="10.0.0.0/16"
 	// +kubebuilder:validation:XValidation:message="network.machineCIDR is immutable",rule=(self == oldSelf)
 	// CIDR to use for the AWS VPC (default: 10.0.0.0/16).  Required if
 	// subnets are not set so that the provisioner may create the network architecture.
-	MachineCIDR string `json:"machineCIDR"`
+	MachineCIDR string `json:"machineCIDR,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=23
@@ -237,27 +251,27 @@ type ROSAIAM struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Enum=false
-	// +kubebuilder:validation:XValidation:message="enableManagedPolicies is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="iam.enableManagedPolicies is immutable",rule=(self == oldSelf)
 	// Use policies that are natively managed by AWS.  NOTE: currently this is not possible as the
 	// OCM API does not return valid ARNs.  Only 'false' is an option for now.
 	EnableManagedPolicies bool `json:"enableManagedPolicies,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:message="operatorRolesPrefix is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="iam.operatorRolesPrefix is immutable",rule=(self == oldSelf)
 	// Prefix used for provisioned operator roles.  Defaults to using the cluster name with a randomly
 	// generated 6-digit ID.  These will be created as part of the cluster creation process.
 	OperatorRolesPrefix string `json:"operatorRolesPrefix,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="ManagedOpenShift"
-	// +kubebuilder:validation:XValidation:message="accountRolesPrefix is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="iam.accountRolesPrefix is immutable",rule=(self == oldSelf)
 	// +kubebuilder:validation:XValidation:message="accountRolesPrefix may not be blank",rule=(self != "")
 	// Prefix used for provisioned account roles (default: ManagedOpenShift).  These should have been created as part of
 	// the prerequisite 'rosa create account-roles' step.
 	AccountRolesPrefix string `json:"accountRolesPrefix,omitempty"`
 
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:XValidation:message="operatorRolesPrefix is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="iam.userRole is immutable",rule=(self == oldSelf)
 	// User role created with the prerequisite 'rosa create user-role' step.  This is the value used
 	// as the 'rosa_creator_arn' for the cluster.
 	UserRole string `json:"userRole,omitempty"`
@@ -285,6 +299,16 @@ type ROSAClusterStatus struct {
 	// Represents the AWS ARN for the OIDC provider.  This is only
 	// set after the provider is created.
 	OIDCProviderARN string `json:"oidcProviderARN,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.openshiftVersionID is immutable",rule=(self == oldSelf)
+	// Represents the OpenShift OCM Version ID which was used
+	// to provision the cluster.  This ID is different in format
+	// for the 'spec.openshiftVersion' field.
+	OpenShiftVersionID string `json:"openshiftVersionID,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.operatorRolesCreated is immutable",rule=(self == oldSelf)
+	// Represents whether the operator roles have been created or not.
+	OperatorRolesCreated bool `json:"operatorRolesCreated,omitempty"`
 }
 
 // +kubebuilder:resource:categories=clusters
@@ -526,51 +550,44 @@ func (cluster *ROSACluster) HasProxy() bool {
 	return false
 }
 
-const (
-	singleAZCount           = 1
-	multiAZCount            = 3
-	hostedControlPlaneCount = 0
-	hostedInfraCount        = 0
-)
-
 func (cluster *ROSACluster) GetControlPlaneCount() int {
 	if cluster.Spec.HostedControlPlane {
-		return hostedControlPlaneCount
+		return rosaHostedControlPlaneCount
 	}
 
 	if cluster.Spec.MultiAZ {
-		return multiAZCount
+		return rosaMultiAZCount
 	}
 
-	return singleAZCount
+	return rosaSingleAZCount
 }
 
 func (cluster *ROSACluster) GetInfraCount() int {
 	if cluster.Spec.HostedControlPlane {
-		return hostedInfraCount
+		return rosaHostedControlPlaneInfraCount
 	}
 
 	if cluster.Spec.MultiAZ {
-		return multiAZCount
+		return rosaMultiAZCount
 	}
 
-	return singleAZCount
+	return rosaSingleAZCount
 }
 
 func (cluster *ROSACluster) GetMachinePoolMinimumNodes() int {
 	if cluster.Spec.MultiAZ {
-		return cluster.Spec.DefaultMachinePool.MinimumNodesPerZone * multiAZCount
+		return cluster.Spec.DefaultMachinePool.MinimumNodesPerZone * rosaMultiAZCount
 	}
 
-	return cluster.Spec.DefaultMachinePool.MinimumNodesPerZone * singleAZCount
+	return cluster.Spec.DefaultMachinePool.MinimumNodesPerZone * rosaSingleAZCount
 }
 
 func (cluster *ROSACluster) GetMachinePoolMaximumNodes() int {
 	if cluster.Spec.MultiAZ {
-		return cluster.Spec.DefaultMachinePool.MaximumNodesPerZone * multiAZCount
+		return cluster.Spec.DefaultMachinePool.MaximumNodesPerZone * rosaMultiAZCount
 	}
 
-	return cluster.Spec.DefaultMachinePool.MaximumNodesPerZone * singleAZCount
+	return cluster.Spec.DefaultMachinePool.MaximumNodesPerZone * rosaSingleAZCount
 }
 
 func (cluster *ROSACluster) GetInstallerRole() string {
@@ -587,6 +604,24 @@ func (cluster *ROSACluster) GetControlPlaneRole() string {
 
 func (cluster *ROSACluster) GetWorkerRole() string {
 	return cluster.getIAMRoleName(rosaWorkerRolePrefix)
+}
+
+func (cluster *ROSACluster) SetNetworkDefaults() {
+	if cluster.Spec.Network.HostPrefix == 0 {
+		cluster.Spec.Network.HostPrefix = rosaDefaultHostPrefix
+	}
+
+	if cluster.Spec.Network.MachineCIDR == "" {
+		cluster.Spec.Network.MachineCIDR = rosaDefaultMachineCIDR
+	}
+
+	if cluster.Spec.Network.ServiceCIDR == "" {
+		cluster.Spec.Network.ServiceCIDR = rosaDefaultServiceCIDR
+	}
+
+	if cluster.Spec.Network.PodCIDR == "" {
+		cluster.Spec.Network.PodCIDR = rosaDefaultPodCIDR
+	}
 }
 
 // getAccountRolesPrefix is a helper function to determine the prefix of the

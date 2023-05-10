@@ -34,6 +34,9 @@ type ROSAClusterRequest struct {
 	Trigger           triggers.Trigger
 	Reconciler        *Controller
 	OCMClient         *ocm.ClusterClient
+
+	// data obtained during request reconciliation
+	Version *clustersmgmtv1.Version
 }
 
 func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controllers.Request, error) {
@@ -60,7 +63,17 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		desired.Spec.IAM.OperatorRolesPrefix = aws.GetOperatorRolesPrefixForCluster(desired.Spec.DisplayName)
 	}
 
-	return &ROSAClusterRequest{
+	// set the network config defaults if subnets are not provided
+	// NOTE: this may not be required.  Found that the values for the
+	// network were not being deserialized even with defaults in the CRD
+	// set.  This is to ensure that when subnets are left out, that
+	// defaults get set if they are not set.
+	if len(desired.Spec.Network.Subnets) == 0 {
+		desired.SetNetworkDefaults()
+	}
+
+	// create the request
+	request := &ROSAClusterRequest{
 		Original:          original,
 		Desired:           desired,
 		ControllerRequest: req,
@@ -68,7 +81,34 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		Log:               log.Log,
 		Trigger:           triggers.GetTrigger(original),
 		Reconciler:        r,
-	}, nil
+	}
+
+	// set the default version as the latest if unset.  additionally validate that the version
+	// passed in is valid.  only store this if we have not previously stored the version information.
+	if request.Original.Status.OpenShiftVersionID == "" {
+		if desired.Spec.OpenShiftVersion == "" {
+			version, err := ocm.GetDefaultVersion(r.Connection)
+			if err != nil {
+				return &ROSAClusterRequest{}, fmt.Errorf("unable to retrieve default version - %w", err)
+			}
+
+			desired.Spec.OpenShiftVersion = version.RawID()
+			request.Version = version
+		} else {
+			version, err := ocm.GetVersionObject(r.Connection, desired.Spec.OpenShiftVersion)
+			if err != nil {
+				return &ROSAClusterRequest{}, fmt.Errorf(
+					"found invalid version [%s] - %w",
+					desired.Spec.OpenShiftVersion,
+					err,
+				)
+			}
+
+			request.Version = version
+		}
+	}
+
+	return request, nil
 }
 
 func (request *ROSAClusterRequest) GetObject() controllers.Workload {
@@ -142,9 +182,11 @@ func (request *ROSAClusterRequest) createCluster() error {
 	}
 
 	// create the operator roles
-	request.Log.Info("creating operator roles", request.logValues()...)
-	if err := request.ensureOperatorRoles(oidc); err != nil {
-		return err
+	if !request.Original.Status.OperatorRolesCreated {
+		request.Log.Info("creating operator roles", request.logValues()...)
+		if err := request.createOperatorRoles(oidc); err != nil {
+			return err
+		}
 	}
 
 	// create the cluster
@@ -243,8 +285,8 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 	return config, nil
 }
 
-// ensureOperatorRoles creates the operator roles in AWS.
-func (request *ROSAClusterRequest) ensureOperatorRoles(oidc *clustersmgmtv1.OidcConfig) error {
+// createOperatorRoles creates the operator roles in AWS.
+func (request *ROSAClusterRequest) createOperatorRoles(oidc *clustersmgmtv1.OidcConfig) error {
 	// create the sts client
 	stsClient := ocm.NewSTSClient(
 		request.Reconciler.Connection,
@@ -262,8 +304,16 @@ func (request *ROSAClusterRequest) ensureOperatorRoles(oidc *clustersmgmtv1.Oidc
 	}
 
 	// create the operator roles
-	if err := stsClient.CreateOperatorRoles(request.Desired.Spec.OpenShiftVersion, requests...); err != nil {
+	if err := stsClient.CreateOperatorRoles(request.Version, requests...); err != nil {
 		return fmt.Errorf("unable to create operator roles - %w", err)
+	}
+
+	// update the status indicating the operator roles have been created
+	original := request.Original.DeepCopy()
+	request.Original.Status.OperatorRolesCreated = true
+	request.Original.Status.OpenShiftVersionID = request.Version.ID()
+	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
+		return fmt.Errorf("unable to update status operatorRolesCreated=true - %w", err)
 	}
 
 	return nil

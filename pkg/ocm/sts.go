@@ -105,7 +105,7 @@ func (stsClient *STSClient) GetCredentialRequests() ([]*STSCredentialRequest, er
 	return requests, nil
 }
 
-func (stsClient *STSClient) CreateOperatorRoles(rawVersion string, requests ...*STSCredentialRequest) error {
+func (stsClient *STSClient) CreateOperatorRoles(ver *clustersmgmtv1.Version, requests ...*STSCredentialRequest) error {
 	// get the list of policies
 	policyResponse, err := stsClient.PolicyRequest.Send()
 	if err != nil {
@@ -113,11 +113,8 @@ func (stsClient *STSClient) CreateOperatorRoles(rawVersion string, requests ...*
 	}
 	policies := policyResponse.Items().Slice()
 
-	// get the version
-	version, err := GetVersion(rawVersion)
-	if err != nil {
-		return err
-	}
+	// get the version in a format compatible with sts roles/policies
+	version := MajorMinorVersion(ver)
 
 	// create the client
 	awsClient, err := rosa.NewClient().Logger(&logrus.Logger{Out: ioutil.Discard}).Build()
