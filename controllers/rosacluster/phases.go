@@ -191,7 +191,7 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 
 	request.Log.Info("cluster has been deleted", request.logValues()...)
 
-	return controllers.RequeueAfter(request.provisionRequeueTime()), nil
+	return controllers.NoRequeue(), nil
 }
 
 // DestroyOperatorRoles destroys the operator roles in AWS.
