@@ -5,10 +5,10 @@ metadata:
 spec:
   multiAZ: true
   disableUserWorkloadMonitoring: true
-  displayName: dscott-multi-test
+  displayName: rosa-multi-az
   openshiftVersion: "4.12.13"
   accountID: "660250927410"
-  region: us-east-2
+  region: us-east-1
   tags:
     owner: dscott
   iam:

@@ -52,18 +52,19 @@ const (
 
 // TODO: validate additionalTrustBundle only supplied with subnets
 
-// +kubebuilder:validation:XValidation:message="singleAZ clusters require a minimum of 2 nodes",rule=(self.defaultMachinePool.minimumNodesPerZone >= 2)
+// +kubebuilder:validation:XValidation:message="singleAZ clusters require a minimum of 2 nodes",rule=(self.multiAZ || self.defaultMachinePool.minimumNodesPerZone >= 2)
 // ROSAClusterSpec defines the desired state of ROSACluster.
 //
 //nolint:lll
 type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=4
-	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:MaxLength=15
 	// +kubebuilder:validation:XValidation:message="displayName is immutable",rule=(self == oldSelf)
 	// Friendly display name as displayed in the OpenShift Cluster Manager
 	// console.  If this is empty, the metadata.name field of the parent resource is used
-	// to construct the display name.  This is limited to 32 characters.
+	// to construct the display name.  This is limited to 15 characters as per a backend
+	// API limitation.
 	DisplayName string `json:"displayName,omitempty"`
 
 	// +kubebuilder:validation:Required
@@ -81,7 +82,6 @@ type ROSAClusterSpec struct {
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="openshiftVersion is immutable",rule=(self == oldSelf)
-	// +kubebuilder:validation:XValidation:message="openshiftVersion must be in x.y.z format",rule=(self.matches('^\d+\.\d+\.\d+$'))
 	// OpenShift version used to provision the cluster with.  This is only used for initial provisioning
 	// and ignored for future updates.  Version must be in format of x.y.z.  If this is empty, the latest
 	// available and supportable version is selected.  If this is used, the version must be a part of
@@ -91,7 +91,6 @@ type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:XValidation:message="multiAZ is immutable",rule=(self == oldSelf)
-	//
 	// Whether the control plane should be provisioned across multiple availability zones (default: false).  Only
 	// applicable when hostedControlPlane is set to false as hostedControlPlane is always
 	// provisioned across multiple availability zones.
@@ -176,14 +175,8 @@ type ROSAKey struct {
 
 // ROSANetwork represents the ROSA network configuration.
 //
-// +kubebuilder:validation:XValidation:message="network.subnets must be provided with a PrivateLink configuration",rule=(self.subnets.size() == 0 || (self.privateLink && (self.subnets.size() == 0)))
-// +kubebuilder:validation:XValidation:message="network.proxy.httpProxy only supported when network.subnets is specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.httpProxy == ""))
-// +kubebuilder:validation:XValidation:message="network.proxy.httpsProxy only supported when network.subnets is specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.httpsProxy == ""))
-// +kubebuilder:validation:XValidation:message="network.proxy.noProxy only supported when network.subnets is specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.noProxy == ""))
-// +kubebuilder:validation:XValidation:message="network.serviceCIDR required when network.subnets is not specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.serviceCIDR != ""))
-// +kubebuilder:validation:XValidation:message="network.podCIDR required when network.subnets is not specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.podCIDR != ""))
-// +kubebuilder:validation:XValidation:message="network.machineCIDR required when network.subnets is not specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.machineCIDR != ""))
-// +kubebuilder:validation:XValidation:message="network.hostPrefix required when network.subnets is not specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.hostPrefix != 0))
+// +kubebuilder:validation:XValidation:message="network.subnets must be provided with a PrivateLink configuration",rule=(has(self.privateLink) && self.privateLink && has(self.subnets) && self.subnets.size() > 0 || !self.privateLink)
+// +kubebuilder:validation:XValidation:message="network.proxy configuration only supported when network.subnets is specified",rule=(has(self.proxy) && has(self.subnets) && self.subnets.size() > 0 || !has(self.proxy))
 //
 //nolint:lll
 type ROSANetwork struct {
@@ -250,7 +243,7 @@ type ROSAProxy struct {
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="network.proxy.noProxy is immutable",rule=(self == oldSelf)
-	// Comma-separated list of URLs to skip proxying for.
+	// Comma-separated list of URLs, IP addresses or Network CIDRs to skip proxying for.
 	NoProxy string `json:"noProxy,omitempty"`
 }
 
@@ -337,7 +330,7 @@ type ROSAClusterStatus struct {
 // +kubebuilder:resource:categories=cluster;clusters
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:validation:XValidation:message="metadata.name limited to 32 characters",rule=(self.metadata.name.size() <= 32)
+//+kubebuilder:validation:XValidation:message="metadata.name limited to 15 characters",rule=(self.metadata.name.size() <= 15)
 
 // ROSACluster is the Schema for the clusters API.
 type ROSACluster struct {

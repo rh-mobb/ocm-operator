@@ -134,13 +134,18 @@ func FinalizerName(object client.Object) string {
 	))
 }
 
+// HasFinalizer is a helper function to make the code more readable.
+func HasFinalizer(object client.Object) bool {
+	return utils.ContainsString(object.GetFinalizers(), FinalizerName(object))
+}
+
 // AddFinalizer adds finalizers to the object so that the delete lifecycle can be run
 // before the object is deleted.
 func AddFinalizer(ctx context.Context, r kubernetes.Client, object client.Object) error {
 	// The object is not being deleted, so if it does not have our finalizer,
 	// then lets add the finalizer and update the object. This is equivalent
 	// registering our finalizer.
-	if !utils.ContainsString(object.GetFinalizers(), FinalizerName(object)) {
+	if !HasFinalizer(object) {
 		original, ok := object.DeepCopyObject().(client.Object)
 		if !ok {
 			return ErrConvertClientObject
@@ -159,7 +164,7 @@ func AddFinalizer(ctx context.Context, r kubernetes.Client, object client.Object
 // RemoveFinalizer removes finalizers from the object.  It is intended to be run after an
 // external object is deleted so that the delete lifecycle may continue reconciliation.
 func RemoveFinalizer(ctx context.Context, r kubernetes.Client, object client.Object) error {
-	if utils.ContainsString(object.GetFinalizers(), FinalizerName(object)) {
+	if HasFinalizer(object) {
 		original, ok := object.DeepCopyObject().(client.Object)
 		if !ok {
 			return ErrConvertClientObject

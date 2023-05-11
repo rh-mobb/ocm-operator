@@ -64,9 +64,22 @@ func (r *Controller) GetCurrentState(request *ROSAClusterRequest) (ctrl.Result, 
 func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, error) {
 	// create the rosa cluster if it does not exist
 	if request.Current == nil {
+		// return immediately if we have already created the cluster
+		if conditions.IsSet(ClusterCreated(), request.Original) {
+			return controllers.NoRequeue(), nil
+		}
+
 		if err := request.createCluster(); err != nil {
 			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
 				"error in createCluster - %w",
+				err,
+			)
+		}
+
+		// set the created condition
+		if err := request.updateCondition(ClusterCreated()); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
+				"error updating created condition - %w",
 				err,
 			)
 		}
@@ -99,8 +112,9 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 
 // DestroyCluster deletes the cluster from OCM.
 func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, error) {
-	// return immediately if we have already uninstalled the cluster
-	if conditions.IsSet(ClusterUninstalling(), request.Original) {
+	// return immediately if we have already uninstalled the cluster or if
+	// we have not created the cluster
+	if conditions.IsSet(ClusterUninstalling(), request.Original) || !conditions.IsSet(ClusterCreated(), request.Original) {
 		return controllers.NoRequeue(), nil
 	}
 

@@ -7,8 +7,10 @@ import (
 )
 
 const (
+	rosaConditionTypeCreated      = "ROSAClusterCreated"
 	rosaConditionTypeUninstalling = "ROSAClusterUninstalling"
 	rosaConditionTypeDeleted      = "ROSAClusterDeleted"
+	rosaMessageCreated            = "rosa cluster has been created"
 	rosaMessageUninstalling       = "rosa cluster has been deleted from openshift cluster manager and is uninstalling"
 	rosaMessageDeleted            = "rosa infrastructure has been deleted"
 
@@ -20,6 +22,18 @@ const (
 	oidcMessageConfigDeleted         = "oidc config has been deleted from ocm"
 	oidcMessageProviderDeleted       = "oidc provider has been deleted from aws"
 )
+
+// ClusterCreated return a condition indicating that the ROSA Cluster has
+// been created.
+func ClusterCreated() *metav1.Condition {
+	return &metav1.Condition{
+		Type:               rosaConditionTypeCreated,
+		LastTransitionTime: metav1.Now(),
+		Status:             metav1.ConditionTrue,
+		Reason:             triggers.Create.String(),
+		Message:            rosaMessageCreated,
+	}
+}
 
 // ClusterUninstalling return a condition indicating that the ROSA Cluster has
 // been deleted from OpenShift Cluster Manager and is uninstalling.

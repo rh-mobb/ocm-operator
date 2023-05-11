@@ -166,7 +166,7 @@ func (stsClient *STSClient) CreateOperatorRoles(
 			)
 
 			// ensure the policy exists
-			_, err = awsClient.EnsurePolicy(policyARN, getPolicyDetails(policyID, policies...), version, tagsList, "")
+			_, err = awsClient.Connection.EnsurePolicy(policyARN, getPolicyDetails(policyID, policies...), version, tagsList, "")
 			if err != nil {
 				return fmt.Errorf("unable to create policy [%s] - %w", policyID, err)
 			}
@@ -183,13 +183,13 @@ func (stsClient *STSClient) CreateOperatorRoles(
 			return fmt.Errorf("error retrieving iam role policy details - %w", err)
 		}
 
-		_, err = awsClient.EnsureRole(roleName, policy, "", "", tagsList, "", stsClient.ManagedPolicies)
+		_, err = awsClient.Connection.EnsureRole(roleName, policy, "", "", tagsList, "", stsClient.ManagedPolicies)
 		if err != nil {
 			return fmt.Errorf("unable to create aws iam role [%s] - %w", roleName, err)
 		}
 
 		// attach the policy to the role
-		if err := awsClient.AttachRolePolicy(roleName, policyARN); err != nil {
+		if err := awsClient.Connection.AttachRolePolicy(roleName, policyARN); err != nil {
 			return fmt.Errorf("unable to attach iam policy [%s] to iam role [%s] - %w", policyARN, roleName, err)
 		}
 	}
@@ -208,7 +208,7 @@ func (stsClient *STSClient) DeleteOperatorRoles(awsClient *aws.Client, requests 
 	}
 
 	// get the operator roles
-	operatorRoles, err := awsClient.GetOperatorRolesFromAccountByPrefix(stsClient.Prefix, requestsMap)
+	operatorRoles, err := awsClient.Connection.GetOperatorRolesFromAccountByPrefix(stsClient.Prefix, requestsMap)
 	if err != nil {
 		return fmt.Errorf("unable to retrieve operator roles - %w", err)
 	}
@@ -220,7 +220,7 @@ func (stsClient *STSClient) DeleteOperatorRoles(awsClient *aws.Client, requests 
 
 	// delete the operator roles
 	for _, role := range operatorRoles {
-		if err := awsClient.DeleteOperatorRole(role, stsClient.ManagedPolicies); err != nil {
+		if err := awsClient.Connection.DeleteOperatorRole(role, stsClient.ManagedPolicies); err != nil {
 			return fmt.Errorf("unable to delete role [%s] - %w", role, err)
 		}
 	}

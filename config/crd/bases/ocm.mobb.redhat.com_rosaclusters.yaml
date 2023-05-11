@@ -104,8 +104,8 @@ spec:
                 description: Friendly display name as displayed in the OpenShift Cluster
                   Manager console.  If this is empty, the metadata.name field of the
                   parent resource is used to construct the display name.  This is
-                  limited to 32 characters.
-                maxLength: 32
+                  limited to 15 characters as per a backend API limitation.
+                maxLength: 15
                 minLength: 4
                 type: string
                 x-kubernetes-validations:
@@ -279,8 +279,8 @@ spec:
                         - message: https proxy url must be a valid uri
                           rule: (self.contains("://"))
                       noProxy:
-                        description: Comma-separated list of URLs to skip proxying
-                          for.
+                        description: Comma-separated list of URLs, IP addresses or
+                          Network CIDRs to skip proxying for.
                         type: string
                         x-kubernetes-validations:
                         - message: network.proxy.noProxy is immutable
@@ -307,35 +307,12 @@ spec:
                 type: object
                 x-kubernetes-validations:
                 - message: network.subnets must be provided with a PrivateLink configuration
-                  rule: (self.subnets.size() == 0 || (self.privateLink && (self.subnets.size()
-                    == 0)))
-                - message: network.proxy.httpProxy only supported when network.subnets
+                  rule: (has(self.privateLink) && self.privateLink && has(self.subnets)
+                    && self.subnets.size() > 0 || !self.privateLink)
+                - message: network.proxy configuration only supported when network.subnets
                     is specified
-                  rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.httpProxy
-                    == ""))
-                - message: network.proxy.httpsProxy only supported when network.subnets
-                    is specified
-                  rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.httpsProxy
-                    == ""))
-                - message: network.proxy.noProxy only supported when network.subnets
-                    is specified
-                  rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.noProxy
-                    == ""))
-                - message: network.serviceCIDR required when network.subnets is not
-                    specified
-                  rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.serviceCIDR
-                    != ""))
-                - message: network.podCIDR required when network.subnets is not specified
-                  rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.podCIDR
-                    != ""))
-                - message: network.machineCIDR required when network.subnets is not
-                    specified
-                  rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.machineCIDR
-                    != ""))
-                - message: network.hostPrefix required when network.subnets is not
-                    specified
-                  rule: (self.subnets.size() > 0 || (self.subnets.size() == 0 && self.hostPrefix
-                    != 0))
+                  rule: (has(self.proxy) && has(self.subnets) && self.subnets.size()
+                    > 0 || !has(self.proxy))
               openshiftVersion:
                 description: OpenShift version used to provision the cluster with.  This
                   is only used for initial provisioning and ignored for future updates.  Version
@@ -346,8 +323,6 @@ spec:
                 x-kubernetes-validations:
                 - message: openshiftVersion is immutable
                   rule: (self == oldSelf)
-                - message: openshiftVersion must be in x.y.z format
-                  rule: (self.matches('^\d+\.\d+\.\d+$'))
               region:
                 default: us-east-1
                 description: Region used to provision the ROSA cluster.  Supported
@@ -378,7 +353,8 @@ spec:
             type: object
             x-kubernetes-validations:
             - message: singleAZ clusters require a minimum of 2 nodes
-              rule: (self.defaultMachinePool.minimumNodesPerZone >= 2)
+              rule: (self.multiAZ || self.defaultMachinePool.minimumNodesPerZone >=
+                2)
           status:
             description: ROSAClusterStatus defines the observed state of ROSACluster.
             properties:
@@ -511,8 +487,8 @@ spec:
             type: object
         type: object
         x-kubernetes-validations:
-        - message: metadata.name limited to 32 characters
-          rule: (self.metadata.name.size() <= 32)
+        - message: metadata.name limited to 15 characters
+          rule: (self.metadata.name.size() <= 15)
     served: true
     storage: true
     subresources:

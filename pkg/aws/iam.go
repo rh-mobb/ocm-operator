@@ -39,7 +39,7 @@ func (awsClient *Client) CreateOIDCProvider(issuerURL string) (providerARN strin
 	}
 
 	// create the oidc provider
-	providerARN, err = awsClient.CreateOpenIDConnectProvider(issuerURL, thumbprint, "")
+	providerARN, err = awsClient.Connection.CreateOpenIDConnectProvider(issuerURL, thumbprint, "")
 	if err != nil {
 		return providerARN, fmt.Errorf("unable to create oidc provider - %w", err)
 	}
@@ -52,7 +52,7 @@ func (awsClient *Client) CreateOIDCProvider(issuerURL string) (providerARN strin
 // and supportable behavior.
 func (awsClient *Client) DeleteOIDCProvider(oidcProviderARN string) error {
 	// delete the oidc provider
-	if err := awsClient.DeleteOpenIDConnectProvider(oidcProviderARN); err != nil {
+	if err := awsClient.Connection.DeleteOpenIDConnectProvider(oidcProviderARN); err != nil {
 		return fmt.Errorf("delete oidc provider - %w", err)
 	}
 

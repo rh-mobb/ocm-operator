@@ -3,7 +3,6 @@ kind: ROSACluster
 metadata:
   name: rosa-fail
 spec:
-  displayName: dscott-multi-test-this-is-very-long
   openshiftVersion: "4.12.13"
   accountID: "660250927410"
   region: us-east-2
@@ -15,7 +14,7 @@ spec:
     operatorRolesPrefix: dscott-test
     accountRolesPrefix: dscott
   defaultMachinePool:
-    minimumNodesPerZone: 1
+    minimumNodesPerZone: 2
     maximumNodesPerZone: 2
     instanceType: m5.xlarge
     labels:
@@ -27,5 +26,9 @@ spec:
     hostPrefix: 24
     machineCIDR: "10.1.0.0/16"
     podCIDR: "10.128.0.0/16"
-    privateLink: false
-    serviceCIDR: "172.40.0.0/16"
+    privateLink: true
+    #serviceCIDR: "172.40.0.0/16"
+    proxy:
+      httpProxy: "test"
+      httpsProxy: "test"
+      noProxy: "test"

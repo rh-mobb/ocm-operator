@@ -14,7 +14,7 @@ var (
 )
 
 type Client struct {
-	rosa.Client
+	Connection rosa.Client
 }
 
 // NewClient returns a new instance of an AWS client.  This client is loaded
@@ -26,11 +26,5 @@ func NewClient() (*Client, error) {
 		return &Client{}, fmt.Errorf("unable to create aws client - %w", err)
 	}
 
-	// convert the aws client into an interface
-	client, ok := aws.(Client)
-	if !ok {
-		return &Client{}, ErrConvertAWSClient
-	}
-
-	return &client, nil
+	return &Client{Connection: aws}, nil
 }
