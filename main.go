@@ -44,6 +44,7 @@ import (
 
 const (
 	defaultPollerIntervalMinutes = 5
+	tokenEnvKey                  = "OCM_TOKEN"
 )
 
 var (
@@ -102,7 +103,6 @@ func main() {
 	}
 
 	// load the token and create the ocm client
-	tokenEnvKey := "OCM_TOKEN"
 	token, tokenExists := os.LookupEnv(tokenEnvKey)
 	if !tokenExists {
 		setupLog.Error(err, "unable to load token", "environment variable", tokenEnvKey)
