@@ -447,7 +447,7 @@ func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig, versi
 
 	// only add the network builder if we have not specified a
 	// preconfigured network architecture via the network.subnets field.
-	if len(cluster.Spec.Network.Subnets) > 0 {
+	if len(cluster.Spec.Network.Subnets) == 0 {
 		builder.Network(cluster.BuildNetwork())
 	}
 

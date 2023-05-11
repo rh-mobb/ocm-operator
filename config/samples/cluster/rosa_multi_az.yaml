@@ -22,9 +22,9 @@ spec:
     instanceType: m5.xlarge
     labels:
       this: that
-  encryption:
-    ebs:
-      kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
+  # encryption:
+  #   ebs:
+  #     kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
   network:
     hostPrefix: 24
     machineCIDR: "10.1.0.0/16"
