@@ -205,7 +205,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 //nolint:forcetypeassert
 func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the machine pool
-	if conditions.IsSet(conditions.MachinePoolDeleted(), request.Original) {
+	if conditions.IsSet(MachinePoolDeleted(), request.Original) {
 		return controllers.NoRequeue(), nil
 	}
 
@@ -244,7 +244,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	events.RegisterAction(events.Deleted, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
 	// set the deleted condition
-	if err := request.updateCondition(conditions.MachinePoolDeleted()); err != nil {
+	if err := request.updateCondition(MachinePoolDeleted()); err != nil {
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating deleted condition - %w", err)
 	}
 

@@ -29,14 +29,6 @@ func testConditionReconciled(at metav1.Time) *metav1.Condition {
 	return condition
 }
 
-func testConditionMachinePoolDeleted(at metav1.Time) *metav1.Condition {
-	condition := MachinePoolDeleted()
-
-	condition.LastTransitionTime = at
-
-	return condition
-}
-
 func testObject(t metav1.Time) *ocmv1alpha1.MachinePool {
 	return &ocmv1alpha1.MachinePool{
 		Status: ocmv1alpha1.MachinePoolStatus{
@@ -82,9 +74,9 @@ func Test_addCondition(t *testing.T) {
 			name: "ensure new condition is added",
 			args: args{
 				current: []metav1.Condition{*testConditionReconciled(now)},
-				new:     testConditionMachinePoolDeleted(now),
+				new:     testConditionReconciling(now),
 			},
-			want: []metav1.Condition{*testConditionReconciled(now), *testConditionMachinePoolDeleted(now)},
+			want: []metav1.Condition{*testConditionReconciled(now), *testConditionReconciling(now)},
 		},
 		{
 			name: "ensure differing condition is replaced",

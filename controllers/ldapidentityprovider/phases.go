@@ -158,7 +158,7 @@ func (r *Controller) Destroy(request *LDAPIdentityProviderRequest) (ctrl.Result,
 	events.RegisterAction(events.Deleted, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
 	// set the deleted condition
-	if err := request.updateCondition(conditions.MachinePoolDeleted()); err != nil {
+	if err := request.updateCondition(conditions.IdentityProviderDeleted()); err != nil {
 		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
