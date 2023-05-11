@@ -31,14 +31,7 @@ func GetVersionObject(connection *sdk.Connection, rawVersion string) (version *c
 	}
 
 	// sort list in descending order
-	sort.Slice(versions.Items().Slice(), func(i, j int) bool {
-		a, erra := ver.NewVersion(versions.Items().Slice()[i].RawID())
-		b, errb := ver.NewVersion(versions.Items().Slice()[j].RawID())
-		if erra != nil || errb != nil {
-			return false
-		}
-		return a.GreaterThan(b)
-	})
+	sortVersions(versions.Items().Slice())
 
 	return versions.Items().Slice()[0], nil
 }
@@ -75,17 +68,10 @@ func GetAvailableVersions(connection *sdk.Connection) (versions []*clustersmgmtv
 		page++
 	}
 
-	// Sort list in descending order
-	sort.Slice(versions, func(i, j int) bool {
-		a, erra := ver.NewVersion(versions[i].RawID())
-		b, errb := ver.NewVersion(versions[j].RawID())
-		if erra != nil || errb != nil {
-			return false
-		}
-		return a.GreaterThan(b)
-	})
+	// sort list in descending order
+	sortVersions(versions)
 
-	return
+	return versions, nil
 }
 
 // GetDefaultVersion gets the default (latest) version.
@@ -100,8 +86,21 @@ func GetDefaultVersion(connection *sdk.Connection) (version *clustersmgmtv1.Vers
 		if response[0] != nil {
 			return response[0], nil
 		}
-
 	}
 
 	return version, ErrVersionsNotFound
+}
+
+// sortVersions sorts versions with the newest version being the first in the
+// slice.
+func sortVersions(versions []*clustersmgmtv1.Version) {
+	sort.Slice(versions, func(i, j int) bool {
+		a, erra := ver.NewVersion(versions[i].RawID())
+		b, errb := ver.NewVersion(versions[j].RawID())
+		if erra != nil || errb != nil {
+			return false
+		}
+
+		return a.GreaterThan(b)
+	})
 }

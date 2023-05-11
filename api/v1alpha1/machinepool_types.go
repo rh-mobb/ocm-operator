@@ -75,6 +75,8 @@ type MachinePoolSpec struct {
 // DefaultMachinePoolFields represents the fields relevant to the default machine pool.  It
 // is broken out as a separate object to allow other types of machine pools to use this
 // struct inheritance as well.
+//
+//nolint:lll
 type DefaultMachinePoolFields struct {
 	// +kubebuilder:validation:Required
 	// Minimum amount of nodes allowed per availability zone.  For single availability zone

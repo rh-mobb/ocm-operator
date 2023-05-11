@@ -1,8 +1,36 @@
 package aws
 
-type awsClient struct {
+import (
+	"errors"
+	"fmt"
+	"io"
+
+	rosa "github.com/openshift/rosa/pkg/aws"
+	"github.com/sirupsen/logrus"
+)
+
+var (
+	ErrConvertAWSClient = errors.New("unable to convert rosa client to internal client")
+)
+
+type Client struct {
+	rosa.Client
 }
 
-func NewAWSClient() (*awsClient, error) {
-	return nil, nil
+// NewClient returns a new instance of an AWS client.  This client is loaded
+// from the rosa package to maintain consistency and supportability.
+func NewClient() (*Client, error) {
+	// create the client from the rosa package
+	aws, err := rosa.NewClient().Logger(&logrus.Logger{Out: io.Discard}).Build()
+	if err != nil {
+		return &Client{}, fmt.Errorf("unable to create aws client - %w", err)
+	}
+
+	// convert the aws client into an interface
+	client, ok := aws.(Client)
+	if !ok {
+		return &Client{}, ErrConvertAWSClient
+	}
+
+	return &client, nil
 }

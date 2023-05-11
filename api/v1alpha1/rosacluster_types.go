@@ -25,9 +25,8 @@ import (
 )
 
 const (
-	rosaProductId = "rosa"
+	rosaProduceID = "rosa"
 
-	// iam defaults
 	rosaAccountRolePrefix           = "ManagedOpenShift"
 	rosaSupportRolePrefix           = "Support"
 	rosaInstallerRolePrefix         = "Installer"
@@ -37,13 +36,11 @@ const (
 	rosaPropertyProvisioner         = "rosa_provisioner"
 	rosaPropertyProvisionerOperator = "ocm-operator"
 
-	// network defaults
 	rosaDefaultMachineCIDR = "10.0.0.0/16"
 	rosaDefaultPodCIDR     = "10.128.0.0/14"
 	rosaDefaultServiceCIDR = "172.30.0.0/16"
 	rosaDefaultHostPrefix  = 23
 
-	// count defaults based on type and configuration
 	rosaSingleAZCount                = 1
 	rosaMultiAZCount                 = 3
 	rosaHostedControlPlaneCount      = 0
@@ -57,6 +54,8 @@ const (
 
 // +kubebuilder:validation:XValidation:message="singleAZ clusters require a minimum of 2 nodes",rule=(self.defaultMachinePool.minimumNodesPerZone >= 2)
 // ROSAClusterSpec defines the desired state of ROSACluster.
+//
+//nolint:lll
 type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:MinLength=4
@@ -139,7 +138,7 @@ type ROSAClusterSpec struct {
 	// +kubebuilder:validation:XValidation:message="red-hat-clustertype is a reserved tag",rule=!('red-hat-clustertype' in self)
 	// Additional tags to apply to all AWS objects. Tags
 	// are limited to 10 tags in total.  It should be noted that
-	// there are reserved tags that may not be overwritted.  These
+	// there are reserved tags that may not be overwritten.  These
 	// tags are as follows: red-hat-managed, red-hat-clustertype.
 	Tags map[string]string `json:"tags,omitempty"`
 
@@ -176,6 +175,7 @@ type ROSAKey struct {
 }
 
 // ROSANetwork represents the ROSA network configuration.
+//
 // +kubebuilder:validation:XValidation:message="network.subnets must be provided with a PrivateLink configuration",rule=(self.subnets.size() == 0 || (self.privateLink && (self.subnets.size() == 0)))
 // +kubebuilder:validation:XValidation:message="network.proxy.httpProxy only supported when network.subnets is specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.httpProxy == ""))
 // +kubebuilder:validation:XValidation:message="network.proxy.httpsProxy only supported when network.subnets is specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.proxy.httpsProxy == ""))
@@ -184,6 +184,8 @@ type ROSAKey struct {
 // +kubebuilder:validation:XValidation:message="network.podCIDR required when network.subnets is not specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.podCIDR != ""))
 // +kubebuilder:validation:XValidation:message="network.machineCIDR required when network.subnets is not specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.machineCIDR != ""))
 // +kubebuilder:validation:XValidation:message="network.hostPrefix required when network.subnets is not specified",rule=(self.subnets.size() > 0 || (self.subnets.size() == 0 && self.hostPrefix != 0))
+//
+//nolint:lll
 type ROSANetwork struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
@@ -195,12 +197,12 @@ type ROSANetwork struct {
 
 	// +kubebuilder:validation:Optional
 	// ROSA Proxy configuration.
-	Proxy ROSAProxy `json:"proxy,omitempty,omitempty"`
+	Proxy ROSAProxy `json:"proxy,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="network.subnets are immutable",rule=(self == oldSelf)
 	// Pre-existing subnets used for provisioning a ROSA cluster.
-	Subnets []string `json:"subnets,omitempty,omitempty"`
+	Subnets []string `json:"subnets,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="172.30.0.0/16"
@@ -232,7 +234,7 @@ type ROSANetwork struct {
 	HostPrefix int `json:"hostPrefix,omitempty"`
 }
 
-// ROSAProxy represents the ROSA proxy configuration
+// ROSAProxy represents the ROSA proxy configuration.
 type ROSAProxy struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="network.proxy.httpProxy is immutable",rule=(self == oldSelf)
@@ -421,7 +423,7 @@ func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig, versi
 	builder := clustersmgmtv1.NewCluster().
 		// openshift/rosa settings
 		Name(cluster.Spec.DisplayName).
-		Product(clustersmgmtv1.NewProduct().ID(rosaProductId)).
+		Product(clustersmgmtv1.NewProduct().ID(rosaProduceID)).
 		Hypershift(clustersmgmtv1.NewHypershift().Enabled(cluster.Spec.HostedControlPlane)).
 		DisableUserWorkloadMonitoring(cluster.Spec.DisableUserWorkloadMonitoring).
 		Properties(

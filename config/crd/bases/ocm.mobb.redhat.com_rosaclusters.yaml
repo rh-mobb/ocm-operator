@@ -346,6 +346,8 @@ spec:
                 x-kubernetes-validations:
                 - message: openshiftVersion is immutable
                   rule: (self == oldSelf)
+                - message: openshiftVersion must be in x.y.z format
+                  rule: (self.matches('^\d+\.\d+\.\d+$'))
               region:
                 default: us-east-1
                 description: Region used to provision the ROSA cluster.  Supported
@@ -361,7 +363,7 @@ spec:
                   type: string
                 description: 'Additional tags to apply to all AWS objects. Tags are
                   limited to 10 tags in total.  It should be noted that there are
-                  reserved tags that may not be overwritted.  These tags are as follows:
+                  reserved tags that may not be overwritten.  These tags are as follows:
                   red-hat-managed, red-hat-clustertype.'
                 type: object
                 x-kubernetes-validations:

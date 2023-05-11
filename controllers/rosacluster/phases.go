@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
-	"github.com/rh-mobb/ocm-operator/controllers"
-	"github.com/rh-mobb/ocm-operator/pkg/aws"
-	"github.com/rh-mobb/ocm-operator/pkg/conditions"
-	"github.com/rh-mobb/ocm-operator/pkg/events"
-	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
+	"github.com/rh-mobb/ocm-operator/controllers"
+	"github.com/rh-mobb/ocm-operator/pkg/conditions"
+	"github.com/rh-mobb/ocm-operator/pkg/events"
+	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
 // Phase defines an individual phase in the controller reconciliation process.
@@ -233,7 +232,7 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 	// only destroy the oidc configuration if we have not already done so
 	if !conditions.IsSet(OIDCConfigDeleted(), request.Original) {
 		request.Log.Info("deleting oidc config", request.logValues()...)
-		if err := aws.DeleteOIDCProvider(request.Original.Status.OIDCProviderARN); err != nil {
+		if err := request.AWSClient.DeleteOIDCProvider(request.Original.Status.OIDCProviderARN); err != nil {
 			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
 				"unable to delete oidc config - %w",
 				err,
@@ -254,6 +253,8 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 
 // WaitUntilReady will requeue until the reconciler determines that the current state of the
 // resource in the cluster is ready.
+//
+//nolint:exhaustive,goerr113
 func (r *Controller) WaitUntilReady(request *ROSAClusterRequest) (ctrl.Result, error) {
 	switch request.Cluster.State() {
 	case clustersmgmtv1.ClusterStateReady:

@@ -3,14 +3,12 @@ package ocm
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	rosa "github.com/openshift/rosa/pkg/aws"
 	rosatags "github.com/openshift/rosa/pkg/aws/tags"
 	rosahelper "github.com/openshift/rosa/pkg/helper"
-	"github.com/sirupsen/logrus"
 
 	"github.com/rh-mobb/ocm-operator/pkg/aws"
 )
@@ -68,12 +66,12 @@ func NewSTSClient(
 }
 
 func (stsClient *STSClient) GetCredentialRequests() ([]*STSCredentialRequest, error) {
-	var requests []*STSCredentialRequest
-
 	stsCredentialResponse, err := stsClient.CredentialRequest.Send()
 	if err != nil {
-		return requests, fmt.Errorf("error retrieving sts credential requests - %w", err)
+		return []*STSCredentialRequest{}, fmt.Errorf("error retrieving sts credential requests - %w", err)
 	}
+
+	requests := make([]*STSCredentialRequest, len(stsCredentialResponse.Items().Slice()))
 
 	// return an error if we found no items in the response
 	if len(stsCredentialResponse.Items().Slice()) == 0 {
@@ -81,7 +79,7 @@ func (stsClient *STSClient) GetCredentialRequests() ([]*STSCredentialRequest, er
 	}
 
 	// append the request for each response item
-	for _, req := range stsCredentialResponse.Items().Slice() {
+	for i, req := range stsCredentialResponse.Items().Slice() {
 		request := &STSCredentialRequest{
 			ID:        req.Name(),
 			Namespace: req.Operator().Namespace(),
@@ -99,13 +97,21 @@ func (stsClient *STSClient) GetCredentialRequests() ([]*STSCredentialRequest, er
 
 		request.Role = role
 
-		requests = append(requests, request)
+		requests[i] = request
 	}
 
 	return requests, nil
 }
 
-func (stsClient *STSClient) CreateOperatorRoles(ver *clustersmgmtv1.Version, requests ...*STSCredentialRequest) error {
+// CreateOperatorRoles creates the operator roles given a specific version and a set of
+// credential requests obtained from OCM.
+//
+//nolint:cyclop
+func (stsClient *STSClient) CreateOperatorRoles(
+	awsClient *aws.Client,
+	ver *clustersmgmtv1.Version,
+	requests ...*STSCredentialRequest,
+) error {
 	// get the list of policies
 	policyResponse, err := stsClient.PolicyRequest.Send()
 	if err != nil {
@@ -115,12 +121,6 @@ func (stsClient *STSClient) CreateOperatorRoles(ver *clustersmgmtv1.Version, req
 
 	// get the version in a format compatible with sts roles/policies
 	version := MajorMinorVersion(ver)
-
-	// create the client
-	awsClient, err := rosa.NewClient().Logger(&logrus.Logger{Out: ioutil.Discard}).Build()
-	if err != nil {
-		return fmt.Errorf("unable to create aws client - %w", err)
-	}
 
 	for i := range requests {
 		// retrieve the role name for this request
@@ -197,13 +197,9 @@ func (stsClient *STSClient) CreateOperatorRoles(ver *clustersmgmtv1.Version, req
 	return nil
 }
 
-func (stsClient *STSClient) DeleteOperatorRoles(requests ...*STSCredentialRequest) error {
-	// create the client
-	awsClient, err := rosa.NewClient().Logger(&logrus.Logger{Out: ioutil.Discard}).Build()
-	if err != nil {
-		return fmt.Errorf("unable to create aws client - %w", err)
-	}
-
+// DeleteOperatorRoles deletes the operator roles given a specific version and a set of
+// credential requests obtained from OCM.
+func (stsClient *STSClient) DeleteOperatorRoles(awsClient *aws.Client, requests ...*STSCredentialRequest) error {
 	// turn our requests into a format understood by the underlying library
 	requestsMap := make(map[string]*clustersmgmtv1.STSOperator)
 

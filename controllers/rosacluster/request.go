@@ -35,6 +35,7 @@ type ROSAClusterRequest struct {
 	Trigger           triggers.Trigger
 	Reconciler        *Controller
 	OCMClient         *ocm.ClusterClient
+	AWSClient         *aws.Client
 
 	// data obtained during request reconciliation
 	Cluster *clustersmgmtv1.Cluster
@@ -88,6 +89,12 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		desired.SetNetworkDefaults()
 	}
 
+	// create the aws client used for interacting with aws services
+	awsClient, err := aws.NewClient()
+	if err != nil {
+		return &ROSAClusterRequest{}, fmt.Errorf("unable to create aws client - %w", err)
+	}
+
 	// create the request
 	request := &ROSAClusterRequest{
 		Original:          original,
@@ -97,6 +104,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		Log:               log.Log,
 		Trigger:           triggers.GetTrigger(original),
 		Reconciler:        r,
+		AWSClient:         awsClient,
 	}
 
 	// set the version
@@ -242,8 +250,8 @@ func (request *ROSAClusterRequest) createCluster() error {
 	// create the operator roles
 	if !request.Original.Status.OperatorRolesCreated {
 		request.Log.Info("creating operator roles", request.logValues()...)
-		if err := request.createOperatorRoles(oidc); err != nil {
-			return err
+		if createErr := request.createOperatorRoles(oidc); createErr != nil {
+			return createErr
 		}
 	}
 
@@ -319,7 +327,7 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 
 		// update the status with the oidc config id
 		request.Original.Status.OIDCConfigID = config.ID()
-		if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
+		if err = kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
 			return config, fmt.Errorf("unable to update status oidcConfigID=%s - %w", config.ID(), err)
 		}
 	} else {
@@ -333,7 +341,7 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 	// create the oidc provider if we have not created it already
 	if request.Original.Status.OIDCProviderARN == "" {
 		request.Log.Info("creating oidc provider", request.logValues()...)
-		providerARN, err := aws.CreateOIDCProvider(config.IssuerUrl())
+		providerARN, err := request.AWSClient.CreateOIDCProvider(config.IssuerUrl())
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc provider - %w", err)
 		}
@@ -367,7 +375,7 @@ func (request *ROSAClusterRequest) createOperatorRoles(oidc *clustersmgmtv1.Oidc
 	}
 
 	// create the operator roles
-	if err := stsClient.CreateOperatorRoles(request.Version, requests...); err != nil {
+	if err := stsClient.CreateOperatorRoles(request.AWSClient, request.Version, requests...); err != nil {
 		return fmt.Errorf("unable to create operator roles - %w", err)
 	}
 
@@ -402,7 +410,7 @@ func (request *ROSAClusterRequest) destroyOperatorRoles() error {
 	}
 
 	// delete the operator roles
-	if err := stsClient.DeleteOperatorRoles(requests...); err != nil {
+	if err := stsClient.DeleteOperatorRoles(request.AWSClient, requests...); err != nil {
 		return fmt.Errorf("unable to delete operator roles - %w", err)
 	}
 
@@ -419,5 +427,4 @@ func (request *ROSAClusterRequest) provisionRequeueTime() time.Duration {
 	}
 
 	return defaultClusterRequeueClassicPostProvision
-
 }
