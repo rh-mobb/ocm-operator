@@ -418,7 +418,11 @@ func (cluster *ROSACluster) CopyFrom(source *clustersmgmtv1.Cluster) {
 }
 
 // Builder builds an object that is used for create and update operations.
-func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig, versionID string) *clustersmgmtv1.ClusterBuilder {
+func (cluster *ROSACluster) Builder(
+	oidcConfig *clustersmgmtv1.OidcConfig,
+	versionID string,
+	availabilityZones []string,
+) *clustersmgmtv1.ClusterBuilder {
 	// create the base builder
 	builder := clustersmgmtv1.NewCluster().
 		// openshift/rosa settings
@@ -454,11 +458,11 @@ func (cluster *ROSACluster) Builder(oidcConfig *clustersmgmtv1.OidcConfig, versi
 
 	// only add the network builder if we have not specified a
 	// preconfigured network architecture via the network.subnets field.
-	if len(cluster.Spec.Network.Subnets) == 0 {
+	if !cluster.HasSubnets() {
 		builder.Network(cluster.BuildNetwork())
 	}
 
-	builder.AWS(cluster.BuildAWS(oidcConfig)).Nodes(cluster.BuildClusterNodes())
+	builder.AWS(cluster.BuildAWS(oidcConfig)).Nodes(cluster.BuildClusterNodes(availabilityZones))
 
 	return builder
 }
@@ -516,14 +520,14 @@ func (cluster *ROSACluster) BuildAWS(oidcConfig *clustersmgmtv1.OidcConfig) *clu
 	}
 
 	// add subnet ids if specified
-	if len(cluster.Spec.Network.Subnets) > 0 {
+	if cluster.HasSubnets() {
 		awsBuilder.SubnetIDs(cluster.Spec.Network.Subnets...)
 	}
 
 	return awsBuilder
 }
 
-func (cluster *ROSACluster) BuildClusterNodes() *clustersmgmtv1.ClusterNodesBuilder {
+func (cluster *ROSACluster) BuildClusterNodes(availabilityZones []string) *clustersmgmtv1.ClusterNodesBuilder {
 	nodeBuilder := clustersmgmtv1.NewClusterNodes().
 		ComputeMachineType(clustersmgmtv1.NewMachineType().Name(cluster.Spec.DefaultMachinePool.InstanceType))
 
@@ -545,6 +549,11 @@ func (cluster *ROSACluster) BuildClusterNodes() *clustersmgmtv1.ClusterNodesBuil
 		nodeBuilder.Compute(cluster.GetMachinePoolMinimumNodes())
 	}
 
+	// add availability zones if we have requested subnets
+	if cluster.HasSubnets() {
+		nodeBuilder.AvailabilityZones(availabilityZones...)
+	}
+
 	return nodeBuilder
 }
 
@@ -554,6 +563,11 @@ func (cluster *ROSACluster) BuildNetwork() *clustersmgmtv1.NetworkBuilder {
 		ServiceCIDR(cluster.Spec.Network.ServiceCIDR).
 		PodCIDR(cluster.Spec.Network.PodCIDR).
 		MachineCIDR(cluster.Spec.Network.MachineCIDR)
+}
+
+// HasSubnets determines if a cluster has pre-configure subnets or not.
+func (cluster *ROSACluster) HasSubnets() bool {
+	return len(cluster.Spec.Network.Subnets) > 0
 }
 
 // HasProxy determines if a cluster has a proxy configuration or not.

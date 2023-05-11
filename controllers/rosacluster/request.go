@@ -85,7 +85,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	// network were not being deserialized even with defaults in the CRD
 	// set.  This is to ensure that when subnets are left out, that
 	// defaults get set if they are not set.
-	if len(desired.Spec.Network.Subnets) == 0 {
+	if !desired.HasSubnets() {
 		desired.SetNetworkDefaults()
 	}
 
@@ -255,9 +255,22 @@ func (request *ROSAClusterRequest) createCluster() error {
 		}
 	}
 
+	// get the availability zones if we provided subnets
+	var availabilityZones []string
+	if request.Desired.HasSubnets() {
+		availabilityZones, err = request.AWSClient.GetAvailabilityZonesBySubnet(request.Desired.Spec.Network.Subnets)
+		if err != nil {
+			return fmt.Errorf("unable to retrieve availability zones from provided subnets - %w", err)
+		}
+	}
+
 	// create the cluster
 	request.Log.Info("creating rosa cluster", request.logValues()...)
-	cluster, err := request.OCMClient.Create(request.Desired.Builder(oidc, request.Original.Status.OpenShiftVersionID))
+	cluster, err := request.OCMClient.Create(request.Desired.Builder(
+		oidc,
+		request.Original.Status.OpenShiftVersionID,
+		availabilityZones,
+	))
 	if err != nil {
 		return fmt.Errorf("unable to create rosa cluster in ocm - %w", err)
 	}
@@ -290,10 +303,22 @@ func (request *ROSAClusterRequest) updateCluster() error {
 		return fmt.Errorf("unable to get oidc config from ocm - %w", err)
 	}
 
+	// get the availability zones if we provided subnets
+	var availabilityZones []string
+	if request.Desired.HasSubnets() {
+		availabilityZones, err = request.AWSClient.GetAvailabilityZonesBySubnet(request.Desired.Spec.Network.Subnets)
+		if err != nil {
+			return fmt.Errorf("unable to retrieve availability zones from provided subnets - %w", err)
+		}
+	}
+
 	// update the rosa cluster if it does exist
 	request.Log.Info("updating rosa cluster", request.logValues()...)
-	cluster, err := request.OCMClient.Update(request.Desired.Builder(oidc, request.Original.Status.OpenShiftVersionID).
-		ID(request.Original.Status.ClusterID),
+	cluster, err := request.OCMClient.Update(request.Desired.Builder(
+		oidc,
+		request.Original.Status.OpenShiftVersionID,
+		availabilityZones,
+	).ID(request.Original.Status.ClusterID),
 	)
 	if err != nil {
 		return fmt.Errorf("unable to update rosa cluster in ocm - %w", err)
