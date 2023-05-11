@@ -50,9 +50,9 @@ const (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// TODO: validate additionalTrustBundle only supplied with subnets
-
 // +kubebuilder:validation:XValidation:message="singleAZ clusters require a minimum of 2 nodes",rule=(self.multiAZ || self.defaultMachinePool.minimumNodesPerZone >= 2)
+// +kubebuilder:validation:XValidation:message="additionalTrustBundle only supported when network.subnets is specified",rule=(has(self.network.subnets) && has(self.additionalTrustBundle) && self.network.subnets.size() > 0 || !has(self.additionalTrustBundle))
+// +kubebuilder:validation:XValidation:message="hostedControlPlane cannot have node labels",rule=(!self.hostedControlPlane || self.hostedControlPlane && !has(self.defaultMachinePool.labels) || self.hostedControlPlane && has(self.defaultMachinePool.labels) && self.defaultMachinePool.labels.size() == 0)
 // ROSAClusterSpec defines the desired state of ROSACluster.
 //
 //nolint:lll
@@ -82,6 +82,8 @@ type ROSAClusterSpec struct {
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="openshiftVersion is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="openshiftVersion must either be blank or valid x.y.z format",rule=(self == "" || self.split(".").size() == 3)
+	// +kubebuilder:validation:XValidation:message="openshiftVersion cannot start with a 'v'",rule=(!self.startsWith('v'))
 	// OpenShift version used to provision the cluster with.  This is only used for initial provisioning
 	// and ignored for future updates.  Version must be in format of x.y.z.  If this is empty, the latest
 	// available and supportable version is selected.  If this is used, the version must be a part of
@@ -173,10 +175,9 @@ type ROSAKey struct {
 	Key string `json:"kmsKey,omitempty"`
 }
 
-// ROSANetwork represents the ROSA network configuration.
-//
 // +kubebuilder:validation:XValidation:message="network.subnets must be provided with a PrivateLink configuration",rule=(has(self.privateLink) && self.privateLink && has(self.subnets) && self.subnets.size() > 0 || !self.privateLink)
 // +kubebuilder:validation:XValidation:message="network.proxy configuration only supported when network.subnets is specified",rule=(has(self.proxy) && has(self.subnets) && self.subnets.size() > 0 || !has(self.proxy))
+// ROSANetwork represents the ROSA network configuration.
 //
 //nolint:lll
 type ROSANetwork struct {
@@ -200,6 +201,8 @@ type ROSANetwork struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="172.30.0.0/16"
 	// +kubebuilder:validation:XValidation:message="network.serviceCIDR is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="network.serviceCIDR not a valid CIDR",rule=(self.split(".").size() == 4)
+	// +kubebuilder:validation:XValidation:message="network.serviceCIDR not a valid CIDR",rule=(self.contains("/"))
 	// CIDR to use for the internal cluster service network (default: 172.30.0.0/16).  Required if
 	// subnets are not set so that the provisioner may create the network architecture.
 	ServiceCIDR string `json:"serviceCIDR,omitempty"`
@@ -207,6 +210,8 @@ type ROSANetwork struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="10.128.0.0/14"
 	// +kubebuilder:validation:XValidation:message="network.podCIDR is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="network.podCIDR not a valid CIDR",rule=(self.split(".").size() == 4)
+	// +kubebuilder:validation:XValidation:message="network.podCIDR not a valid CIDR",rule=(self.contains("/"))
 	// CIDR to use for the internal pod network (default: 10.128.0.0/14).  Required if
 	// subnets are not set so that the provisioner may create the network architecture.
 	PodCIDR string `json:"podCIDR,omitempty"`
@@ -214,6 +219,8 @@ type ROSANetwork struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="10.0.0.0/16"
 	// +kubebuilder:validation:XValidation:message="network.machineCIDR is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="network.machineCIDR not a valid CIDR",rule=(self.split(".").size() == 4)
+	// +kubebuilder:validation:XValidation:message="network.machineCIDR not a valid CIDR",rule=(self.contains("/"))
 	// CIDR to use for the AWS VPC (default: 10.0.0.0/16).  Required if
 	// subnets are not set so that the provisioner may create the network architecture.
 	MachineCIDR string `json:"machineCIDR,omitempty"`

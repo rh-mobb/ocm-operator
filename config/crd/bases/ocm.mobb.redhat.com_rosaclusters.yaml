@@ -238,6 +238,10 @@ spec:
                     x-kubernetes-validations:
                     - message: network.machineCIDR is immutable
                       rule: (self == oldSelf)
+                    - message: network.machineCIDR not a valid CIDR
+                      rule: (self.split(".").size() == 4)
+                    - message: network.machineCIDR not a valid CIDR
+                      rule: (self.contains("/"))
                   podCIDR:
                     default: 10.128.0.0/14
                     description: 'CIDR to use for the internal pod network (default:
@@ -247,6 +251,10 @@ spec:
                     x-kubernetes-validations:
                     - message: network.podCIDR is immutable
                       rule: (self == oldSelf)
+                    - message: network.podCIDR not a valid CIDR
+                      rule: (self.split(".").size() == 4)
+                    - message: network.podCIDR not a valid CIDR
+                      rule: (self.contains("/"))
                   privateLink:
                     default: false
                     description: 'Enable PrivateLink (default: false).  Forces Red
@@ -295,6 +303,10 @@ spec:
                     x-kubernetes-validations:
                     - message: network.serviceCIDR is immutable
                       rule: (self == oldSelf)
+                    - message: network.serviceCIDR not a valid CIDR
+                      rule: (self.split(".").size() == 4)
+                    - message: network.serviceCIDR not a valid CIDR
+                      rule: (self.contains("/"))
                   subnets:
                     description: Pre-existing subnets used for provisioning a ROSA
                       cluster.
@@ -323,6 +335,10 @@ spec:
                 x-kubernetes-validations:
                 - message: openshiftVersion is immutable
                   rule: (self == oldSelf)
+                - message: openshiftVersion must either be blank or valid x.y.z format
+                  rule: (self == "" || self.split(".").size() == 3)
+                - message: openshiftVersion cannot start with a 'v'
+                  rule: (!self.startsWith('v'))
               region:
                 default: us-east-1
                 description: Region used to provision the ROSA cluster.  Supported
@@ -355,6 +371,14 @@ spec:
             - message: singleAZ clusters require a minimum of 2 nodes
               rule: (self.multiAZ || self.defaultMachinePool.minimumNodesPerZone >=
                 2)
+            - message: additionalTrustBundle only supported when network.subnets is
+                specified
+              rule: (has(self.network.subnets) && has(self.additionalTrustBundle)
+                && self.network.subnets.size() > 0 || !has(self.additionalTrustBundle))
+            - message: hostedControlPlane cannot have node labels
+              rule: (!self.hostedControlPlane || self.hostedControlPlane && !has(self.defaultMachinePool.labels)
+                || self.hostedControlPlane && has(self.defaultMachinePool.labels)
+                && self.defaultMachinePool.labels.size() == 0)
           status:
             description: ROSAClusterStatus defines the observed state of ROSACluster.
             properties:

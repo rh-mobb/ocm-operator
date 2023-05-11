@@ -109,10 +109,10 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	// execute the phases
 	return request.execute([]Phase{
 		{Name: "begin", Function: r.Begin},
-		{Name: "destroy", Function: r.DestroyCluster},
-		{Name: "destroy", Function: r.WaitUntilMissing},
-		{Name: "destroy", Function: r.DestroyOperatorRoles},
-		{Name: "destroy", Function: r.DestroyOIDC},
+		{Name: "destroyCluster", Function: r.DestroyCluster},
+		{Name: "waitUntilMissing", Function: r.WaitUntilMissing},
+		{Name: "destroyOperatorRoles", Function: r.DestroyOperatorRoles},
+		{Name: "destroyOIDC", Function: r.DestroyOIDC},
 		{Name: "complete", Function: r.CompleteDestroy},
 	}...)
 }

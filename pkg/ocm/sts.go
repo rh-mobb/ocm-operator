@@ -130,7 +130,7 @@ func (stsClient *STSClient) CreateOperatorRoles(
 		}
 
 		// retrieve the policy arn for this request
-		policyID := rosa.GetOperatorPolicyKey(requests[i].ID, stsClient.HostedControlPlane)
+		policyID := rosa.GetOperatorPolicyKey(requests[i].ID, false)
 
 		// set the tags
 		tagsList := map[string]string{

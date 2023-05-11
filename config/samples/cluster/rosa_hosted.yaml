@@ -3,11 +3,12 @@ kind: ROSACluster
 metadata:
   name: rosa-hosted
 spec:
+  hostedControlPlane: true
   multiAZ: true
   displayName: dscott-hosted
   openshiftVersion: "4.12.12"
   accountID: "660250927410"
-  region: us-east-1
+  region: us-east-2
   tags:
     owner: dscott
   iam:
@@ -17,11 +18,9 @@ spec:
     minimumNodesPerZone: 1
     maximumNodesPerZone: 2
     instanceType: m5.xlarge
-    labels:
-      this: that
-  encryption:
-    etcd:
-      kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
+  # encryption:
+  #   etcd:
+  #     kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
   network:
     subnets:
-      - "subnet-0bc21b11792723298"
+      - "subnet-057a59ecc95f86f34"

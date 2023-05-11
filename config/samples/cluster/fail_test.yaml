@@ -3,11 +3,13 @@ kind: ROSACluster
 metadata:
   name: rosa-fail
 spec:
-  openshiftVersion: "4.12.13"
+  hostedControlPlane: true
+  openshiftVersion: "v4.12.13"
   accountID: "660250927410"
   region: us-east-2
   tags:
     owner: dscott
+  additionalTrustBundle: "thisisatest"
   iam:
     userRole: "arn:aws:iam::660250927410:role/ManagedOpenShift-User-dscott_mobb-Role"
     enableManagedPolicies: false
@@ -24,11 +26,13 @@ spec:
       kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
   network:
     hostPrefix: 24
-    machineCIDR: "10.1.0.0/16"
-    podCIDR: "10.128.0.0/16"
+    machineCIDR: "10.1.0.0"
+    podCIDR: "10.128.0/16"
     privateLink: true
     #serviceCIDR: "172.40.0.0/16"
     proxy:
       httpProxy: "test"
       httpsProxy: "test"
       noProxy: "test"
+    subnets:
+      - "test"
