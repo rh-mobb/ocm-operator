@@ -19,9 +19,12 @@ type Client struct {
 
 // NewClient returns a new instance of an AWS client.  This client is loaded
 // from the rosa package to maintain consistency and supportability.
-func NewClient() (*Client, error) {
+func NewClient(region string) (*Client, error) {
 	// create the client from the rosa package
-	aws, err := rosa.NewClient().Logger(&logrus.Logger{Out: io.Discard}).Build()
+	aws, err := rosa.NewClient().
+		Logger(&logrus.Logger{Out: io.Discard}).
+		Region(region).
+		Build()
 	if err != nil {
 		return &Client{}, fmt.Errorf("unable to create aws client - %w", err)
 	}

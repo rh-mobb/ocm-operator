@@ -349,6 +349,8 @@ spec:
                 x-kubernetes-validations:
                 - message: region is immutable
                   rule: (self == oldSelf)
+                - message: region not a valid AWS region
+                  rule: (self.split("-").size() == 3)
               tags:
                 additionalProperties:
                   type: string

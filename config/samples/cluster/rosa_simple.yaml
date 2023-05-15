@@ -4,6 +4,7 @@ metadata:
   name: rosa-simple
 spec:
   accountID: "660250927410"
+  displayName: dscott
   tags:
     owner: dscott
   iam:

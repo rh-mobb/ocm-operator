@@ -15,12 +15,13 @@ spec:
     userRole: "arn:aws:iam::660250927410:role/ManagedOpenShift-User-dscott_mobb-Role"
     enableManagedPolicies: false
   defaultMachinePool:
-    minimumNodesPerZone: 1
-    maximumNodesPerZone: 2
-    instanceType: m5.xlarge
+    minimumNodesPerZone: 2
+    maximumNodesPerZone: 3
+    instanceType: m6id.xlarge
   # encryption:
   #   etcd:
   #     kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
   network:
     subnets:
+      - "subnet-0aab7e3436abe7c2d"
       - "subnet-057a59ecc95f86f34"

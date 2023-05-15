@@ -22,6 +22,8 @@ import (
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/rh-mobb/ocm-operator/pkg/utils"
 )
 
 const (
@@ -114,6 +116,7 @@ type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=us-east-1
 	// +kubebuilder:validation:XValidation:message="region is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="region not a valid AWS region",rule=(self.split("-").size() == 3)
 	// Region used to provision the ROSA cluster.  Supported regions can be found using the
 	// supportability checker located at https://access.redhat.com/labs/rosasc/.  Be aware of
 	// valid region differences if using '.spec.hostedControlPlane = true'.
@@ -529,7 +532,7 @@ func (cluster *ROSACluster) BuildAWS(oidcConfig *clustersmgmtv1.OidcConfig) *clu
 
 func (cluster *ROSACluster) BuildClusterNodes(availabilityZones []string) *clustersmgmtv1.ClusterNodesBuilder {
 	nodeBuilder := clustersmgmtv1.NewClusterNodes().
-		ComputeMachineType(clustersmgmtv1.NewMachineType().Name(cluster.Spec.DefaultMachinePool.InstanceType))
+		ComputeMachineType(clustersmgmtv1.NewMachineType().ID(cluster.Spec.DefaultMachinePool.InstanceType))
 
 	// add labels if specified
 	if len(cluster.Spec.DefaultMachinePool.Labels) > 0 {
@@ -551,7 +554,7 @@ func (cluster *ROSACluster) BuildClusterNodes(availabilityZones []string) *clust
 
 	// add availability zones if we have requested subnets
 	if cluster.HasSubnets() {
-		nodeBuilder.AvailabilityZones(availabilityZones...)
+		nodeBuilder.AvailabilityZones(utils.UniqueStrings(availabilityZones)...)
 	}
 
 	return nodeBuilder
@@ -626,19 +629,11 @@ func (cluster *ROSACluster) GetInfraCount() int {
 }
 
 func (cluster *ROSACluster) GetMachinePoolMinimumNodes() int {
-	if cluster.Spec.MultiAZ {
-		return cluster.Spec.DefaultMachinePool.MinimumNodesPerZone * rosaMultiAZCount
-	}
-
-	return cluster.Spec.DefaultMachinePool.MinimumNodesPerZone * rosaSingleAZCount
+	return cluster.Spec.DefaultMachinePool.MinimumNodesPerZone * cluster.GetAvailabilityZoneCount()
 }
 
 func (cluster *ROSACluster) GetMachinePoolMaximumNodes() int {
-	if cluster.Spec.MultiAZ {
-		return cluster.Spec.DefaultMachinePool.MaximumNodesPerZone * rosaMultiAZCount
-	}
-
-	return cluster.Spec.DefaultMachinePool.MaximumNodesPerZone * rosaSingleAZCount
+	return cluster.Spec.DefaultMachinePool.MaximumNodesPerZone * cluster.GetAvailabilityZoneCount()
 }
 
 func (cluster *ROSACluster) GetInstallerRole() string {

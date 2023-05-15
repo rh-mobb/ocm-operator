@@ -90,7 +90,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	}
 
 	// create the aws client used for interacting with aws services
-	awsClient, err := aws.NewClient()
+	awsClient, err := aws.NewClient(desired.Spec.Region)
 	if err != nil {
 		return &ROSAClusterRequest{}, fmt.Errorf("unable to create aws client - %w", err)
 	}
