@@ -3,6 +3,7 @@ kind: MachinePool
 metadata:
   name: sample
 spec:
+  wait: false
   clusterName: "my-cluster"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1

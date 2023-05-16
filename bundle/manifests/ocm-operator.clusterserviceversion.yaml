@@ -52,7 +52,8 @@ metadata:
               "owner": "my-user"
             },
             "maximumNodesPerZone": 1,
-            "minimumNodesPerZone": 1
+            "minimumNodesPerZone": 1,
+            "wait": false
           }
         },
         {
@@ -83,13 +84,13 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     containerImage: quay.io/mobb/ocm-operator:v0.1.0-alpha.1
-    createdAt: "2023-05-16T16:03:47Z"
+    createdAt: "2023-05-16T20:36:45Z"
     operatorframework.io/suggested-namespace: ocm-operator
     operators.operatorframework.io/builder: operator-sdk-v1.28.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/rh-mobb/ocm-operator
     support: Managed Openshift Black Belt
-  name: ocm-operator.v0.0.1
+  name: ocm-operator.v0.1.0-alpha.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -476,4 +477,4 @@ spec:
   provider:
     name: Managed OpenShift Black Belt
     url: https://github.com/rh-mobb/ocm-operator
-  version: 0.0.1
+  version: 0.1.0-alpha.1
