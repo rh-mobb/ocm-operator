@@ -9,18 +9,17 @@ import (
 	"github.com/go-logr/logr"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/aws"
-	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 // ROSAClusterRequest is an object that is unique to each reconciliation
@@ -115,7 +114,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	return request, nil
 }
 
-func (request *ROSAClusterRequest) GetObject() controllers.Workload {
+func (request *ROSAClusterRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
@@ -136,20 +135,6 @@ func (request *ROSAClusterRequest) execute(phases ...Phase) (ctrl.Result, error)
 	}
 
 	return controllers.NoRequeue(), nil
-}
-
-// TODO: centralize this function into controllers or conditions package.
-func (request *ROSAClusterRequest) updateCondition(condition *metav1.Condition) error {
-	if err := conditions.Update(
-		request.Context,
-		request.Reconciler,
-		request.Original,
-		condition,
-	); err != nil {
-		return fmt.Errorf("unable to update condition - %w", err)
-	}
-
-	return nil
 }
 
 // logValues produces a consistent set of log values for this request.

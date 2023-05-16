@@ -9,17 +9,16 @@ import (
 	"github.com/go-logr/logr"
 	gitlab "github.com/xanzy/go-gitlab"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
-	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/identityprovider"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 var (
@@ -100,7 +99,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	}, nil
 }
 
-func (request *GitLabIdentityProviderRequest) GetObject() controllers.Workload {
+func (request *GitLabIdentityProviderRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
@@ -121,20 +120,6 @@ func (request *GitLabIdentityProviderRequest) execute(phases ...Phase) (ctrl.Res
 	}
 
 	return controllers.NoRequeue(), nil
-}
-
-// TODO: centralize this function into controllers or conditions package.
-func (request *GitLabIdentityProviderRequest) updateCondition(condition *metav1.Condition) error {
-	if err := conditions.Update(
-		request.Context,
-		request.Reconciler,
-		request.Original,
-		condition,
-	); err != nil {
-		return fmt.Errorf("unable to update condition - %w", err)
-	}
-
-	return nil
 }
 
 // updateStatusCluster updates fields related to the cluster in which the gitlab identity provider resides in.

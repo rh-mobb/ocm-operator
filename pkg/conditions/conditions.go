@@ -8,9 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 const (
@@ -51,7 +51,7 @@ func Reconciled(trigger triggers.Trigger) *metav1.Condition {
 func Update(
 	ctx context.Context,
 	reconciler kubernetes.Client,
-	object controllers.Workload,
+	object workload.Workload,
 	condition *metav1.Condition,
 ) error {
 	// return if we already have the condition set
@@ -74,7 +74,7 @@ func Update(
 }
 
 // IsSet determines if a workload has a condition already set.
-func IsSet(condition *metav1.Condition, on controllers.Workload) bool {
+func IsSet(condition *metav1.Condition, on workload.Workload) bool {
 	for _, existing := range on.GetConditions() {
 		if equalCondition(*condition, existing) {
 			return true

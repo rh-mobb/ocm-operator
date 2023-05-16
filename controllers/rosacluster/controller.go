@@ -82,7 +82,6 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 
 	// execute the phases
 	return request.execute([]Phase{
-		{Name: "begin", Function: r.Begin},
 		{Name: "getCurrentState", Function: r.GetCurrentState},
 		{Name: "applyOCM", Function: r.ApplyCluster},
 		{Name: "waitUntilReady", Function: r.WaitUntilReady},
@@ -108,7 +107,6 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 
 	// execute the phases
 	return request.execute([]Phase{
-		{Name: "begin", Function: r.Begin},
 		{Name: "destroyCluster", Function: r.DestroyCluster},
 		{Name: "waitUntilMissing", Function: r.WaitUntilMissing},
 		{Name: "destroyOperatorRoles", Function: r.DestroyOperatorRoles},

@@ -70,7 +70,6 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 
 	// execute the phases
 	return request.execute([]Phase{
-		{Name: "begin", Function: r.Begin},
 		{Name: "getCurrentState", Function: r.GetCurrentState},
 		{Name: "applyOCM", Function: r.ApplyIdentityProvider},
 		{Name: "complete", Function: r.Complete},
@@ -95,7 +94,6 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 
 	// execute the phases
 	return request.execute([]Phase{
-		{Name: "begin", Function: r.Begin},
 		{Name: "destroy", Function: r.Destroy},
 		{Name: "complete", Function: r.CompleteDestroy},
 	}...)

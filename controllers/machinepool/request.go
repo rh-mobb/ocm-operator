@@ -8,16 +8,15 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
-	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 const (
@@ -114,7 +113,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	}, nil
 }
 
-func (request *MachinePoolRequest) GetObject() controllers.Workload {
+func (request *MachinePoolRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
@@ -146,19 +145,6 @@ func (request *MachinePoolRequest) desired() bool {
 		request.Desired.Spec,
 		request.Current.Spec,
 	)
-}
-
-func (request *MachinePoolRequest) updateCondition(condition *metav1.Condition) error {
-	if err := conditions.Update(
-		request.Context,
-		request.Reconciler,
-		request.Original,
-		condition,
-	); err != nil {
-		return fmt.Errorf("unable to update condition - %w", err)
-	}
-
-	return nil
 }
 
 // logValues produces a consistent set of log values for this request.

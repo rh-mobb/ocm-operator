@@ -23,17 +23,6 @@ type Phase struct {
 	Function func(*GitLabIdentityProviderRequest) (ctrl.Result, error)
 }
 
-// Begin begins the reconciliation state once we get the object (the desired state) from the cluster.
-// It is mainly used to set conditions of the controller and to let anyone who is viewiing the
-// custom resource know that we are currently reconciling.
-func (r *Controller) Begin(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
-	if err := request.updateCondition(conditions.Reconciling(request.Trigger)); err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
-	}
-
-	return controllers.NoRequeue(), nil
-}
-
 // GetCurrentState gets the current state of the GitLabIdentityProvider resoruce.  The current state of the GitLabIdentityProvider resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
@@ -167,8 +156,13 @@ func (r *Controller) Destroy(request *GitLabIdentityProviderRequest) (ctrl.Resul
 // requeue after the interval value requested by the controller configuration to ensure that the
 // object remains in its desired state at a specific interval.
 func (r *Controller) Complete(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
-	if err := request.updateCondition(conditions.Reconciled(request.Trigger)); err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf("error updating reconciled condition - %w", err)
+	if err := conditions.Update(
+		request.Context,
+		request.Reconciler,
+		request.Original,
+		conditions.Reconciled(request.Trigger),
+	); err != nil {
+		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
 	request.Log.Info("completed gitlab identity provider reconciliation", request.logValues()...)

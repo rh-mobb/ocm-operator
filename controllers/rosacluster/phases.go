@@ -19,17 +19,6 @@ type Phase struct {
 	Function func(*ROSAClusterRequest) (ctrl.Result, error)
 }
 
-// Begin begins the reconciliation state once we get the object (the desired state) from the cluster.
-// It is mainly used to set conditions of the controller and to let anyone who is viewiing the
-// custom resource know that we are currently reconciling.
-func (r *Controller) Begin(request *ROSAClusterRequest) (ctrl.Result, error) {
-	if err := request.updateCondition(conditions.Reconciling(request.Trigger)); err != nil {
-		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
-	}
-
-	return controllers.NoRequeue(), nil
-}
-
 // GetCurrentState gets the current state of the LDAPIdentityProvider resoruce.  The current state of the LDAPIdentityProvider resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
@@ -77,11 +66,8 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 		}
 
 		// set the created condition
-		if err := request.updateCondition(ClusterCreated()); err != nil {
-			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
-				"error updating created condition - %w",
-				err,
-			)
+		if err := conditions.Update(request.Context, request.Reconciler, request.Original, ClusterCreated()); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating created condition - %w", err)
 		}
 
 		return controllers.NoRequeue(), nil
@@ -140,17 +126,16 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 	)
 
 	// set the uninstalling condition
-	if err := request.updateCondition(ClusterUninstalling()); err != nil {
-		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
-			"error updating uninstalling condition - %w",
-			err,
-		)
+	if err := conditions.Update(request.Context, request.Reconciler, request.Original, ClusterUninstalling()); err != nil {
+		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating uninstalling condition - %w", err)
 	}
 
 	return controllers.NoRequeue(), nil
 }
 
 // WaitUntilMissing will requeue until the reconciler determines that the cluster is missing.
+//
+//nolint:exhaustive,goerr113
 func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the cluster
 	if conditions.IsSet(ClusterDeleted(), request.Original) {
@@ -169,29 +154,37 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 		)
 	}
 
-	// return if we are still uninstalling
-	if cluster.State() == clustersmgmtv1.ClusterStateUninstalling {
-		request.Log.Info("cluster is still uninstalling", request.logValues()...)
-		request.Log.Info(fmt.Sprintf("checking again in %s", request.provisionRequeueTime().String()), request.logValues()...)
-
-		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
-	}
-
 	// set the deleted condition and return if we have no cluster
 	if cluster == nil {
-		if err := request.updateCondition(ClusterDeleted()); err != nil {
-			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
-				"error updating deleted condition - %w",
-				err,
-			)
+		if err := conditions.Update(request.Context, request.Reconciler, request.Original, ClusterDeleted()); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating deleted condition - %w", err)
 		}
+
+		request.Log.Info("cluster has been deleted", request.logValues()...)
 
 		return controllers.NoRequeue(), nil
 	}
 
-	request.Log.Info("cluster has been deleted", request.logValues()...)
+	// return if we are still uninstalling
+	switch cluster.State() {
+	case clustersmgmtv1.ClusterStateUninstalling:
+		request.Log.Info("cluster is still uninstalling", request.logValues()...)
+		request.Log.Info(fmt.Sprintf("checking again in %s", request.provisionRequeueTime().String()), request.logValues()...)
 
-	return controllers.NoRequeue(), nil
+		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
+	case clustersmgmtv1.ClusterStateError:
+		request.Log.Error(fmt.Errorf("cluster uninstalling is in error state"), fmt.Sprintf(
+			"checking again in %s", request.provisionRequeueTime().String(),
+		), request.logValues()...)
+
+		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
+	default:
+		request.Log.Error(fmt.Errorf("cluster uninstalling is in unknown state"), fmt.Sprintf(
+			"checking again in %s", request.provisionRequeueTime().String(),
+		), request.logValues()...)
+
+		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
+	}
 }
 
 // DestroyOperatorRoles destroys the operator roles in AWS.
@@ -210,11 +203,8 @@ func (r *Controller) DestroyOperatorRoles(request *ROSAClusterRequest) (ctrl.Res
 	}
 
 	// update the status indicating the operator roles have been deleted
-	if err := request.updateCondition(OperatorRolesDeleted()); err != nil {
-		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
-			"error updating operator roles deleted condition - %w",
-			err,
-		)
+	if err := conditions.Update(request.Context, request.Reconciler, request.Original, OperatorRolesDeleted()); err != nil {
+		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating operator roles deleted condition - %w", err)
 	}
 
 	return controllers.NoRequeue(), nil
@@ -235,11 +225,8 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 		}
 
 		// update the status indicating the oidc provider has been deleted
-		if err := request.updateCondition(OIDCProviderDeleted()); err != nil {
-			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
-				"error updating oidc provider deleted condition - %w",
-				err,
-			)
+		if err := conditions.Update(request.Context, request.Reconciler, request.Original, OIDCProviderDeleted()); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating oidc provider deleted condition - %w", err)
 		}
 	}
 
@@ -254,11 +241,8 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 		}
 
 		// update the status indicating the oidc config has been deleted
-		if err := request.updateCondition(OIDCConfigDeleted()); err != nil {
-			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
-				"error updating oidc config deleted condition - %w",
-				err,
-			)
+		if err := conditions.Update(request.Context, request.Reconciler, request.Original, OIDCConfigDeleted()); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating oidc config deleted condition - %w", err)
 		}
 	}
 
@@ -293,7 +277,7 @@ func (r *Controller) WaitUntilReady(request *ROSAClusterRequest) (ctrl.Result, e
 // requeue after the interval value requested by the controller configuration to ensure that the
 // object remains in its desired state at a specific interval.
 func (r *Controller) Complete(request *ROSAClusterRequest) (ctrl.Result, error) {
-	if err := request.updateCondition(conditions.Reconciled(request.Trigger)); err != nil {
+	if err := conditions.Update(request.Context, request.Reconciler, request.Original, conditions.Reconciled(request.Trigger)); err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating reconciled condition - %w", err)
 	}
 

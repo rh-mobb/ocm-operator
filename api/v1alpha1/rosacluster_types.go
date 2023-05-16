@@ -21,9 +21,8 @@ import (
 	"strings"
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+	"github.com/scottd018/go-utils/pkg/list"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/rh-mobb/ocm-operator/pkg/utils"
 )
 
 const (
@@ -554,7 +553,7 @@ func (cluster *ROSACluster) BuildClusterNodes(availabilityZones []string) *clust
 
 	// add availability zones if we have requested subnets
 	if cluster.HasSubnets() {
-		nodeBuilder.AvailabilityZones(utils.UniqueStrings(availabilityZones)...)
+		nodeBuilder.AvailabilityZones(list.Strings(availabilityZones).Unique()...)
 	}
 
 	return nodeBuilder
