@@ -18,12 +18,6 @@ const (
 	defaultLDAPIdentityProviderRequeue = 30 * time.Second
 )
 
-// Phase defines an individual phase in the controller reconciliation process.
-type Phase struct {
-	Name     string
-	Function func(*LDAPIdentityProviderRequest) (ctrl.Result, error)
-}
-
 // GetCurrentState gets the current state of the LDAPIdentityProvider resoruce.  The current state of the LDAPIdentityProvider resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
