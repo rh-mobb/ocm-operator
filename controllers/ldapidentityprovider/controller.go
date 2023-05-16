@@ -56,6 +56,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a ldap identity provider request
 	request, ok := req.(*LDAPIdentityProviderRequest)
@@ -69,10 +71,10 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	}
 
 	// execute the phases
-	return request.execute([]Phase{
-		{Name: "getCurrentState", Function: r.GetCurrentState},
-		{Name: "applyOCM", Function: r.ApplyIdentityProvider},
-		{Name: "complete", Function: r.Complete},
+	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "GetCurrentState", Function: func() (ctrl.Result, error) { return r.GetCurrentState(request) }},
+		{Name: "Apply", Function: func() (ctrl.Result, error) { return r.ApplyIdentityProvider(request) }},
+		{Name: "Complete", Function: func() (ctrl.Result, error) { return r.Complete(request) }},
 	}...)
 }
 
@@ -85,6 +87,8 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a ldap identity provider request
 	request, ok := req.(*LDAPIdentityProviderRequest)
@@ -93,9 +97,9 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	}
 
 	// execute the phases
-	return request.execute([]Phase{
-		{Name: "destroy", Function: r.Destroy},
-		{Name: "complete", Function: r.CompleteDestroy},
+	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "Destroy", Function: func() (ctrl.Result, error) { return r.Destroy(request) }},
+		{Name: "CompleteDestroy", Function: func() (ctrl.Result, error) { return r.CompleteDestroy(request) }},
 	}...)
 }
 

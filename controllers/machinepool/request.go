@@ -117,25 +117,6 @@ func (request *MachinePoolRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
-// execute executes a variety of different phases for the request.
-//
-//nolint:wrapcheck
-func (request *MachinePoolRequest) execute(phases ...Phase) (ctrl.Result, error) {
-	for execute := range phases {
-		// run each phase function and return if we receive any errors
-		result, err := phases[execute].Function(request)
-		if err != nil || result.Requeue {
-			return result, controllers.ReconcileError(
-				request.ControllerRequest,
-				fmt.Sprintf("%s phase reconciliation error", phases[execute].Name),
-				err,
-			)
-		}
-	}
-
-	return controllers.NoRequeue(), nil
-}
-
 func (request *MachinePoolRequest) desired() bool {
 	if request.Desired == nil || request.Current == nil {
 		return false

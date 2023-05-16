@@ -103,25 +103,6 @@ func (request *GitLabIdentityProviderRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
-// execute executes a variety of different phases for the request.
-//
-//nolint:wrapcheck
-func (request *GitLabIdentityProviderRequest) execute(phases ...Phase) (ctrl.Result, error) {
-	for execute := range phases {
-		// run each phase function and return if we receive any errors
-		result, err := phases[execute].Function(request)
-		if err != nil || result.Requeue {
-			return result, controllers.ReconcileError(
-				request.ControllerRequest,
-				fmt.Sprintf("%s phase reconciliation error", phases[execute].Name),
-				err,
-			)
-		}
-	}
-
-	return controllers.NoRequeue(), nil
-}
-
 // updateStatusCluster updates fields related to the cluster in which the gitlab identity provider resides in.
 // TODO: centralize this function into controllers or conditions package.
 func (request *GitLabIdentityProviderRequest) updateStatusCluster() error {

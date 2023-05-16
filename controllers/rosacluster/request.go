@@ -118,25 +118,6 @@ func (request *ROSAClusterRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
-// execute executes a variety of different phases for the request.
-//
-//nolint:wrapcheck
-func (request *ROSAClusterRequest) execute(phases ...Phase) (ctrl.Result, error) {
-	for execute := range phases {
-		// run each phase function and return if we receive any errors
-		result, err := phases[execute].Function(request)
-		if err != nil || result.Requeue {
-			return result, controllers.ReconcileError(
-				request.ControllerRequest,
-				fmt.Sprintf("%s phase reconciliation error", phases[execute].Name),
-				err,
-			)
-		}
-	}
-
-	return controllers.NoRequeue(), nil
-}
-
 // logValues produces a consistent set of log values for this request.
 func (request *ROSAClusterRequest) logValues() []interface{} {
 	return []interface{}{

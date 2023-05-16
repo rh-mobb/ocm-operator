@@ -60,6 +60,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a machine pool request
 	request, ok := req.(*MachinePoolRequest)
@@ -73,11 +75,11 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	}
 
 	// execute the phases
-	return request.execute([]Phase{
-		{Name: "getCurrentState", Function: r.GetCurrentState},
-		{Name: "applyState", Function: r.Apply},
-		{Name: "waitUntilReady", Function: r.WaitUntilReady},
-		{Name: "complete", Function: r.Complete},
+	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "GetCurrentState", Function: func() (ctrl.Result, error) { return r.GetCurrentState(request) }},
+		{Name: "Apply", Function: func() (ctrl.Result, error) { return r.Apply(request) }},
+		{Name: "WaitUntilReady", Function: func() (ctrl.Result, error) { return r.WaitUntilReady(request) }},
+		{Name: "Complete", Function: func() (ctrl.Result, error) { return r.Complete(request) }},
 	}...)
 }
 
@@ -90,6 +92,8 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a machine pool request
 	request, ok := req.(*MachinePoolRequest)
@@ -98,10 +102,10 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	}
 
 	// execute the phases
-	return request.execute([]Phase{
-		{Name: "destroy", Function: r.Destroy},
-		{Name: "waitUntilMissing", Function: r.WaitUntilMissing},
-		{Name: "complete", Function: r.CompleteDestroy},
+	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "Destroy", Function: func() (ctrl.Result, error) { return r.Destroy(request) }},
+		{Name: "WaitUntilMissing", Function: func() (ctrl.Result, error) { return r.WaitUntilMissing(request) }},
+		{Name: "CompleteDestroy", Function: func() (ctrl.Result, error) { return r.CompleteDestroy(request) }},
 	}...)
 }
 
