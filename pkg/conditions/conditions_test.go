@@ -8,9 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
-	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 func testConditionReconciling(at metav1.Time) *metav1.Condition {
@@ -23,14 +23,6 @@ func testConditionReconciling(at metav1.Time) *metav1.Condition {
 
 func testConditionReconciled(at metav1.Time) *metav1.Condition {
 	condition := Reconciled(triggers.Create)
-
-	condition.LastTransitionTime = at
-
-	return condition
-}
-
-func testConditionMachinePoolDeleted(at metav1.Time) *metav1.Condition {
-	condition := MachinePoolDeleted()
 
 	condition.LastTransitionTime = at
 
@@ -82,9 +74,9 @@ func Test_addCondition(t *testing.T) {
 			name: "ensure new condition is added",
 			args: args{
 				current: []metav1.Condition{*testConditionReconciled(now)},
-				new:     testConditionMachinePoolDeleted(now),
+				new:     testConditionReconciling(now),
 			},
-			want: []metav1.Condition{*testConditionReconciled(now), *testConditionMachinePoolDeleted(now)},
+			want: []metav1.Condition{*testConditionReconciled(now), *testConditionReconciling(now)},
 		},
 		{
 			name: "ensure differing condition is replaced",
@@ -117,7 +109,7 @@ func TestUpdate(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		reconciler kubernetes.Client
-		object     controllers.Workload
+		object     workload.Workload
 		condition  *metav1.Condition
 	}
 

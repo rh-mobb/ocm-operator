@@ -122,3 +122,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - rosaclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - rosaclusters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ocm.mobb.redhat.com
+  resources:
+  - rosaclusters/status
+  verbs:
+  - get
+  - patch
+  - update

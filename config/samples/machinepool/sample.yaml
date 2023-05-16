@@ -1,0 +1,15 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: MachinePool
+metadata:
+  name: sample
+spec:
+  wait: false
+  clusterName: "my-cluster"
+  minimumNodesPerZone: 1
+  maximumNodesPerZone: 1
+  instanceType: m5.xlarge
+  labels:
+    owner: my-user
+  aws:
+    spotInstances:
+      enabled: false

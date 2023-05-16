@@ -1,0 +1,27 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: ROSACluster
+metadata:
+  name: rosa-hosted
+spec:
+  hostedControlPlane: true
+  multiAZ: true
+  displayName: dscott-hosted
+  openshiftVersion: "4.12.12"
+  accountID: "660250927410"
+  region: us-east-2
+  tags:
+    owner: dscott
+  iam:
+    userRole: "arn:aws:iam::660250927410:role/ManagedOpenShift-User-dscott_mobb-Role"
+    enableManagedPolicies: false
+  defaultMachinePool:
+    minimumNodesPerZone: 2
+    maximumNodesPerZone: 3
+    instanceType: m6id.xlarge
+  # encryption:
+  #   etcd:
+  #     kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
+  network:
+    subnets:
+      - "subnet-0aab7e3436abe7c2d"
+      - "subnet-057a59ecc95f86f34"

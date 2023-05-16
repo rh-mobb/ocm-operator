@@ -22,7 +22,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: GitLabIdentityProvider is the Schema for the gitlabidentityproviders
-          API
+          API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: GitLabIdentityProviderSpec defines the desired state of GitLabIdentityProvider
+            description: GitLabIdentityProviderSpec defines the desired state of GitLabIdentityProvider.
             properties:
               accessTokenSecret:
                 description: accessTokenSecret is a required reference to the secret
@@ -104,7 +104,7 @@ spec:
             type: object
           status:
             description: GitLabIdentityProviderStatus defines the observed state of
-              GitLabIdentityProvider
+              GitLabIdentityProvider.
             properties:
               callbackURL:
                 description: Represents the OAuth endpoint used for the OAuth provider

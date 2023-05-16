@@ -8,16 +8,15 @@ import (
 
 	"github.com/go-logr/logr"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
-	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 const (
@@ -114,27 +113,8 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	}, nil
 }
 
-func (request *MachinePoolRequest) GetObject() controllers.Workload {
+func (request *MachinePoolRequest) GetObject() workload.Workload {
 	return request.Original
-}
-
-// execute executes a variety of different phases for the request.
-//
-//nolint:wrapcheck
-func (request *MachinePoolRequest) execute(phases ...Phase) (ctrl.Result, error) {
-	for execute := range phases {
-		// run each phase function and return if we receive any errors
-		result, err := phases[execute].Function(request)
-		if err != nil || result.Requeue {
-			return result, controllers.ReconcileError(
-				request.ControllerRequest,
-				fmt.Sprintf("%s phase reconciliation error", phases[execute].Name),
-				err,
-			)
-		}
-	}
-
-	return controllers.NoRequeue(), nil
 }
 
 func (request *MachinePoolRequest) desired() bool {
@@ -146,19 +126,6 @@ func (request *MachinePoolRequest) desired() bool {
 		request.Desired.Spec,
 		request.Current.Spec,
 	)
-}
-
-func (request *MachinePoolRequest) updateCondition(condition *metav1.Condition) error {
-	if err := conditions.Update(
-		request.Context,
-		request.Reconciler,
-		request.Original,
-		condition,
-	); err != nil {
-		return fmt.Errorf("unable to update condition - %w", err)
-	}
-
-	return nil
 }
 
 // logValues produces a consistent set of log values for this request.
@@ -175,7 +142,7 @@ func (request *MachinePoolRequest) updateStatusCluster() error {
 	// retrieve the cluster id
 	clusterClient := ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.ClusterName)
 	cluster, err := clusterClient.Get()
-	if err != nil {
+	if err != nil || cluster == nil {
 		return fmt.Errorf(
 			"unable to retrieve cluster from ocm [name=%s] - %w",
 			request.Desired.Spec.ClusterName,

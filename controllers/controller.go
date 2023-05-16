@@ -7,16 +7,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/scottd018/go-utils/pkg/list"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
-	"github.com/rh-mobb/ocm-operator/pkg/utils"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 var (
@@ -25,6 +26,7 @@ var (
 
 const (
 	defaultFinalizerSuffix = "finalizer"
+	defaultRequeue         = 30 * time.Second
 
 	LogLevelDebug = 5
 )
@@ -35,20 +37,14 @@ const (
 // return back the original object, in its pure form, that was discovered
 // when the request was triggered.
 type Request interface {
-	GetObject() Workload
-}
-
-// Workload represents the actual object that is being reconciled.
-type Workload interface {
-	client.Object
-
-	GetConditions() []metav1.Condition
-	SetConditions([]metav1.Condition)
+	GetObject() workload.Workload
 }
 
 // Controller represents the object that is performing the reconciliation
 // action.
 type Controller interface {
+	kubernetes.Client
+
 	NewRequest(ctx context.Context, req ctrl.Request) (Request, error)
 	Reconcile(context.Context, ctrl.Request) (ctrl.Result, error)
 	ReconcileCreate(Request) (ctrl.Result, error)
@@ -78,6 +74,11 @@ func Reconcile(ctx context.Context, controller Controller, req ctrl.Request) (ct
 
 	// determine what triggered the reconcile request
 	trigger := triggers.GetTrigger(request.GetObject())
+
+	// set a condition notifying the resource that we are reconciling
+	if err := conditions.Update(ctx, controller, request.GetObject(), conditions.Reconciling(trigger)); err != nil {
+		return RequeueAfter(defaultRequeue), fmt.Errorf("unable to update condition - %w", err)
+	}
 
 	// run the reconciliation loop based on the event trigger
 	//nolint:wrapcheck
@@ -134,13 +135,18 @@ func FinalizerName(object client.Object) string {
 	))
 }
 
+// HasFinalizer is a helper function to make the code more readable.
+func HasFinalizer(object client.Object) bool {
+	return list.Strings(object.GetFinalizers()).Has(FinalizerName(object))
+}
+
 // AddFinalizer adds finalizers to the object so that the delete lifecycle can be run
 // before the object is deleted.
 func AddFinalizer(ctx context.Context, r kubernetes.Client, object client.Object) error {
 	// The object is not being deleted, so if it does not have our finalizer,
 	// then lets add the finalizer and update the object. This is equivalent
 	// registering our finalizer.
-	if !utils.ContainsString(object.GetFinalizers(), FinalizerName(object)) {
+	if !HasFinalizer(object) {
 		original, ok := object.DeepCopyObject().(client.Object)
 		if !ok {
 			return ErrConvertClientObject
@@ -159,7 +165,7 @@ func AddFinalizer(ctx context.Context, r kubernetes.Client, object client.Object
 // RemoveFinalizer removes finalizers from the object.  It is intended to be run after an
 // external object is deleted so that the delete lifecycle may continue reconciliation.
 func RemoveFinalizer(ctx context.Context, r kubernetes.Client, object client.Object) error {
-	if utils.ContainsString(object.GetFinalizers(), FinalizerName(object)) {
+	if HasFinalizer(object) {
 		original, ok := object.DeepCopyObject().(client.Object)
 		if !ok {
 			return ErrConvertClientObject

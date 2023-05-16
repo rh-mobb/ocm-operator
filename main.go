@@ -38,11 +38,13 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/gitlabidentityprovider"
 	"github.com/rh-mobb/ocm-operator/controllers/ldapidentityprovider"
 	"github.com/rh-mobb/ocm-operator/controllers/machinepool"
+	"github.com/rh-mobb/ocm-operator/controllers/rosacluster"
 	//+kubebuilder:scaffold:imports
 )
 
 const (
 	defaultPollerIntervalMinutes = 5
+	tokenEnvKey                  = "OCM_TOKEN"
 )
 
 var (
@@ -101,7 +103,6 @@ func main() {
 	}
 
 	// load the token and create the ocm client
-	tokenEnvKey := "OCM_TOKEN"
 	token, tokenExists := os.LookupEnv(tokenEnvKey)
 	if !tokenExists {
 		setupLog.Error(err, "unable to load token", "environment variable", tokenEnvKey)
@@ -145,6 +146,16 @@ func main() {
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "LDAPIdentityProvider")
+		os.Exit(1)
+	}
+	if err = (&rosacluster.Controller{
+		Connection: connection,
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Recorder:   mgr.GetEventRecorderFor("rosa-cluster-controller"),
+		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Cluster")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

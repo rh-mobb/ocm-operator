@@ -60,6 +60,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a gitlab identity provider request
 	request, ok := req.(*GitLabIdentityProviderRequest)
@@ -73,12 +75,11 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	}
 
 	// execute the phases
-	return request.execute([]Phase{
-		{Name: "begin", Function: r.Begin},
-		{Name: "getCurrentState", Function: r.GetCurrentState},
-		{Name: "applyGitLab", Function: r.ApplyGitLab},
-		{Name: "applyIdentityProvider", Function: r.ApplyIdentityProvider},
-		{Name: "complete", Function: r.Complete},
+	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "GetCurrentState", Function: func() (ctrl.Result, error) { return r.GetCurrentState(request) }},
+		{Name: "ApplyGitLab", Function: func() (ctrl.Result, error) { return r.ApplyGitLab(request) }},
+		{Name: "ApplyIdentityProvider", Function: func() (ctrl.Result, error) { return r.ApplyIdentityProvider(request) }},
+		{Name: "Complete", Function: func() (ctrl.Result, error) { return r.Complete(request) }},
 	}...)
 }
 
@@ -91,6 +92,8 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a gitlab identity provider request
 	request, ok := req.(*GitLabIdentityProviderRequest)
@@ -99,10 +102,9 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	}
 
 	// execute the phases
-	return request.execute([]Phase{
-		{Name: "begin", Function: r.Begin},
-		{Name: "destroy", Function: r.Destroy},
-		{Name: "complete", Function: r.Complete},
+	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "Destroy", Function: func() (ctrl.Result, error) { return r.Destroy(request) }},
+		{Name: "Complete", Function: func() (ctrl.Result, error) { return r.Complete(request) }},
 	}...)
 }
 

@@ -1,0 +1,16 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: ROSACluster
+metadata:
+  name: rosa-sample
+spec:
+  accountID: "111111111111"
+  displayName: my-cluster
+  tags:
+    owner: my-owner
+  iam:
+    userRole: "arn:aws:iam::111111111111:role/ManagedOpenShift-User-my_user-Role"
+  defaultMachinePool:
+    minimumNodesPerZone: 2
+    instanceType: m5.xlarge
+    labels:
+      owner: my-owner
