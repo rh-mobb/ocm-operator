@@ -6,15 +6,15 @@ metadata:
     app.kubernetes.io/name: clusterrole
     app.kubernetes.io/instance: cluster-viewer-role
     app.kubernetes.io/component: rbac
-    app.kubernetes.io/created-by: ocm-machine-pool-operator
-    app.kubernetes.io/part-of: ocm-machine-pool-operator
+    app.kubernetes.io/created-by: ocm-operator
+    app.kubernetes.io/part-of: ocm-operator
     app.kubernetes.io/managed-by: kustomize
   name: cluster-viewer-role
 rules:
 - apiGroups:
   - ocm.mobb.redhat.com
   resources:
-  - clusters
+  - rosaclusters
   verbs:
   - get
   - list
@@ -22,6 +22,6 @@ rules:
 - apiGroups:
   - ocm.mobb.redhat.com
   resources:
-  - clusters/status
+  - rosaclusters/status
   verbs:
   - get

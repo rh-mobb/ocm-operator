@@ -3,9 +3,11 @@ module github.com/rh-mobb/ocm-operator
 go 1.19
 
 require (
+	github.com/hashicorp/go-version v1.3.0
 	github.com/onsi/ginkgo/v2 v2.6.0
 	github.com/onsi/gomega v1.24.1
 	github.com/openshift/api v0.0.0-20230417092139-1b2161d23365
+	github.com/sirupsen/logrus v1.8.1
 	k8s.io/apimachinery v0.26.2
 	k8s.io/client-go v0.26.0
 	sigs.k8s.io/controller-runtime v0.14.1
@@ -28,7 +30,6 @@ require (
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.2 // indirect
-	github.com/hashicorp/go-version v1.3.0 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -36,7 +37,6 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.23 // indirect
 	github.com/nukleros/desired v0.1.0 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/cobra v1.6.0 // indirect
 	github.com/wayneashleyberry/terminal-dimensions v1.1.0 // indirect

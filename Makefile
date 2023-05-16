@@ -28,8 +28,8 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# mobb.redhat.com/ocm-machine-pool-operator-bundle:$VERSION and mobb.redhat.com/ocm-machine-pool-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= mobb.redhat.com/ocm-machine-pool-operator
+# mobb.redhat.com/ocm-operator-bundle:$VERSION and mobb.redhat.com/ocm-operator-catalog:$VERSION.
+IMAGE_TAG_BASE ?= quay.io/mobb/ocm-operator
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -47,7 +47,7 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 endif
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= $(IMAGE_TAG_BASE):v$(VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.26.0
 
@@ -215,9 +215,12 @@ $(GOLANGCI_LINT): $(LOCALBIN)
 	fi
 	test -s $(LOCALBIN)/golangci-lint || { curl -sSfL $(GOLANGCI_LINT_INSTALL_SCRIPT) | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION); }
 
+.PHONY: bundle-init
+bundle-init: manifests kustomize ## Generate bundle metadata.
+	operator-sdk generate kustomize manifests --verbose
+
 .PHONY: bundle
-bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
-	operator-sdk generate kustomize manifests -q
+bundle: manifests kustomize ## Generate bundle manifests, then validate generated files.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
 	operator-sdk bundle validate ./bundle

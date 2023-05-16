@@ -1,0 +1,9 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: GitLabIdentityProvider
+metadata:
+  name: gitlab-sample
+spec:
+  clusterName: my-cluster
+  displayName: gitlab-sample
+  url: https://gitlab.com
+  accessTokenSecret: gitlab-access-token

@@ -1,7 +1,7 @@
 ## Append samples you want in your CSV to this file as resources ##
 resources:
-- machinepool/sample_simple.yaml
-- ocm_v1alpha1_gitlabidentityprovider.yaml
-- ocm_v1alpha1_ldapidentityprovider.yaml
-- ocm_v1alpha1_cluster.yaml
+- machinepool/sample.yaml
+- cluster/rosa_sample.yaml
+- identityprovider/ldap_sample.yaml
+- identityprovider/gitlab_sample.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

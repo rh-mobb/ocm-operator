@@ -4,20 +4,24 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.1
   creationTimestamp: null
-  name: machinepools.ocm.mobb.redhat.com
+  name: gitlabidentityproviders.ocm.mobb.redhat.com
 spec:
   group: ocm.mobb.redhat.com
   names:
-    kind: MachinePool
-    listKind: MachinePoolList
-    plural: machinepools
-    singular: machinepool
+    categories:
+    - idps
+    - identityproviders
+    kind: GitLabIdentityProvider
+    listKind: GitLabIdentityProviderList
+    plural: gitlabidentityproviders
+    singular: gitlabidentityprovider
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: MachinePool is the Schema for the machinepools API.
+        description: GitLabIdentityProvider is the Schema for the gitlabidentityproviders
+          API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -32,35 +36,27 @@ spec:
           metadata:
             type: object
           spec:
-            description: MachinePoolSpec defines the desired state of MachinePool.
+            description: GitLabIdentityProviderSpec defines the desired state of GitLabIdentityProvider.
             properties:
-              aws:
-                description: Represents the AWS provider specific configuration options.
-                properties:
-                  spotInstances:
-                    description: Configuration of AWS Spot Instances for this MachinePool.  This
-                      section is not valid and is ignored if the cluster is using
-                      hosted control plane.
-                    properties:
-                      enabled:
-                        description: Request spot instances when scaling up this MachinePool.  If
-                          enabled a maximum price for the spot instances may be set
-                          in spec.aws.spotInstances.maximumPrice.
-                        type: boolean
-                        x-kubernetes-validations:
-                        - message: aws.spotInstances.enabled is immutable
-                          rule: (self == oldSelf)
-                      maximumPrice:
-                        description: Maximum price to pay for spot instance. To be
-                          used with spec.aws.spotInstances.enabled. If no maximum
-                          price is set, the spot instance configuration defaults to
-                          on-demand pricing.
-                        type: integer
-                        x-kubernetes-validations:
-                        - message: aws.spotInstances.maximumPrice is immutable
-                          rule: (self == oldSelf)
-                    type: object
-                type: object
+              accessTokenSecret:
+                description: accessTokenSecret is a required reference to the secret
+                  by name containing the GitLab access token required to interact
+                  with the GitLab API.  This access token must have read/write API
+                  access.  The secret must contain the key 'accessToken' to locate
+                  the data. If the secret or expected key is not found, the identity
+                  provider is not honored. The namespace for this secret must exist
+                  in the same namespace as the resource.
+                type: string
+                x-kubernetes-validations:
+                - message: accessTokenSecret is immutable
+                  rule: (self == oldSelf)
+              ca:
+                description: ca is an optional reference containing the PEM-encoded
+                  CA bundle data, as a string value. It is used as a trust anchor
+                  to validate the TLS certificate presented by the remote server.
+                  If the specified ca data is not valid, the identity provider is
+                  not honored. If empty, the default system roots are used.
+                type: string
               clusterName:
                 description: Cluster ID in OpenShift Cluster Manager by which this
                   should be managed for.  The cluster ID can be obtained on the Clusters
@@ -82,96 +78,40 @@ spec:
                 x-kubernetes-validations:
                 - message: displayName is immutable
                   rule: (self == oldSelf)
-              instanceType:
-                default: m5.xlarge
-                description: "Instance type to use for all nodes within this MachinePool.
-                  \ Please see the following for a list of supported instance types
-                  based on the provider type (ROSA/OSD only supported for now): \n
-                  *ROSA/OSD: https://docs.openshift.com/rosa/rosa_architecture/rosa_policy_service_definition/rosa-service-definition.html"
+              mappingMethod:
+                default: claim
+                description: Mapping method to use for the identity provider. See
+                  https://docs.openshift.com/container-platform/latest/authentication/understanding-identity-provider.html#identity-provider-parameters_understanding-identity-provider
+                  for a detailed description of what these mean.  Must be one of claim
+                  (default), lookup, generate, or add.
+                enum:
+                - claim
+                - lookup
+                - generate
+                - add
+                type: string
+              url:
+                description: url is the oauth server base URL.  This field is immutable
+                  to prevent leaving orphaned resources on a GitLab server.  The URL
+                  should contain an 'https://' prefix.
                 type: string
                 x-kubernetes-validations:
-                - message: instanceType is immutable
+                - message: url is immutable
                   rule: (self == oldSelf)
-              labels:
-                additionalProperties:
-                  type: string
-                description: Additional labels to apply to this MachinePool.  It should
-                  be noted that 'ocm.mobb.redhat.com/managed' = 'true' is automatically
-                  applied as well as 'ocm.mobb.redhat.com/name' = spec.displayName.  Both
-                  of these labels are reserved and cannot be used as part of the spec.labels
-                  field.
-                type: object
-                x-kubernetes-validations:
-                - message: ocm.mobb.redhat.com/name is a reserved label
-                  rule: '!(''ocm.mobb.redhat.com/name'' in self)'
-                - message: ocm.mobb.redhat.com/managed is a reserved label
-                  rule: '!(''ocm.mobb.redhat.com/managed'' in self)'
-              maximumNodesPerZone:
-                description: Maximum amount of nodes allowed per availability zone.  Must
-                  be greater than or equal to spec.minimumNodesPerZone.  If this field
-                  is set, autoscaling will be enabled for this machine pool.
-                type: integer
-              minimumNodesPerZone:
-                description: Minimum amount of nodes allowed per availability zone.  For
-                  single availability zone clusters, the minimum allowed is 2 per
-                  zone.  For multiple availability zone clusters, the minimum allowed
-                  is 1 per zone.  If spec.maximumNodesPerZone is also set, autoscaling
-                  will be enabled for this machine pool.
-                type: integer
-              taints:
-                description: Taints that should be applied to this machine pool.  For
-                  information please see https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/.
-                items:
-                  description: The node this Taint is attached to has the "effect"
-                    on any pod that does not tolerate the Taint.
-                  properties:
-                    effect:
-                      description: Required. The effect of the taint on pods that
-                        do not tolerate the taint. Valid effects are NoSchedule, PreferNoSchedule
-                        and NoExecute.
-                      type: string
-                    key:
-                      description: Required. The taint key to be applied to a node.
-                      type: string
-                    timeAdded:
-                      description: TimeAdded represents the time at which the taint
-                        was added. It is only written for NoExecute taints.
-                      format: date-time
-                      type: string
-                    value:
-                      description: The taint value corresponding to the taint key.
-                      type: string
-                  required:
-                  - effect
-                  - key
-                  type: object
-                type: array
-              wait:
-                default: true
-                description: Wait for the machine pool to enter a ready state.  If
-                  this is set to true, it is assumed that the operator is running
-                  in the cluster that machine pools are being controlled for.  This
-                  is due to a limitation in the OCM API which does not expose the
-                  ready state of a machine pool.  If this is set to false, the reconciler
-                  will perform a "fire and forget" approach and assume if the object
-                  is created, it will eventually be correctly reconciled.
-                type: boolean
+                - message: url must have an https:// prefix
+                  rule: (self.startsWith("https://"))
             type: object
-            x-kubernetes-validations:
-            - message: maximumNodesPerZone must be greater than or equal to minimumNodesPerZone
-              rule: (self.maximumNodesPerZone == 0 || self.minimumNodesPerZone <=
-                self.maximumNodesPerZone)
           status:
-            description: MachinePoolStatus defines the observed state of MachinePool.
+            description: GitLabIdentityProviderStatus defines the observed state of
+              GitLabIdentityProvider.
             properties:
-              availabilityZones:
-                description: Represents the number of availability zones that the
-                  cluster resides in.  Used to calculate the total number of replicas.
-                items:
-                  type: string
-                type: array
+              callbackURL:
+                description: Represents the OAuth endpoint used for the OAuth provider
+                  to call back to.  This is necessary for proper configuration of
+                  any external identity provider.
+                type: string
                 x-kubernetes-validations:
-                - message: status.AvailabilityZoneCount is immutable
+                - message: status.callbackURL is immutable
                   rule: (self == oldSelf)
               clusterID:
                 description: Represents the programmatic cluster ID of the cluster,
@@ -250,20 +190,6 @@ spec:
                   - type
                   type: object
                 type: array
-              hosted:
-                description: Whether this cluster is using a hosted control plane.
-                type: boolean
-                x-kubernetes-validations:
-                - message: status.Hosted is immutable
-                  rule: (self == oldSelf)
-              subnets:
-                description: Represents the subnets where the cluster is provisioned.
-                items:
-                  type: string
-                type: array
-                x-kubernetes-validations:
-                - message: status.Subnets is immutable
-                  rule: (self == oldSelf)
             type: object
         type: object
         x-kubernetes-validations:

@@ -1,0 +1,12 @@
+apiVersion: ocm.mobb.redhat.com/v1alpha1
+kind: LDAPIdentityProvider
+metadata:
+  name: ldap-sample
+spec:
+  clusterName: my-cluster
+  displayName: ldap-sample
+  mappingMethod: claim
+  url: ldap://test.example.com:389
+  bindDN: CN=test,OU=Users,DC=example,DC=com
+  bindPassword:
+    name: test

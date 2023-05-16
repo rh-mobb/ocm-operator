@@ -8,7 +8,7 @@ layout:
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
-projectName: ocm-machine-pool-operator
+projectName: ocm-operator
 repo: github.com/rh-mobb/ocm-operator
 resources:
 - api:
@@ -44,7 +44,7 @@ resources:
   controller: true
   domain: mobb.redhat.com
   group: ocm
-  kind: Cluster
+  kind: ROSACluster
   path: github.com/rh-mobb/ocm-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

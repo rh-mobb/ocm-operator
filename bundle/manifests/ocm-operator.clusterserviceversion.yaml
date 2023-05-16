@@ -1,0 +1,479 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "ocm.mobb.redhat.com/v1alpha1",
+          "kind": "GitLabIdentityProvider",
+          "metadata": {
+            "name": "gitlab-sample"
+          },
+          "spec": {
+            "accessTokenSecret": "gitlab-access-token",
+            "clusterName": "my-cluster",
+            "displayName": "gitlab-sample",
+            "url": "https://gitlab.com"
+          }
+        },
+        {
+          "apiVersion": "ocm.mobb.redhat.com/v1alpha1",
+          "kind": "LDAPIdentityProvider",
+          "metadata": {
+            "name": "ldap-sample"
+          },
+          "spec": {
+            "bindDN": "CN=test,OU=Users,DC=example,DC=com",
+            "bindPassword": {
+              "name": "test"
+            },
+            "clusterName": "my-cluster",
+            "displayName": "ldap-sample",
+            "mappingMethod": "claim",
+            "url": "ldap://test.example.com:389"
+          }
+        },
+        {
+          "apiVersion": "ocm.mobb.redhat.com/v1alpha1",
+          "kind": "MachinePool",
+          "metadata": {
+            "name": "sample"
+          },
+          "spec": {
+            "aws": {
+              "spotInstances": {
+                "enabled": false
+              }
+            },
+            "clusterName": "my-cluster",
+            "instanceType": "m5.xlarge",
+            "labels": {
+              "owner": "my-user"
+            },
+            "maximumNodesPerZone": 1,
+            "minimumNodesPerZone": 1
+          }
+        },
+        {
+          "apiVersion": "ocm.mobb.redhat.com/v1alpha1",
+          "kind": "ROSACluster",
+          "metadata": {
+            "name": "rosa-sample"
+          },
+          "spec": {
+            "accountID": "111111111111",
+            "defaultMachinePool": {
+              "instanceType": "m5.xlarge",
+              "labels": {
+                "owner": "my-owner"
+              },
+              "minimumNodesPerZone": 2
+            },
+            "displayName": "my-cluster",
+            "iam": {
+              "userRole": "arn:aws:iam::111111111111:role/ManagedOpenShift-User-my_user-Role"
+            },
+            "tags": {
+              "owner": "my-owner"
+            }
+          }
+        }
+      ]
+    capabilities: Basic Install
+    categories: Integration & Delivery
+    containerImage: quay.io/mobb/ocm-operator:v0.1.0-alpha.1
+    createdAt: "2023-05-16T16:03:47Z"
+    operatorframework.io/suggested-namespace: ocm-operator
+    operators.operatorframework.io/builder: operator-sdk-v1.28.1
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+    repository: https://github.com/rh-mobb/ocm-operator
+    support: Managed Openshift Black Belt
+  name: ocm-operator.v0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: GitLabIdentityProvider creates a GitLab Identity Provider associated
+        with an existing OCM cluster.
+      displayName: GitLab Identity Provider
+      kind: GitLabIdentityProvider
+      name: gitlabidentityproviders.ocm.mobb.redhat.com
+      version: v1alpha1
+    - description: LDAPIdentityProvider creates an LDAP Identity Provider associated
+        with an existing OCM cluster.
+      displayName: LDAP Identity Provider
+      kind: LDAPIdentityProvider
+      name: ldapidentityproviders.ocm.mobb.redhat.com
+      version: v1alpha1
+    - description: MachinePool creates a Machine Pool for an existing OCM cluster.
+      displayName: Machine Pool
+      kind: MachinePool
+      name: machinepools.ocm.mobb.redhat.com
+      version: v1alpha1
+    - description: ROSA Cluster provisions a new ROSA Cluster in OCM.
+      displayName: ROSA Cluster
+      kind: ROSACluster
+      name: rosaclusters.ocm.mobb.redhat.com
+      version: v1alpha1
+  description: Operator for controlling various OCM Objects.
+  displayName: OpenShift Cluster Manager Operator
+  icon:
+  - base64data: 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
+    mediatype: image/jpeg
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - nodes
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - nodes/status
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - gitlabidentityproviders
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - gitlabidentityproviders/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - gitlabidentityproviders/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - ldapidentityproviders
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - ldapidentityproviders/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - ldapidentityproviders/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - machinepools
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - machinepools/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - machinepools/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - rosaclusters
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - rosaclusters/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ocm.mobb.redhat.com
+          resources:
+          - rosaclusters/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: ocm-operator-controller-manager
+      deployments:
+      - label:
+          app.kubernetes.io/component: manager
+          app.kubernetes.io/created-by: ocm-operator
+          app.kubernetes.io/instance: controller-manager
+          app.kubernetes.io/managed-by: kustomize
+          app.kubernetes.io/name: deployment
+          app.kubernetes.io/part-of: ocm-operator
+          control-plane: controller-manager
+        name: ocm-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
+              labels:
+                control-plane: controller-manager
+            spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                        - amd64
+                        - arm64
+                        - ppc64le
+                        - s390x
+                      - key: kubernetes.io/os
+                        operator: In
+                        values:
+                        - linux
+              containers:
+              - args:
+                - --secure-listen-address=0.0.0.0:8443
+                - --upstream=http://127.0.0.1:8080/
+                - --logtostderr=true
+                - --v=0
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.1
+                name: kube-rbac-proxy
+                ports:
+                - containerPort: 8443
+                  name: https
+                  protocol: TCP
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 5m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+              - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
+                - --leader-elect
+                command:
+                - /manager
+                env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      key: aws_access_key_id
+                      name: aws-credentials
+                      optional: true
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      key: aws_secret_access_key
+                      name: aws-credentials
+                      optional: true
+                - name: AWS_SDK_LOAD_CONFIG
+                  value: "1"
+                - name: AWS_CONFIG_FILE
+                  value: /var/run/secrets/aws/credentials
+                image: quay.io/mobb/ocm-operator:v0.1.0-alpha.1
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                volumeMounts:
+                - mountPath: /var/run/secrets/aws
+                  name: aws-credentials
+                  readOnly: true
+                - mountPath: /var/run/secrets/openshift/serviceaccount
+                  name: bound-sa-token
+                  readOnly: true
+              securityContext:
+                runAsNonRoot: true
+              serviceAccountName: ocm-operator-controller-manager
+              terminationGracePeriodSeconds: 10
+              volumes:
+              - name: aws-credentials
+                secret:
+                  optional: true
+                  secretName: aws-credentials
+              - name: bound-sa-token
+                projected:
+                  sources:
+                  - serviceAccountToken:
+                      audience: openshift
+                      path: token
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: ocm-operator-controller-manager
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - ocm
+  - rosa
+  - redhat
+  - machinepool
+  - mobb
+  links:
+  - name: OCM Machine Pool Operator
+    url: https://github.com/rh-mobb/ocm-operator
+  maintainers:
+  - email: dscott@redhat.com
+    name: Dustin Scott
+  maturity: alpha
+  provider:
+    name: Managed OpenShift Black Belt
+    url: https://github.com/rh-mobb/ocm-operator
+  version: 0.0.1
