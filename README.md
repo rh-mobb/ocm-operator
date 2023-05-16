@@ -11,6 +11,8 @@ native Kubernetes CRDs.  This allows you to plugin to more modern workflows such
 as GitOps.
 
 * [Machine Pools](https://docs.openshift.com/rosa/rosa_cluster_admin/rosa_nodes/rosa-nodes-machinepools-about.html#machine-pools)
+* [ROSA Clusters](https://docs.openshift.com/rosa/welcome/index.html)
+* [LDAP Identity Providers](https://docs.openshift.com/rosa/rosa_install_access_delete_clusters/rosa-sts-config-identity-providers.html#config-ldap-idp_rosa-sts-config-identity-providers)
 
 
 ### Running on the Cluster
