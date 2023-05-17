@@ -188,8 +188,6 @@ respectively to satisfy the `Controller`.  Here is an example using `ReconcileCr
 ```go
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
-//
-//nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a ldap identity provider request
 	request, ok := req.(*ROSAClusterRequest)

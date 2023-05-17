@@ -53,7 +53,6 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	original := &ocmv1alpha1.GitLabIdentityProvider{}
 
 	// get the object (desired state) from the cluster
-	//nolint:wrapcheck
 	if err := r.Get(ctx, req.NamespacedName, original); err != nil {
 		if !apierrs.IsNotFound(err) {
 			return &GitLabIdentityProviderRequest{}, fmt.Errorf("unable to fetch cluster object - %w", err)
