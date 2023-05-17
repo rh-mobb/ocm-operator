@@ -71,7 +71,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 //
 //nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to a ldap identity provider request
+	// type cast the request to a rosa cluster request
 	request, ok := req.(*ROSAClusterRequest)
 	if !ok {
 		return controllers.RequeueAfter(defaultClusterRequeue), ErrClusterRequestConvert
@@ -103,7 +103,7 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 //
 //nolint:wrapcheck
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to an ldap identity provider request
+	// type cast the request to a rosa cluster request
 	request, ok := req.(*ROSAClusterRequest)
 	if !ok {
 		return controllers.RequeueAfter(defaultClusterRequeue), ErrClusterRequestConvert
