@@ -106,7 +106,10 @@ func (r *Controller) ApplyGitLab(request *GitLabIdentityProviderRequest) (ctrl.R
 func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
-		request.Log.V(controllers.LogLevelDebug).Info("gitlab identity provider already in desired state", request.logValues()...)
+		request.Log.V(controllers.LogLevelDebug).Info(
+			"gitlab identity provider already in desired state",
+			controllers.LogValues(request)...,
+		)
 
 		return controllers.NoRequeue(), nil
 	}
@@ -159,8 +162,8 @@ func (r *Controller) Complete(request *GitLabIdentityProviderRequest) (ctrl.Resu
 		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
-	request.Log.Info("completed gitlab identity provider reconciliation", request.logValues()...)
-	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), request.logValues()...)
+	request.Log.Info("completed gitlab identity provider reconciliation", controllers.LogValues(request)...)
+	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
 	return controllers.RequeueAfter(r.Interval), nil
 }

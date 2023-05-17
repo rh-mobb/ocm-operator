@@ -74,7 +74,7 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 
 	// return if it is already in its desired state
 	if request.desired() {
-		request.Log.V(controllers.LogLevelDebug).Info("rosa cluster already in desired state", request.logValues()...)
+		request.Log.V(controllers.LogLevelDebug).Info("rosa cluster already in desired state", controllers.LogValues(request)...)
 
 		return controllers.NoRequeue(), nil
 	}
@@ -99,7 +99,7 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 	}
 
 	// delete the cluster
-	request.Log.Info("deleting cluster", request.logValues()...)
+	request.Log.Info("deleting cluster", controllers.LogValues(request)...)
 	request.OCMClient = ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.DisplayName)
 
 	if err := request.OCMClient.Delete(request.Original.Status.ClusterID); err != nil {
@@ -154,7 +154,7 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating deleted condition - %w", err)
 		}
 
-		request.Log.Info("cluster has been deleted", request.logValues()...)
+		request.Log.Info("cluster has been deleted", controllers.LogValues(request)...)
 
 		return controllers.NoRequeue(), nil
 	}
@@ -162,20 +162,20 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 	// return if we are still uninstalling
 	switch cluster.State() {
 	case clustersmgmtv1.ClusterStateUninstalling:
-		request.Log.Info("cluster is still uninstalling", request.logValues()...)
-		request.Log.Info(fmt.Sprintf("checking again in %s", request.provisionRequeueTime().String()), request.logValues()...)
+		request.Log.Info("cluster is still uninstalling", controllers.LogValues(request)...)
+		request.Log.Info(fmt.Sprintf("checking again in %s", request.provisionRequeueTime().String()), controllers.LogValues(request)...)
 
 		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
 	case clustersmgmtv1.ClusterStateError:
 		request.Log.Error(fmt.Errorf("cluster uninstalling is in error state"), fmt.Sprintf(
 			"checking again in %s", request.provisionRequeueTime().String(),
-		), request.logValues()...)
+		), controllers.LogValues(request)...)
 
 		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
 	default:
 		request.Log.Error(fmt.Errorf("cluster uninstalling is in unknown state"), fmt.Sprintf(
 			"checking again in %s", request.provisionRequeueTime().String(),
-		), request.logValues()...)
+		), controllers.LogValues(request)...)
 
 		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
 	}
@@ -188,7 +188,7 @@ func (r *Controller) DestroyOperatorRoles(request *ROSAClusterRequest) (ctrl.Res
 		return controllers.NoRequeue(), nil
 	}
 
-	request.Log.Info("deleting operator roles", request.logValues()...)
+	request.Log.Info("deleting operator roles", controllers.LogValues(request)...)
 	if err := request.destroyOperatorRoles(); err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
 			"unable to destroy operator roles - %w",
@@ -208,7 +208,7 @@ func (r *Controller) DestroyOperatorRoles(request *ROSAClusterRequest) (ctrl.Res
 func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, error) {
 	// only destroy the oidc provider if we have not already done so
 	if !conditions.IsSet(OIDCProviderDeleted(), request.Original) {
-		request.Log.Info("deleting oidc provider", request.logValues()...)
+		request.Log.Info("deleting oidc provider", controllers.LogValues(request)...)
 		if err := ocm.NewOIDCConfigClient(
 			request.Reconciler.Connection,
 		).Delete(request.Original.Status.OIDCConfigID); err != nil {
@@ -226,7 +226,7 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 
 	// only destroy the oidc configuration if we have not already done so
 	if !conditions.IsSet(OIDCConfigDeleted(), request.Original) {
-		request.Log.Info("deleting oidc config", request.logValues()...)
+		request.Log.Info("deleting oidc config", controllers.LogValues(request)...)
 		if err := request.AWSClient.DeleteOIDCProvider(request.Original.Status.OIDCProviderARN); err != nil {
 			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
 				"unable to delete oidc config - %w",
@@ -250,18 +250,18 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 func (r *Controller) WaitUntilReady(request *ROSAClusterRequest) (ctrl.Result, error) {
 	switch request.Cluster.State() {
 	case clustersmgmtv1.ClusterStateReady:
-		request.Log.Info("cluster is ready", request.logValues()...)
+		request.Log.Info("cluster is ready", controllers.LogValues(request)...)
 
 		return controllers.NoRequeue(), nil
 	case clustersmgmtv1.ClusterStateError:
 		request.Log.Error(fmt.Errorf("cluster is in error state"), fmt.Sprintf(
 			"checking again in %s", request.provisionRequeueTime().String(),
-		), request.logValues()...)
+		), controllers.LogValues(request)...)
 
 		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
 	default:
-		request.Log.Info("cluster is not ready", request.logValues()...)
-		request.Log.Info(fmt.Sprintf("checking again in %s", request.provisionRequeueTime().String()), request.logValues()...)
+		request.Log.Info("cluster is not ready", controllers.LogValues(request)...)
+		request.Log.Info(fmt.Sprintf("checking again in %s", request.provisionRequeueTime().String()), controllers.LogValues(request)...)
 
 		return controllers.RequeueAfter(request.provisionRequeueTime()), nil
 	}
@@ -275,8 +275,8 @@ func (r *Controller) Complete(request *ROSAClusterRequest) (ctrl.Result, error) 
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating reconciled condition - %w", err)
 	}
 
-	request.Log.Info("completed rosa cluster reconciliation", request.logValues()...)
-	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), request.logValues()...)
+	request.Log.Info("completed rosa cluster reconciliation", controllers.LogValues(request)...)
+	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
 	return controllers.RequeueAfter(r.Interval), nil
 }
@@ -287,7 +287,7 @@ func (r *Controller) CompleteDestroy(request *ROSAClusterRequest) (ctrl.Result, 
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
 	}
 
-	request.Log.Info("completed rosa cluster deletion", request.logValues()...)
+	request.Log.Info("completed rosa cluster deletion", controllers.LogValues(request)...)
 
 	return controllers.NoRequeue(), nil
 }

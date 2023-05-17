@@ -113,8 +113,14 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	}, nil
 }
 
+// GetObject returns the original object to satisfy the controllers.Request interface.
 func (request *MachinePoolRequest) GetObject() workload.Workload {
 	return request.Original
+}
+
+// GetName returns the name as it should appear in OCM.
+func (request *MachinePoolRequest) GetName() string {
+	return request.Desired.Spec.DisplayName
 }
 
 func (request *MachinePoolRequest) desired() bool {
@@ -126,15 +132,6 @@ func (request *MachinePoolRequest) desired() bool {
 		request.Desired.Spec,
 		request.Current.Spec,
 	)
-}
-
-// logValues produces a consistent set of log values for this request.
-func (request *MachinePoolRequest) logValues() []interface{} {
-	return []interface{}{
-		"resource", fmt.Sprintf("%s/%s", request.Desired.Namespace, request.Desired.Name),
-		"cluster", request.Desired.Spec.ClusterName,
-		"name", request.Desired.Spec.DisplayName,
-	}
 }
 
 // updateStatusCluster updates fields related to the cluster in which the machine pool resides in.
