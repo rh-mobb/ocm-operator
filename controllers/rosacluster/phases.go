@@ -125,7 +125,7 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 
 // WaitUntilMissing will requeue until the reconciler determines that the cluster is missing.
 //
-//nolint:exhaustive,goerr113
+//nolint:exhaustive
 func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the cluster
 	if conditions.IsSet(ClusterDeleted(), request.Original) {
@@ -242,7 +242,7 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 // WaitUntilReady will requeue until the reconciler determines that the current state of the
 // resource in the cluster is ready.
 //
-//nolint:exhaustive,goerr113
+//nolint:exhaustive
 func (r *Controller) WaitUntilReady(request *ROSAClusterRequest) (ctrl.Result, error) {
 	switch request.Cluster.State() {
 	case clustersmgmtv1.ClusterStateReady:

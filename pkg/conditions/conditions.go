@@ -69,7 +69,6 @@ func Update(
 	object.SetConditions(addCondition(object.GetConditions(), condition))
 
 	// run the patch
-	//nolint:wrapcheck
 	return kubernetes.PatchStatus(ctx, reconciler, original, object)
 }
 
