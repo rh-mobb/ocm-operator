@@ -59,7 +59,7 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 //
 //nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to a ldap identity provider request
+	// type cast the request to an ldap identity provider request
 	request, ok := req.(*LDAPIdentityProviderRequest)
 	if !ok {
 		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), ErrLDAPIdentityProviderRequestConvert
