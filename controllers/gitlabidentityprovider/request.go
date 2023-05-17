@@ -99,8 +99,14 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	}, nil
 }
 
+// GetObject returns the original object to satisfy the controllers.Request interface.
 func (request *GitLabIdentityProviderRequest) GetObject() workload.Workload {
 	return request.Original
+}
+
+// GetName returns the name as it should appear in OCM.
+func (request *GitLabIdentityProviderRequest) GetName() string {
+	return request.Desired.Spec.DisplayName
 }
 
 // updateStatusCluster updates fields related to the cluster in which the gitlab identity provider resides in.
@@ -137,16 +143,6 @@ func (request *GitLabIdentityProviderRequest) updateStatusCluster() error {
 	}
 
 	return nil
-}
-
-// logValues produces a consistent set of log values for this request.
-func (request *GitLabIdentityProviderRequest) logValues() []interface{} {
-	return []interface{}{
-		"resource", fmt.Sprintf("%s/%s", request.Desired.Namespace, request.Desired.Name),
-		"cluster", request.Desired.Spec.ClusterName,
-		"name", request.Desired.Spec.DisplayName,
-		"type", "gitlab",
-	}
 }
 
 func (request *GitLabIdentityProviderRequest) desired() bool {

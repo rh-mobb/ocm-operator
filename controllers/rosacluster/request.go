@@ -114,16 +114,14 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	return request, nil
 }
 
+// GetObject returns the original object to satisfy the controllers.Request interface.
 func (request *ROSAClusterRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
-// logValues produces a consistent set of log values for this request.
-func (request *ROSAClusterRequest) logValues() []interface{} {
-	return []interface{}{
-		"resource", fmt.Sprintf("%s/%s", request.Desired.Namespace, request.Desired.Name),
-		"name", request.Desired.Spec.DisplayName,
-	}
+// GetName returns the name as it should appear in OCM.
+func (request *ROSAClusterRequest) GetName() string {
+	return request.Desired.Spec.DisplayName
 }
 
 // desired returns whether or not the request is in its current desired state.
@@ -215,7 +213,7 @@ func (request *ROSAClusterRequest) createCluster() error {
 
 	// create the operator roles
 	if !request.Original.Status.OperatorRolesCreated {
-		request.Log.Info("creating operator roles", request.logValues()...)
+		request.Log.Info("creating operator roles", controllers.LogValues(request)...)
 		if createErr := request.createOperatorRoles(oidc); createErr != nil {
 			return createErr
 		}
@@ -231,7 +229,7 @@ func (request *ROSAClusterRequest) createCluster() error {
 	}
 
 	// create the cluster
-	request.Log.Info("creating rosa cluster", request.logValues()...)
+	request.Log.Info("creating rosa cluster", controllers.LogValues(request)...)
 	cluster, err := request.OCMClient.Create(request.Desired.Builder(
 		oidc,
 		request.Original.Status.OpenShiftVersionID,
@@ -279,7 +277,7 @@ func (request *ROSAClusterRequest) updateCluster() error {
 	}
 
 	// update the rosa cluster if it does exist
-	request.Log.Info("updating rosa cluster", request.logValues()...)
+	request.Log.Info("updating rosa cluster", controllers.LogValues(request)...)
 	cluster, err := request.OCMClient.Update(request.Desired.Builder(
 		oidc,
 		request.Original.Status.OpenShiftVersionID,
@@ -310,7 +308,7 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 
 	// create oidc config only if we have not created it already
 	if request.Original.Status.OIDCConfigID == "" {
-		request.Log.Info("creating oidc config", request.logValues()...)
+		request.Log.Info("creating oidc config", controllers.LogValues(request)...)
 		config, err = ocm.NewOIDCConfigClient(request.Reconciler.Connection).Create()
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc config - %w", err)
@@ -331,7 +329,7 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 
 	// create the oidc provider if we have not created it already
 	if request.Original.Status.OIDCProviderARN == "" {
-		request.Log.Info("creating oidc provider", request.logValues()...)
+		request.Log.Info("creating oidc provider", controllers.LogValues(request)...)
 		providerARN, err := request.AWSClient.CreateOIDCProvider(config.IssuerUrl())
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc provider - %w", err)
