@@ -59,9 +59,9 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 			)
 		}
 
-		// set the created condition
-		if err := conditions.Update(request.Context, request.Reconciler, request.Original, ClusterCreated()); err != nil {
-			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating created condition - %w", err)
+		// send a notification that the cluster has been created
+		if err := request.notify(events.Created, ClusterCreated(), rosaConditionTypeCreated); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster created notification - %w", err)
 		}
 
 		return controllers.NoRequeue(), nil
@@ -87,6 +87,11 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 		)
 	}
 
+	// send a notification that the cluster has been updated
+	if err := request.notify(events.Updated, ClusterUpdated(), rosaConditionTypeUpdated); err != nil {
+		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster updated notification - %w", err)
+	}
+
 	return controllers.NoRequeue(), nil
 }
 
@@ -110,18 +115,9 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 		)
 	}
 
-	// create an event indicating that the cluster has been deleted
-	events.RegisterAction(
-		events.Deleted,
-		request.Original,
-		r.Recorder,
-		request.Desired.Spec.DisplayName,
-		request.Original.Status.ClusterID,
-	)
-
-	// set the uninstalling condition
-	if err := conditions.Update(request.Context, request.Reconciler, request.Original, ClusterUninstalling()); err != nil {
-		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating uninstalling condition - %w", err)
+	// send a notification that the cluster has been deleted
+	if err := request.notify(events.Deleted, ClusterDeleted(), rosaConditionTypeDeleted); err != nil {
+		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster deleted notification - %w", err)
 	}
 
 	return controllers.NoRequeue(), nil
@@ -196,9 +192,9 @@ func (r *Controller) DestroyOperatorRoles(request *ROSAClusterRequest) (ctrl.Res
 		)
 	}
 
-	// update the status indicating the operator roles have been deleted
-	if err := conditions.Update(request.Context, request.Reconciler, request.Original, OperatorRolesDeleted()); err != nil {
-		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating operator roles deleted condition - %w", err)
+	// send a notification that the operator roles have been deleted
+	if err := request.notify(events.Deleted, OperatorRolesDeleted(), awsConditionTypeOperatorRolesDeleted); err != nil {
+		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending operator roles deleted notification - %w", err)
 	}
 
 	return controllers.NoRequeue(), nil
@@ -218,9 +214,9 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 			)
 		}
 
-		// update the status indicating the oidc provider has been deleted
-		if err := conditions.Update(request.Context, request.Reconciler, request.Original, OIDCProviderDeleted()); err != nil {
-			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating oidc provider deleted condition - %w", err)
+		// send a notification that the oidc provider has been deleted
+		if err := request.notify(events.Deleted, OIDCProviderDeleted(), oidcConditionTypeProviderDeleted); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending oidc provider deleted notification - %w", err)
 		}
 	}
 
@@ -234,9 +230,9 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 			)
 		}
 
-		// update the status indicating the oidc config has been deleted
-		if err := conditions.Update(request.Context, request.Reconciler, request.Original, OIDCConfigDeleted()); err != nil {
-			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error updating oidc config deleted condition - %w", err)
+		// send a notification that the oidc config has been deleted
+		if err := request.notify(events.Deleted, OIDCConfigDeleted(), oidcConditionTypeConfigDeleted); err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending oidc config deleted notification - %w", err)
 		}
 	}
 

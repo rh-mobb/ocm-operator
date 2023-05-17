@@ -8,9 +8,11 @@ import (
 
 const (
 	rosaConditionTypeCreated      = "ROSAClusterCreated"
+	rosaConditionTypeUpdated      = "ROSAClusterUpdated"
 	rosaConditionTypeUninstalling = "ROSAClusterUninstalling"
 	rosaConditionTypeDeleted      = "ROSAClusterDeleted"
 	rosaMessageCreated            = "rosa cluster has been created"
+	rosaMessageUpdated            = "rosa cluster has been updated"
 	rosaMessageUninstalling       = "rosa cluster has been deleted from openshift cluster manager and is uninstalling"
 	rosaMessageDeleted            = "rosa infrastructure has been deleted"
 
@@ -32,6 +34,18 @@ func ClusterCreated() *metav1.Condition {
 		Status:             metav1.ConditionTrue,
 		Reason:             triggers.Create.String(),
 		Message:            rosaMessageCreated,
+	}
+}
+
+// ClusterUpdated return a condition indicating that the ROSA Cluster has
+// been updated.
+func ClusterUpdated() *metav1.Condition {
+	return &metav1.Condition{
+		Type:               rosaConditionTypeUpdated,
+		LastTransitionTime: metav1.Now(),
+		Status:             metav1.ConditionTrue,
+		Reason:             triggers.Update.String(),
+		Message:            rosaMessageUpdated,
 	}
 }
 

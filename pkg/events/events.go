@@ -24,7 +24,7 @@ const (
 	DeletedString = "Deleted"
 )
 
-// String returns the string value of a machine pool event.
+// String returns the string value of an event.
 func (event Event) String() string {
 	return map[Event]string{
 		Unknown: UnknownString,
@@ -34,7 +34,7 @@ func (event Event) String() string {
 	}[event]
 }
 
-// Type returns the type of machine pool event.
+// Type returns the type of event.
 func (event Event) Type() string {
 	return map[Event]string{
 		Unknown: UnknownString,
@@ -44,14 +44,14 @@ func (event Event) Type() string {
 	}[event]
 }
 
-// Register registers an event.
+// RegisterAction registers an event.
 func RegisterAction(event Event, object client.Object, recorder record.EventRecorder, name, cluster string) {
 	recorder.Event(
 		object,
 		event.Type(),
 		fmt.Sprintf("%s%s", object.GetObjectKind().GroupVersionKind(), event.String()),
 		fmt.Sprintf(
-			"%s %s '%s' in cluster '%s'",
+			"%s %s '%s' for cluster '%s'",
 			object.GetObjectKind().GroupVersionKind(),
 			event.String(),
 			name,

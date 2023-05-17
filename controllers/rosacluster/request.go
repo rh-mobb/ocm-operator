@@ -9,12 +9,14 @@ import (
 	"github.com/go-logr/logr"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/aws"
+	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
@@ -247,15 +249,6 @@ func (request *ROSAClusterRequest) createCluster() error {
 		return fmt.Errorf("unable to update status providerID=%s - %w", cluster.ID(), err)
 	}
 
-	// create an event indicating that the rosa cluster has been created
-	events.RegisterAction(
-		events.Created,
-		request.Original,
-		request.Reconciler.Recorder,
-		request.Desired.Spec.DisplayName,
-		request.Original.Status.ClusterID,
-	)
-
 	return nil
 }
 
@@ -289,15 +282,6 @@ func (request *ROSAClusterRequest) updateCluster() error {
 	}
 
 	request.Cluster = cluster
-
-	// create an event indicating that the rosa cluster has been updated
-	events.RegisterAction(
-		events.Updated,
-		request.Original,
-		request.Reconciler.Recorder,
-		request.Desired.Spec.DisplayName,
-		request.Original.Status.ClusterID,
-	)
 
 	return nil
 }
@@ -404,6 +388,22 @@ func (request *ROSAClusterRequest) destroyOperatorRoles() error {
 	}
 
 	return nil
+}
+
+// notify notifies the user via a condition update and an event creation that something has happened.
+func (request *ROSAClusterRequest) notify(event events.Event, condition *metav1.Condition, name string) error {
+	// create an event registered to the resource notifying the consumer that something important
+	// has happened
+	events.RegisterAction(
+		event,
+		request.Original,
+		request.Reconciler.Recorder,
+		name,
+		request.Original.Status.ClusterID,
+	)
+
+	// update the status with the condition
+	return conditions.Update(request.Context, request.Reconciler, request.Original, condition)
 }
 
 // provisionRequeueTime determines the requeue time when the cluster prior to the cluster being ready.
