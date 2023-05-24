@@ -180,14 +180,3 @@ func RemoveFinalizer(ctx context.Context, r kubernetes.Client, object client.Obj
 
 	return nil
 }
-
-// LogValues returns a consistent set of values for a request.
-func LogValues(request Request) []interface{} {
-	object := request.GetObject()
-
-	return []interface{}{
-		"kind", object.GetObjectKind().GroupVersionKind().Kind,
-		"resource", fmt.Sprintf("%s/%s", object.GetNamespace(), object.GetName()),
-		"name", request.GetName(),
-	}
-}

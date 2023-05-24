@@ -58,6 +58,8 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a gitlab identity provider request
 	request, ok := req.(*GitLabIdentityProviderRequest)
@@ -88,6 +90,8 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
+//
+//nolint:wrapcheck
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a gitlab identity provider request
 	request, ok := req.(*GitLabIdentityProviderRequest)
