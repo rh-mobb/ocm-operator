@@ -233,6 +233,14 @@ bundle-build: ## Build the bundle image.
 bundle-push: ## Push the bundle image.
 	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
 
+.PHONY: bundle-run
+bundle-run: ## Run the bundle image.
+	operator-sdk run bundle $(BUNDLE_IMG)
+
+.PHONY: bundle-cleanup
+bundle-cleanup: ## Cleanup a running bundle image.
+	operator-sdk cleanup --delete-all ocm-operator
+
 .PHONY: opm
 OPM = ./bin/opm
 opm: ## Download opm locally if necessary.
