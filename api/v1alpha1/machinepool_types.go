@@ -119,7 +119,7 @@ type MachinePoolProviderAWS struct {
 	SpotInstances MachinePoolProviderAWSSpotInstances `json:"spotInstances,omitempty"`
 }
 
-// MachinePoolProviderAWSSpotInstances represents the AWS Spot Intance configuration.
+// MachinePoolProviderAWSSpotInstances represents the AWS Spot Instance configuration.
 type MachinePoolProviderAWSSpotInstances struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="aws.spotInstances.enabled is immutable",rule=(self == oldSelf)

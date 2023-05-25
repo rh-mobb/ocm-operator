@@ -150,7 +150,7 @@ against the request.  The request is used to store data to pass to other phases 
 Here is an example phase:
 
 ```go
-// GetCurrentState gets the current state of the LDAPIdentityProvider resoruce.  The current state of the LDAPIdentityProvider resource
+// GetCurrentState gets the current state of the LDAPIdentityProvider resource.  The current state of the LDAPIdentityProvider resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
 func (r *Controller) GetCurrentState(request *ROSAClusterRequest) (ctrl.Result, error) {
@@ -182,7 +182,7 @@ func (r *Controller) GetCurrentState(request *ROSAClusterRequest) (ctrl.Result, 
 ```
 
 6. Finally, you need to define the phases, in order, that the controller will execute for each create, update, or 
-delete operation.  These functions need to be named `RenconcileCreate`, `ReconcileUpdate` and `ReconcileDelete` 
+delete operation.  These functions need to be named `ReconcileCreate`, `ReconcileUpdate` and `ReconcileDelete` 
 respectively to satisfy the `Controller`.  Here is an example using `ReconcileCreate`:
 
 ```go

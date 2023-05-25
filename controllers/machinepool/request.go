@@ -95,7 +95,7 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 
 	// if we have a hosted control plane, ensure that we ignore the aws
 	// configuration as it is invalid for a hosted control plane.  this is
-	// only relevant so that the desired state does not drift and constanatly
+	// only relevant so that the desired state does not drift and constantly
 	// require an update.
 	if desired.Status.Hosted {
 		desired.Spec.AWS = ocmv1alpha1.MachinePoolProviderAWS{}

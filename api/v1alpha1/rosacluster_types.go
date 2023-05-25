@@ -132,7 +132,7 @@ type ROSAClusterSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="additionalTrustBundle is immutable",rule=(self == oldSelf)
 	// PEM-encoded X.509 certificate bundle that will be added to each nodes trusted certificate store.
-	AdditonalTrustBundle string `json:"additionalTrustBundle,omitempty"`
+	AdditionalTrustBundle string `json:"additionalTrustBundle,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:XValidation:message="tags is immutable",rule=(self == oldSelf)
@@ -389,7 +389,7 @@ func (cluster *ROSACluster) CopyFrom(source *clustersmgmtv1.Cluster) {
 	cluster.Spec.EnableFIPS = source.FIPS()
 	cluster.Spec.Encryption.EBS.Key = source.AWS().KMSKeyArn()
 	cluster.Spec.Encryption.ETCD.Key = source.AWS().EtcdEncryption().KMSKeyARN()
-	cluster.Spec.AdditonalTrustBundle = source.AdditionalTrustBundle()
+	cluster.Spec.AdditionalTrustBundle = source.AdditionalTrustBundle()
 
 	// machine pool settings
 	cluster.Spec.DefaultMachinePool.InstanceType = source.Nodes().ComputeMachineType().ID()
@@ -449,8 +449,8 @@ func (cluster *ROSACluster) Builder(
 		EtcdEncryption(cluster.Spec.Encryption.ETCD.Key != "")
 
 	// add trust bundle if specified
-	if cluster.Spec.AdditonalTrustBundle != "" {
-		builder.AdditionalTrustBundle(cluster.Spec.AdditonalTrustBundle)
+	if cluster.Spec.AdditionalTrustBundle != "" {
+		builder.AdditionalTrustBundle(cluster.Spec.AdditionalTrustBundle)
 	}
 
 	// only add the proxy builder if we have proxy settings

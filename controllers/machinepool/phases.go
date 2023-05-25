@@ -16,7 +16,7 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
-// GetCurrentState gets the current state of the MachinePool resoruce.  The current state of the MachinePool resource
+// GetCurrentState gets the current state of the MachinePool resource.  The current state of the MachinePool resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
 // TODO: needs refactor
