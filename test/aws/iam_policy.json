@@ -1,0 +1,69 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+              "ec2:DescribeSubnets",
+              "ec2:DescribeVpcs",
+              "ec2:DescribeAvailabilityZones",
+              "iam:CreateOpenIDConnectProvider",
+              "iam:TagOpenIDConnectProvider",
+              "iam:DeleteOpenIDConnectProvider",
+              "iam:ListRoles",
+              "iam:ListPolicies",
+              "iam:ListAttachedRolePolicies",
+              "iam:ListPolicyVersions"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+              "iam:CreatePolicy"
+            ],
+            "Resource": "arn:aws:iam::660250927410:policy/dscott-*",
+            "Condition": {
+                "StringLike": {
+                  "iam:PermissionsBoundary": "arn:aws:iam::660250927410:policy/OCMOperatorBoundary"
+                }
+              }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+              "iam:GetPolicy",
+              "iam:TagPolicy",
+              "iam:ListPolicyTags",
+              "iam:DeletePolicy"
+            ],
+            "Resource": "arn:aws:iam::660250927410:policy/dscott-*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+              "iam:GetRole",
+              "iam:CreateRole",
+              "iam:TagRole",
+              "iam:ListRoleTags",
+              "iam:DeleteRole"
+            ],
+            "Resource": "arn:aws:iam::660250927410:role/dscott-*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+              "iam:AttachRolePolicy",
+              "iam:DetachRolePolicy"
+            ],
+            "Resource": "arn:aws:iam::660250927410:role/dscott-*",
+            "Condition": {
+                "StringLike": {
+                  "iam:PolicyArn": [
+                    "arn:aws:iam::660250927410:policy/dscott-*"
+                  ]
+                }
+              }
+        }
+    ]
+}
