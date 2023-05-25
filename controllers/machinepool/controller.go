@@ -52,16 +52,12 @@ type Controller struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-//
-//nolint:wrapcheck
 func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return controllers.Reconcile(ctx, r, req)
 }
 
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
-//
-//nolint:wrapcheck
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a machine pool request
 	request, ok := req.(*MachinePoolRequest)
@@ -92,8 +88,6 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
-//
-//nolint:wrapcheck
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
 	// type cast the request to a machine pool request
 	request, ok := req.(*MachinePoolRequest)
@@ -110,8 +104,6 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 }
 
 // SetupWithManager sets up the controller with the Manager.
-//
-//nolint:wrapcheck
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		WithEventFilter(predicates.WorkloadPredicates()).

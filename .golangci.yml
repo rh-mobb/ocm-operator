@@ -78,7 +78,6 @@ linters:
     - gocritic
     - gocyclo
     - godot
-    - goerr113
     - goheader
     - goimports
     - gofmt
@@ -112,7 +111,6 @@ linters:
     - unparam
     - unused
     - whitespace
-    - wrapcheck
 
     # ISSUES: the following have global issues and are disabled.
     # - exhaustruct:      too restrictive on how to define structures
@@ -121,6 +119,8 @@ linters:
     # - revive:           allow const type = value format for defining constants and variables
     # - gochecknoglobals: kubebuilder uses globals by default; be consistent
     # - gochecknoinits:   kubebuilder uses init by default; be consistent
+    # - wrapcheck:        errors will not be exposed externally
+    # - goerr113:         errors will not be exposed externally
 
     # OVERRIDDEN: the following are overriden due to other linters being enabled.
     # - rowserrcheck

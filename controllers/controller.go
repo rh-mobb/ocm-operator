@@ -38,6 +38,7 @@ const (
 // when the request was triggered.
 type Request interface {
 	GetObject() workload.Workload
+	GetName() string
 }
 
 // Controller represents the object that is performing the reconciliation
@@ -81,7 +82,6 @@ func Reconcile(ctx context.Context, controller Controller, req ctrl.Request) (ct
 	}
 
 	// run the reconciliation loop based on the event trigger
-	//nolint:wrapcheck
 	switch trigger.String() {
 	case triggers.CreateString:
 		return controller.ReconcileCreate(request)
@@ -179,4 +179,15 @@ func RemoveFinalizer(ctx context.Context, r kubernetes.Client, object client.Obj
 	}
 
 	return nil
+}
+
+// LogValues returns a consistent set of values for a request.
+func LogValues(request Request) []interface{} {
+	object := request.GetObject()
+
+	return []interface{}{
+		"kind", object.GetObjectKind().GroupVersionKind().Kind,
+		"resource", fmt.Sprintf("%s/%s", object.GetNamespace(), object.GetName()),
+		"name", request.GetName(),
+	}
 }

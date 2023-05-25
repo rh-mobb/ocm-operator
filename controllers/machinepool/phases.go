@@ -105,7 +105,10 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
-		request.Log.V(controllers.LogLevelDebug).Info("machine pool already in desired state", request.logValues()...)
+		request.Log.V(controllers.LogLevelDebug).Info(
+			"machine pool already in desired state",
+			controllers.LogValues(request),
+		)
 
 		return controllers.NoRequeue(), nil
 	}
@@ -136,7 +139,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	if request.Current == nil {
 		var createErr error
 
-		request.Log.Info("creating machine pool", request.logValues()...)
+		request.Log.Info("creating machine pool", controllers.LogValues(request)...)
 		if request.Original.Status.Hosted {
 			createErr = request.createNodePool(poolClient.(*ocm.NodePoolClient))
 		} else {
@@ -148,7 +151,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 			if strings.Contains(createErr.Error(), "is being deleted from cluster") {
 				request.Log.Info(
 					"machine pool with same name is deleting; requeueing",
-					request.logValues()...,
+					controllers.LogValues(request)...,
 				)
 
 				return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
@@ -166,7 +169,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	// update the object
 	var updateErr error
 
-	request.Log.Info("updating machine pool", request.logValues()...)
+	request.Log.Info("updating machine pool", controllers.LogValues(request)...)
 	if request.Original.Status.Hosted {
 		updateErr = request.updateNodePool(poolClient.(*ocm.NodePoolClient))
 	} else {
@@ -212,7 +215,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	// delete the object
 	var deleteErr error
 
-	request.Log.Info("deleting machine pool", request.logValues()...)
+	request.Log.Info("deleting machine pool", controllers.LogValues(request)...)
 	if request.Original.Status.Hosted {
 		deleteErr = request.deleteNodePool(poolClient.(*ocm.NodePoolClient))
 	} else {
@@ -267,7 +270,7 @@ func (r *Controller) WaitUntilReady(request *MachinePoolRequest) (ctrl.Result, e
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
 	}
 
-	request.Log.Info("nodes are ready", request.logValues()...)
+	request.Log.Info("nodes are ready", controllers.LogValues(request)...)
 
 	return controllers.NoRequeue(), nil
 }
@@ -290,7 +293,7 @@ func (r *Controller) WaitUntilMissing(request *MachinePoolRequest) (ctrl.Result,
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
 	}
 
-	request.Log.Info("nodes have been removed", request.logValues()...)
+	request.Log.Info("nodes have been removed", controllers.LogValues(request)...)
 
 	return controllers.NoRequeue(), nil
 }
@@ -308,8 +311,8 @@ func (r *Controller) Complete(request *MachinePoolRequest) (ctrl.Result, error) 
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
-	request.Log.Info("completed machine pool reconciliation", request.logValues()...)
-	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), request.logValues()...)
+	request.Log.Info("completed machine pool reconciliation", controllers.LogValues(request)...)
+	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
 	return controllers.RequeueAfter(r.Interval), nil
 }
@@ -320,7 +323,7 @@ func (r *Controller) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, 
 		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
 	}
 
-	request.Log.Info("completed machine pool deletion", request.logValues()...)
+	request.Log.Info("completed machine pool deletion", controllers.LogValues(request)...)
 
 	return controllers.NoRequeue(), nil
 }

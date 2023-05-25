@@ -64,7 +64,10 @@ func (r *Controller) GetCurrentState(request *LDAPIdentityProviderRequest) (ctrl
 func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
-		request.Log.V(controllers.LogLevelDebug).Info("ldap identity provider already in desired state", request.logValues()...)
+		request.Log.V(controllers.LogLevelDebug).Info(
+			"ldap identity provider already in desired state",
+			controllers.LogValues(request)...,
+		)
 
 		return controllers.NoRequeue(), nil
 	}
@@ -73,7 +76,7 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 
 	// create the identity provider if it does not exist
 	if request.Current == nil {
-		request.Log.Info("creating ldap identity provider", request.logValues()...)
+		request.Log.Info("creating ldap identity provider", controllers.LogValues(request)...)
 		idp, err := request.OCMClient.Create(builder)
 		if err != nil {
 			return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
@@ -101,7 +104,7 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 	}
 
 	// update the identity provider if it does exist
-	request.Log.Info("updating ldap identity provider", request.logValues()...)
+	request.Log.Info("updating ldap identity provider", controllers.LogValues(request)...)
 	_, err := request.OCMClient.Update(builder)
 	if err != nil {
 		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf(
@@ -161,8 +164,8 @@ func (r *Controller) Complete(request *LDAPIdentityProviderRequest) (ctrl.Result
 		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
 	}
 
-	request.Log.Info("completed ldap identity provider reconciliation", request.logValues()...)
-	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), request.logValues()...)
+	request.Log.Info("completed ldap identity provider reconciliation", controllers.LogValues(request)...)
+	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
 	return controllers.RequeueAfter(r.Interval), nil
 }
@@ -173,7 +176,7 @@ func (r *Controller) CompleteDestroy(request *LDAPIdentityProviderRequest) (ctrl
 		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
 	}
 
-	request.Log.Info("completed ldap identity provider deletion", request.logValues()...)
+	request.Log.Info("completed ldap identity provider deletion", controllers.LogValues(request)...)
 
 	return controllers.NoRequeue(), nil
 }

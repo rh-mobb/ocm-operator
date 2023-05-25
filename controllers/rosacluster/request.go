@@ -9,12 +9,14 @@ import (
 	"github.com/go-logr/logr"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/aws"
+	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
@@ -45,7 +47,6 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	original := &ocmv1alpha1.ROSACluster{}
 
 	// get the object (desired state) from the cluster
-	//nolint:wrapcheck
 	if err := r.Get(ctx, req.NamespacedName, original); err != nil {
 		if !apierrs.IsNotFound(err) {
 			return &ROSAClusterRequest{}, fmt.Errorf("unable to fetch cluster object - %w", err)
@@ -114,16 +115,14 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	return request, nil
 }
 
+// GetObject returns the original object to satisfy the controllers.Request interface.
 func (request *ROSAClusterRequest) GetObject() workload.Workload {
 	return request.Original
 }
 
-// logValues produces a consistent set of log values for this request.
-func (request *ROSAClusterRequest) logValues() []interface{} {
-	return []interface{}{
-		"resource", fmt.Sprintf("%s/%s", request.Desired.Namespace, request.Desired.Name),
-		"name", request.Desired.Spec.DisplayName,
-	}
+// GetName returns the name as it should appear in OCM.
+func (request *ROSAClusterRequest) GetName() string {
+	return request.Desired.Spec.DisplayName
 }
 
 // desired returns whether or not the request is in its current desired state.
@@ -215,7 +214,7 @@ func (request *ROSAClusterRequest) createCluster() error {
 
 	// create the operator roles
 	if !request.Original.Status.OperatorRolesCreated {
-		request.Log.Info("creating operator roles", request.logValues()...)
+		request.Log.Info("creating operator roles", controllers.LogValues(request)...)
 		if createErr := request.createOperatorRoles(oidc); createErr != nil {
 			return createErr
 		}
@@ -231,7 +230,7 @@ func (request *ROSAClusterRequest) createCluster() error {
 	}
 
 	// create the cluster
-	request.Log.Info("creating rosa cluster", request.logValues()...)
+	request.Log.Info("creating rosa cluster", controllers.LogValues(request)...)
 	cluster, err := request.OCMClient.Create(request.Desired.Builder(
 		oidc,
 		request.Original.Status.OpenShiftVersionID,
@@ -248,15 +247,6 @@ func (request *ROSAClusterRequest) createCluster() error {
 	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
 		return fmt.Errorf("unable to update status providerID=%s - %w", cluster.ID(), err)
 	}
-
-	// create an event indicating that the rosa cluster has been created
-	events.RegisterAction(
-		events.Created,
-		request.Original,
-		request.Reconciler.Recorder,
-		request.Desired.Spec.DisplayName,
-		request.Original.Status.ClusterID,
-	)
 
 	return nil
 }
@@ -279,7 +269,7 @@ func (request *ROSAClusterRequest) updateCluster() error {
 	}
 
 	// update the rosa cluster if it does exist
-	request.Log.Info("updating rosa cluster", request.logValues()...)
+	request.Log.Info("updating rosa cluster", controllers.LogValues(request)...)
 	cluster, err := request.OCMClient.Update(request.Desired.Builder(
 		oidc,
 		request.Original.Status.OpenShiftVersionID,
@@ -292,15 +282,6 @@ func (request *ROSAClusterRequest) updateCluster() error {
 
 	request.Cluster = cluster
 
-	// create an event indicating that the rosa cluster has been updated
-	events.RegisterAction(
-		events.Updated,
-		request.Original,
-		request.Reconciler.Recorder,
-		request.Desired.Spec.DisplayName,
-		request.Original.Status.ClusterID,
-	)
-
 	return nil
 }
 
@@ -310,7 +291,7 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 
 	// create oidc config only if we have not created it already
 	if request.Original.Status.OIDCConfigID == "" {
-		request.Log.Info("creating oidc config", request.logValues()...)
+		request.Log.Info("creating oidc config", controllers.LogValues(request)...)
 		config, err = ocm.NewOIDCConfigClient(request.Reconciler.Connection).Create()
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc config - %w", err)
@@ -331,7 +312,7 @@ func (request *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.
 
 	// create the oidc provider if we have not created it already
 	if request.Original.Status.OIDCProviderARN == "" {
-		request.Log.Info("creating oidc provider", request.logValues()...)
+		request.Log.Info("creating oidc provider", controllers.LogValues(request)...)
 		providerARN, err := request.AWSClient.CreateOIDCProvider(config.IssuerUrl())
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc provider - %w", err)
@@ -406,6 +387,22 @@ func (request *ROSAClusterRequest) destroyOperatorRoles() error {
 	}
 
 	return nil
+}
+
+// notify notifies the user via a condition update and an event creation that something has happened.
+func (request *ROSAClusterRequest) notify(event events.Event, condition *metav1.Condition, name string) error {
+	// create an event registered to the resource notifying the consumer that something important
+	// has happened
+	events.RegisterAction(
+		event,
+		request.Original,
+		request.Reconciler.Recorder,
+		name,
+		request.Original.Status.ClusterID,
+	)
+
+	// update the status with the condition
+	return conditions.Update(request.Context, request.Reconciler, request.Original, condition)
 }
 
 // provisionRequeueTime determines the requeue time when the cluster prior to the cluster being ready.
