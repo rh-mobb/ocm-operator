@@ -116,7 +116,7 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 	}
 
 	// send a notification that the cluster has been deleted
-	if err := request.notify(events.Deleted, ClusterDeleted(), rosaConditionTypeDeleted); err != nil {
+	if err := request.notify(events.Deleted, ClusterUninstalling(), rosaConditionTypeUninstalling); err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster deleted notification - %w", err)
 	}
 
