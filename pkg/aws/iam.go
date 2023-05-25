@@ -21,8 +21,8 @@ const (
 	operatorRolesPrefixLength = 6
 	operatorRolesMaxLength    = 64
 
-	thumprintTimeout  = 10 * time.Second
-	thumprintInterval = 1 * time.Second
+	thumbprintTimeout  = 10 * time.Second
+	thumbprintInterval = 1 * time.Second
 )
 
 var (
@@ -84,16 +84,16 @@ func GetOperatorRoleArn(name, namespace, accountID, prefix string) string {
 }
 
 // waitForThumbprint attempts to get the thumbprint up to a specific timeout value.  This
-// is because the thumprint may not be ready by the time we call this function.  We do not
+// is because the thumbprint may not be ready by the time we call this function.  We do not
 // want to make this a long running function but we do want to give the reconciler sufficient
 // time to retrieve the thumbprint without spitting back an error and requeueing.
 func waitForThumbprint(oidcEndpointURL string) (thumbprint string, err error) {
 	// create the ticker at an interval, ensuring that we stop it to avoid a
 	// memory leak.
-	ticker := time.NewTicker(thumprintInterval)
+	ticker := time.NewTicker(thumbprintInterval)
 	defer ticker.Stop()
 
-	timeout := time.After(thumprintTimeout)
+	timeout := time.After(thumbprintTimeout)
 
 	for {
 		select {
@@ -135,7 +135,7 @@ func getThumbprint(oidcEndpointURL string) (string, error) {
 		}
 	}
 
-	// fall back to using the last certficiate in the chain
+	// fall back to using the last certificate in the chain
 	cert := certChain[len(certChain)-1]
 
 	return sha1Hash(cert.Raw), nil

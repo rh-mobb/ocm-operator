@@ -17,7 +17,7 @@ var (
 	ErrGitLabApplicationDrift = errors.New("gitlab application is immutable but differs from the desired state configuration")
 )
 
-// GetCurrentState gets the current state of the GitLabIdentityProvider resoruce.  The current state of the GitLabIdentityProvider resource
+// GetCurrentState gets the current state of the GitLabIdentityProvider resource.  The current state of the GitLabIdentityProvider resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
 func (r *Controller) GetCurrentState(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
