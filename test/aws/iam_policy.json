@@ -20,7 +20,7 @@
         {
             "Effect": "Allow",
             "Action": [
-              "iam:CreatePolicy"
+              "iam:CreateRole"
             ],
             "Resource": "arn:aws:iam::660250927410:policy/dscott-*",
             "Condition": {
@@ -33,6 +33,7 @@
             "Effect": "Allow",
             "Action": [
               "iam:GetPolicy",
+              "iam:CreatePolicy",
               "iam:TagPolicy",
               "iam:ListPolicyTags",
               "iam:DeletePolicy"

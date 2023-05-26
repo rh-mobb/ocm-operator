@@ -1,8 +1,25 @@
 # Quick Start
 
+## Prerequisites
+
+- [oc](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html)
+- [aws](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [ROSA Cluster (4.12+)](https://mobb.ninja/docs/rosa/sts/)
+
+> **Warning:**
+> This is only tested on ROSA, but may work on other Kubernetes and OpenShift variants.  It requires
+> an AWS STS-enabled cluster.  Additionally, OpenShift versions 4.12+ are recommended, as they 
+> enable [CRD CEL validation](https://kubernetes.io/blog/2022/09/23/crd-validation-rules-beta/).  Versions
+> prior to 4.12 provide a lower version of Kubernetes that does not enable this feature.  They may 
+> work, but provide no input validation when submitting custom resources to the cluster.
+
 Before installing this operator, there are a couple secrets that must be created.
 
-## Create OCM Token Secret
+1. OCM Token: used to authenticate against the OCM API.
+2. AWS Credentials: uses an assume role to a role created in the instructions below in order
+to access AWS resources.
+
+### Create OCM Token Secret
 
 1. Create a namespace where you wish to install the operator:
 
@@ -22,7 +39,7 @@ oc create secret generic ocm-token \
     --from-literal=OCM_TOKEN=${MY_OCM_TOKEN}
 ```
 
-## Create AWS IAM Policies and Roles
+### Create AWS IAM Policies and Roles
 
 The operator will need to elevate privileges in order to perform things like 
 creating the operator-roles for the clusters.  Because of this, the operator 
@@ -32,7 +49,7 @@ must have a specific role created to allow it these permissions.
 policies.  If errors or more stringent security lockdowns are found, please submit a PR 
 so that we can get this fixed.
 
-1. Set the account ID environment variable to define your AWS account ID:
+1. Set `ACCOUNT_ID` environment variable to define your AWS account ID:
 
 ```bash
 export ACCOUNT_ID=111111111111
@@ -83,7 +100,7 @@ via the previous policies.
 ```bash
 cat <<EOF > /tmp/credentials
 [default]
-role_arn = arn:aws:iam::$ACCOUNT_ID:role/ECRLogin
+role_arn = arn:aws:iam::$ACCOUNT_ID:role/OCMOperator
 web_identity_token_file = /var/run/secrets/openshift/serviceaccount/token
 EOF
 
@@ -107,6 +124,6 @@ spec:
   name: ocm-operator
   source: community-operators
   sourceNamespace: ocm-operator
-  startingCSV: ocm-operator.v0.1.0-alpha.3
+  startingCSV: ocm-operator.v0.1.0
 EOF
 ```

@@ -92,3 +92,15 @@ func (cc *ClusterClient) Delete(id string) error {
 
 	return nil
 }
+
+func ClusterExists(clusterName string, connection *sdk.Connection) (*clustersmgmtv1.Cluster, bool, error) {
+	// retrieve the cluster
+	clusterClient := NewClusterClient(connection, clusterName)
+
+	cluster, err := clusterClient.Get()
+	if err != nil {
+		return nil, false, fmt.Errorf("unable to retrieve cluster [%s] - %w", clusterName, err)
+	}
+
+	return cluster, (cluster != nil), nil
+}

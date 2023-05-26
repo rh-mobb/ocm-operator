@@ -132,16 +132,18 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 		return controllers.NoRequeue(), nil
 	}
 
-	// retrieve the cluster
-	request.OCMClient = ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.DisplayName)
-
-	cluster, err := request.OCMClient.Get()
+	// retrieve the cluster and return if it does not exist (has been deleted)
+	cluster, exists, err := ocm.ClusterExists(request.Desired.Spec.DisplayName, request.Reconciler.Connection)
 	if err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
 			"unable to retrieve cluster from ocm [name=%s] - %w",
 			request.Desired.Spec.DisplayName,
 			err,
 		)
+	}
+
+	if !exists {
+		return controllers.NoRequeue(), nil
 	}
 
 	// set the deleted condition and return if we have no cluster

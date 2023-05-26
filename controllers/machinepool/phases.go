@@ -195,6 +195,16 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 		return controllers.NoRequeue(), nil
 	}
 
+	// return if the cluster does not exist (has been deleted)
+	_, exists, err := ocm.ClusterExists(request.Desired.Spec.ClusterName, request.Reconciler.Connection)
+	if err != nil {
+		return controllers.RequeueAfter(defaultMachinePoolRequeue), err
+	}
+
+	if !exists {
+		return controllers.NoRequeue(), nil
+	}
+
 	// get the client
 	var poolClient interface{}
 
