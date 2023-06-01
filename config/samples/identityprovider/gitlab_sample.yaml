@@ -6,4 +6,7 @@ spec:
   clusterName: my-cluster
   displayName: gitlab-sample
   url: https://gitlab.com
-  accessTokenSecret: gitlab-access-token
+  mappingMethod: claim
+  clientID: gitlab
+  clientSecret: 
+    name: gitlab

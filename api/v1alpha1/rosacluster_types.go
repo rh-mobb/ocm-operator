@@ -458,13 +458,9 @@ func (cluster *ROSACluster) Builder(
 		builder.Proxy(cluster.BuildProxy())
 	}
 
-	// only add the network builder if we have not specified a
-	// preconfigured network architecture via the network.subnets field.
-	if !cluster.HasSubnets() {
-		builder.Network(cluster.BuildNetwork())
-	}
-
-	builder.AWS(cluster.BuildAWS(oidcConfig)).Nodes(cluster.BuildClusterNodes(availabilityZones))
+	builder.AWS(cluster.BuildAWS(oidcConfig)).
+		Nodes(cluster.BuildClusterNodes(availabilityZones)).
+		Network(cluster.BuildNetwork())
 
 	return builder
 }

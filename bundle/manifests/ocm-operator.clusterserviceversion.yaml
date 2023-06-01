@@ -11,9 +11,13 @@ metadata:
             "name": "gitlab-sample"
           },
           "spec": {
-            "accessTokenSecret": "gitlab-access-token",
-            "clusterName": "my-cluster",
+            "clientID": "test",
+            "clientSecret": {
+              "name": "gitlab"
+            },
+            "clusterName": "dscott-2",
             "displayName": "gitlab-sample",
+            "mappingMethod": "claim",
             "url": "https://gitlab.com"
           }
         },
@@ -84,13 +88,13 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     containerImage: quay.io/mobb/ocm-operator:v0.1.0-alpha.1
-    createdAt: "2023-05-16T20:36:45Z"
+    createdAt: "2023-06-01T19:59:43Z"
     operatorframework.io/suggested-namespace: ocm-operator
     operators.operatorframework.io/builder: operator-sdk-v1.28.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/rh-mobb/ocm-operator
     support: Managed Openshift Black Belt
-  name: ocm-operator.v0.1.0-alpha.1
+  name: ocm-operator.v0.1.0-alpha.8
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -353,23 +357,14 @@ spec:
                 command:
                 - /manager
                 env:
-                - name: AWS_ACCESS_KEY_ID
-                  valueFrom:
-                    secretKeyRef:
-                      key: aws_access_key_id
-                      name: aws-credentials
-                      optional: true
-                - name: AWS_SECRET_ACCESS_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      key: aws_secret_access_key
-                      name: aws-credentials
-                      optional: true
                 - name: AWS_SDK_LOAD_CONFIG
                   value: "1"
                 - name: AWS_CONFIG_FILE
                   value: /var/run/secrets/aws/credentials
-                image: quay.io/mobb/ocm-operator:v0.1.0-alpha.1
+                envFrom:
+                - secretRef:
+                    name: ocm-token
+                image: quay.io/mobb/ocm-operator:v0.1.0-alpha.8
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -385,8 +380,8 @@ spec:
                   periodSeconds: 10
                 resources:
                   limits:
-                    cpu: 500m
-                    memory: 128Mi
+                    cpu: 100m
+                    memory: 256Mi
                   requests:
                     cpu: 10m
                     memory: 64Mi
@@ -453,13 +448,13 @@ spec:
         serviceAccountName: ocm-operator-controller-manager
     strategy: deployment
   installModes:
-  - supported: false
+  - supported: true
     type: OwnNamespace
-  - supported: false
+  - supported: true
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - ocm
@@ -477,4 +472,4 @@ spec:
   provider:
     name: Managed OpenShift Black Belt
     url: https://github.com/rh-mobb/ocm-operator
-  version: 0.1.0-alpha.1
+  version: 0.1.0-alpha.8

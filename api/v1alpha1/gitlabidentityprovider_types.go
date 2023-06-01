@@ -18,12 +18,14 @@ package v1alpha1
 
 import (
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	GitLabAccessTokenKey = "accessToken"
-	GitLabCAKey          = "ca.crt"
+	GitLabClientSecretKey = "clientSecret"
+	GitLabAccessTokenKey  = "accessToken"
+	GitLabCAKey           = "ca.crt"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -33,13 +35,7 @@ const (
 //
 //nolint:lll
 type GitLabIdentityProviderSpec struct {
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:XValidation:message="url is immutable",rule=(self == oldSelf)
-	// +kubebuilder:validation:XValidation:message="url must have an https:// prefix",rule=(self.startsWith("https://"))
-	// url is the oauth server base URL.  This field is immutable to prevent
-	// leaving orphaned resources on a GitLab server.  The URL should contain
-	// an 'https://' prefix.
-	URL string `json:"url,omitempty"`
+	configv1.GitLabIdentityProvider `json:",inline"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=claim
@@ -48,14 +44,6 @@ type GitLabIdentityProviderSpec struct {
 	// See https://docs.openshift.com/container-platform/latest/authentication/understanding-identity-provider.html#identity-provider-parameters_understanding-identity-provider
 	// for a detailed description of what these mean.  Must be one of claim (default), lookup, generate, or add.
 	MappingMethod string `json:"mappingMethod,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	// ca is an optional reference containing the PEM-encoded CA bundle data, as a string value.
-	// It is used as a trust anchor to validate the TLS certificate presented by the remote server.
-	// If the specified ca data is not valid, the identity provider is not honored.
-	// If empty, the default system roots are used.
-	// +optional
-	CA string `json:"ca,omitempty"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:message="clusterName is immutable",rule=(self == oldSelf)
@@ -75,6 +63,10 @@ type GitLabIdentityProviderSpec struct {
 	// API limitation.
 	DisplayName string `json:"displayName,omitempty"`
 
+	// TODO: eventually we want to be able to have the operator create the application.  currently there is a limitation
+	//       in gitlab which restricts application creation for a particular group to the server admins.  once this
+	//       api limitation is removed (if ever) we can implement the following and be able to reconcile accordingly.
+
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:message="accessTokenSecret is immutable",rule=(self == oldSelf)
 	// accessTokenSecret is a required reference to the secret by
@@ -83,7 +75,23 @@ type GitLabIdentityProviderSpec struct {
 	// secret must contain the key 'accessToken' to locate the data. If the secret or
 	// expected key is not found, the identity provider is not honored. The namespace
 	// for this secret must exist in the same namespace as the resource.
-	AccessTokenSecret string `json:"accessTokenSecret,omitempty"`
+	// AccessTokenSecret string `json:"accessTokenSecret,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:message="url is immutable",rule=(self == oldSelf)
+	// +kubebuilder:validation:XValidation:message="url must have an https:// prefix",rule=(self.startsWith("https://"))
+	// url is the oauth server base URL.  This field is immutable to prevent
+	// leaving orphaned resources on a GitLab server.  The URL should contain
+	// an 'https://' prefix.
+	// URL string `json:"url,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	// ca is an optional reference containing the PEM-encoded CA bundle data, as a string value.
+	// It is used as a trust anchor to validate the TLS certificate presented by the remote server.
+	// If the specified ca data is not valid, the identity provider is not honored.
+	// If empty, the default system roots are used.
+	// +optional
+	// CA string `json:"ca,omitempty"`
 }
 
 // GitLabIdentityProviderStatus defines the observed state of GitLabIdentityProvider.
@@ -96,6 +104,13 @@ type GitLabIdentityProviderStatus struct {
 	// the number of API calls to look up a cluster ID based on
 	// the cluster name.
 	ClusterID string `json:"clusterID,omitempty"`
+
+	// +kubebuilder:validation:XValidation:message="status.providerID is immutable",rule=(self == oldSelf)
+	// Represents the programmatic identity provider ID of the IDP, as
+	// determined during reconciliation.  This is used to reduce
+	// the number of API calls to look up a cluster ID based on
+	// the identity provider name.
+	ProviderID string `json:"providerID,omitempty"`
 
 	// +kubebuilder:validation:XValidation:message="status.callbackURL is immutable",rule=(self == oldSelf)
 	// Represents the OAuth endpoint used for the OAuth provider to call back
@@ -139,23 +154,30 @@ func (gitlab *GitLabIdentityProvider) SetConditions(conditions []metav1.Conditio
 }
 
 // CopyFrom copies a GitLab Identity provider into an object that is able to be reconciled.
-func (gitlab *GitLabIdentityProvider) CopyFrom(source *clustersmgmtv1.GitlabIdentityProvider) {
-	gitlab.Spec.CA = source.CA()
-	gitlab.Spec.URL = source.URL()
+func (gitlab *GitLabIdentityProvider) CopyFrom(source *clustersmgmtv1.IdentityProvider) {
+	gitlab.Spec.CA = configv1.ConfigMapNameReference{Name: source.Gitlab().CA()}
+	gitlab.Spec.URL = source.Gitlab().URL()
+	gitlab.Spec.ClientID = source.Gitlab().ClientID()
 }
 
 // Builder returns the builder object from a reconciler object.  This object is used to
 // pass into the OCM API for creating the object.
-func (gitlab *GitLabIdentityProvider) Builder(ca, clientSecret string) *clustersmgmtv1.GitlabIdentityProviderBuilder {
-	builder := clustersmgmtv1.NewGitlabIdentityProvider().
+func (gitlab *GitLabIdentityProvider) Builder(ca, clientSecret string) *clustersmgmtv1.IdentityProviderBuilder {
+	builder := clustersmgmtv1.NewIdentityProvider().
+		MappingMethod(clustersmgmtv1.IdentityProviderMappingMethod(gitlab.Spec.MappingMethod)).
+		Name(gitlab.Spec.DisplayName).
+		Type(clustersmgmtv1.IdentityProviderTypeGitlab)
+
+	gitlabIDP := clustersmgmtv1.NewGitlabIdentityProvider().
 		URL(gitlab.Spec.URL).
-		ClientSecret(clientSecret)
+		ClientSecret(clientSecret).
+		ClientID(gitlab.Spec.ClientID)
 
 	if ca != "" {
-		return builder.CA(ca)
+		gitlabIDP.CA(ca)
 	}
 
-	return builder
+	return builder.Gitlab(gitlabIDP)
 }
 
 func init() {

@@ -116,7 +116,7 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 	}
 
 	// send a notification that the cluster has been deleted
-	if err := request.notify(events.Deleted, ClusterDeleted(), rosaConditionTypeDeleted); err != nil {
+	if err := request.notify(events.Deleted, ClusterUninstalling(), rosaConditionTypeUninstalling); err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster deleted notification - %w", err)
 	}
 
@@ -132,16 +132,18 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 		return controllers.NoRequeue(), nil
 	}
 
-	// retrieve the cluster
-	request.OCMClient = ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.DisplayName)
-
-	cluster, err := request.OCMClient.Get()
+	// retrieve the cluster and return if it does not exist (has been deleted)
+	cluster, exists, err := ocm.ClusterExists(request.Desired.Spec.DisplayName, request.Reconciler.Connection)
 	if err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
 			"unable to retrieve cluster from ocm [name=%s] - %w",
 			request.Desired.Spec.DisplayName,
 			err,
 		)
+	}
+
+	if !exists {
+		return controllers.NoRequeue(), nil
 	}
 
 	// set the deleted condition and return if we have no cluster
@@ -277,7 +279,7 @@ func (r *Controller) Complete(request *ROSAClusterRequest) (ctrl.Result, error) 
 	return controllers.RequeueAfter(r.Interval), nil
 }
 
-// CompleteDestroy will perform all actions required to successful complete a reconciliation request.
+// CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
 func (r *Controller) CompleteDestroy(request *ROSAClusterRequest) (ctrl.Result, error) {
 	if err := controllers.RemoveFinalizer(request.Context, r, request.Original); err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("unable to remove finalizers - %w", err)

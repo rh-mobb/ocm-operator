@@ -127,6 +127,10 @@ func (request *MachinePoolRequest) desired() bool {
 		return false
 	}
 
+	// ignore the wait field as it is an internal field to the controller
+	// and does not represent the desired state of the machine pool
+	request.Current.Spec.Wait = request.Desired.Spec.Wait
+
 	return reflect.DeepEqual(
 		request.Desired.Spec,
 		request.Current.Spec,

@@ -233,6 +233,14 @@ bundle-build: ## Build the bundle image.
 bundle-push: ## Push the bundle image.
 	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
 
+.PHONY: bundle-run
+bundle-run: ## Run the bundle image.
+	operator-sdk run bundle $(BUNDLE_IMG)
+
+.PHONY: bundle-cleanup
+bundle-cleanup: ## Cleanup a running bundle image.
+	operator-sdk cleanup --delete-all ocm-operator
+
 .PHONY: opm
 OPM = ./bin/opm
 opm: ## Download opm locally if necessary.
@@ -273,3 +281,9 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+# Create the OCM Token secret.
+OCM_TOKEN ?=
+.PHONY: ocm-token
+ocm-token: ## Create the OCM Token secret.
+	oc create secret generic ocm-token --from-literal=OCM_TOKEN=$(OCM_TOKEN)

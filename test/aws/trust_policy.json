@@ -1,0 +1,17 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::660250927410:oidc-provider/rh-oidc.s3.us-east-1.amazonaws.com/23uk0suq45r86nig5tvp2pje1itlb07l"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "rh-oidc.s3.us-east-1.amazonaws.com/23uk0suq45r86nig5tvp2pje1itlb07l:sub": "system:serviceaccount:ocm-operator:ocm-operator-controller-manager"
+                }
+            }
+        }
+    ]
+}

@@ -3,7 +3,8 @@ kind: MachinePool
 metadata:
   name: spot
 spec:
-  clusterName: "dscott-test"
+  wait: false
+  clusterName: "dscott"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge

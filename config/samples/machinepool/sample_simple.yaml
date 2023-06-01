@@ -1,9 +1,10 @@
 apiVersion: ocm.mobb.redhat.com/v1alpha1
 kind: MachinePool
 metadata:
-  name: simple
+  name: simple2
 spec:
-  clusterName: "skynet"
+  wait: false
+  clusterName: "dscott"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge
