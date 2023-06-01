@@ -71,9 +71,10 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	}
 
 	// execute the phases
+	// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
 	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
 		{Name: "GetCurrentState", Function: func() (ctrl.Result, error) { return r.GetCurrentState(request) }},
-		{Name: "ApplyGitLab", Function: func() (ctrl.Result, error) { return r.ApplyGitLab(request) }},
+		// {Name: "ApplyGitLab", Function: func() (ctrl.Result, error) { return r.ApplyGitLab(request) }},
 		{Name: "ApplyIdentityProvider", Function: func() (ctrl.Result, error) { return r.ApplyIdentityProvider(request) }},
 		{Name: "Complete", Function: func() (ctrl.Result, error) { return r.Complete(request) }},
 	}...)
@@ -98,7 +99,7 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	// execute the phases
 	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
 		{Name: "Destroy", Function: func() (ctrl.Result, error) { return r.Destroy(request) }},
-		{Name: "Complete", Function: func() (ctrl.Result, error) { return r.Complete(request) }},
+		{Name: "CompleteDestroy", Function: func() (ctrl.Result, error) { return r.CompleteDestroy(request) }},
 	}...)
 }
 

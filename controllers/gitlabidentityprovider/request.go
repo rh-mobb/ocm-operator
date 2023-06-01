@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	gitlab "github.com/xanzy/go-gitlab"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -41,12 +40,14 @@ type GitLabIdentityProviderRequest struct {
 	Trigger           triggers.Trigger
 	Reconciler        *Controller
 	GitLabClient      *identityprovider.GitLab
-	OCMClient         *ocm.GitLabIdentityProviderClient
+	OCMClient         *ocm.IdentityProviderClient
 
+	// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
 	// data obtained during request reconciliation
-	AccessToken  string
-	ClientID     string
+	// AccessToken  string
+	// ClientID     string
 	ClientSecret string
+	CA           string
 }
 
 func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controllers.Request, error) {
@@ -61,21 +62,44 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		return &GitLabIdentityProviderRequest{}, err
 	}
 
-	// get the secret access token data from the cluster
-	accessToken, err := kubernetes.GetSecretData(ctx, r, original.Spec.AccessTokenSecret, req.Namespace, ocmv1alpha1.GitLabAccessTokenKey)
-	if accessToken == "" {
-		if err == nil {
-			return &GitLabIdentityProviderRequest{}, accessTokenError(original, ErrMissingAccessToken)
+	// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
+	// get the client secret data from the cluster
+	clientSecret, err := kubernetes.GetSecretData(ctx, r, original.Spec.ClientSecret.Name, req.Namespace, ocmv1alpha1.GitLabClientSecretKey)
+	if clientSecret == "" {
+		if err != nil {
+			log.Log.Error(err, "error retrieving client secret")
 		}
 
-		return &GitLabIdentityProviderRequest{}, accessTokenError(original, err)
+		return &GitLabIdentityProviderRequest{}, fmt.Errorf("unable to obtain client secret from cluster - %w", err)
 	}
 
-	// create the api client used to interact with gitlab
-	gitlabClient, err := gitlab.NewClient(accessToken, gitlab.WithBaseURL(original.Spec.URL+"/api/v4"))
-	if err != nil {
-		return &GitLabIdentityProviderRequest{}, fmt.Errorf("error creating gitlab api client - %w", err)
+	// get the client secret data from the cluster
+	ca, err := kubernetes.GetConfigMapData(ctx, r, original.Spec.CA.Name, req.Namespace, ocmv1alpha1.GitLabCAKey)
+	if clientSecret == "" {
+		if err != nil {
+			log.Log.Error(err, "error retrieving client secret")
+		}
+
+		return &GitLabIdentityProviderRequest{}, fmt.Errorf("unable to obtain client secret from cluster - %w", err)
 	}
+
+	// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
+	// // get the secret access token data from the cluster
+	// accessToken, err := kubernetes.GetSecretData(ctx, r, original.Spec.AccessTokenSecret, req.Namespace, ocmv1alpha1.GitLabAccessTokenKey)
+	// if accessToken == "" {
+	// 	if err == nil {
+	// 		return &GitLabIdentityProviderRequest{}, accessTokenError(original, ErrMissingAccessToken)
+	// 	}
+
+	// 	return &GitLabIdentityProviderRequest{}, accessTokenError(original, err)
+	// }
+
+	// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
+	// // create the api client used to interact with gitlab
+	// gitlabClient, err := gitlab.NewClient(accessToken, gitlab.WithBaseURL(original.Spec.URL+"/api/v4"))
+	// if err != nil {
+	// 	return &GitLabIdentityProviderRequest{}, fmt.Errorf("error creating gitlab api client - %w", err)
+	// }
 
 	// create the desired state of the request based on the inputs
 	desired := original.DeepCopy()
@@ -91,10 +115,13 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		Log:               log.Log,
 		Trigger:           triggers.GetTrigger(original),
 		Reconciler:        r,
-		GitLabClient:      &identityprovider.GitLab{Client: gitlabClient},
+		// GitLabClient:      &identityprovider.GitLab{Client: gitlabClient},
 
 		// data obtained from cluster
-		AccessToken: accessToken,
+		// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
+		// AccessToken: accessToken,
+		ClientSecret: clientSecret,
+		CA:           ca,
 	}, nil
 }
 
@@ -155,12 +182,13 @@ func (request *GitLabIdentityProviderRequest) desired() bool {
 	)
 }
 
-func accessTokenError(from *ocmv1alpha1.GitLabIdentityProvider, err error) error {
-	return fmt.Errorf(
-		"unable to retrieve access token from [%s/%s] at key [%s] - %w",
-		from.Namespace,
-		from.Spec.AccessTokenSecret,
-		ocmv1alpha1.GitLabAccessTokenKey,
-		err,
-	)
-}
+// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
+// func accessTokenError(from *ocmv1alpha1.GitLabIdentityProvider, err error) error {
+// 	return fmt.Errorf(
+// 		"unable to retrieve access token from [%s/%s] at key [%s] - %w",
+// 		from.Namespace,
+// 		from.Spec.AccessTokenSecret,
+// 		ocmv1alpha1.GitLabAccessTokenKey,
+// 		err,
+// 	)
+// }
