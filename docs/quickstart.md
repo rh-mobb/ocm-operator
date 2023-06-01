@@ -35,8 +35,8 @@ as the operator is expecting this value as an environment variable.
 
 ```bash
 oc create secret generic ocm-token \
-    --namespace=ocm-operator \
-    --from-literal=OCM_TOKEN=${MY_OCM_TOKEN}
+  --namespace=ocm-operator \
+  --from-literal=OCM_TOKEN=${MY_OCM_TOKEN}
 ```
 
 ### Create AWS IAM Policies and Roles
@@ -104,9 +104,9 @@ role_arn = arn:aws:iam::$ACCOUNT_ID:role/OCMOperator
 web_identity_token_file = /var/run/secrets/openshift/serviceaccount/token
 EOF
 
-oc create secret generic ocm-token aws-credentials \
-    --namespace=ocm-operator \ 
-    --from-file=credentials=/tmp/credentials
+oc create secret generic aws-credentials \
+  --namespace=ocm-operator \
+  --from-file=credentials=/tmp/credentials
 ```
 
 ## Install the Operator
