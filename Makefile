@@ -281,3 +281,9 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+# Create the OCM Token secret.
+OCM_TOKEN ?=
+.PHONY: ocm-token
+ocm-token: ## Create the OCM Token secret.
+	oc create secret generic ocm-token --from-literal=OCM_TOKEN=$(OCM_TOKEN)
