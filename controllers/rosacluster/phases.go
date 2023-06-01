@@ -279,7 +279,7 @@ func (r *Controller) Complete(request *ROSAClusterRequest) (ctrl.Result, error) 
 	return controllers.RequeueAfter(r.Interval), nil
 }
 
-// CompleteDestroy will perform all actions required to successful complete a reconciliation request.
+// CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
 func (r *Controller) CompleteDestroy(request *ROSAClusterRequest) (ctrl.Result, error) {
 	if err := controllers.RemoveFinalizer(request.Context, r, request.Original); err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
