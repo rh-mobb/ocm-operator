@@ -5,10 +5,10 @@ metadata:
 spec:
   hostedControlPlane: true
   multiAZ: true
-  displayName: dscott-hosted
+  displayName: dscott-hosted2
   openshiftVersion: "4.12.12"
   accountID: "660250927410"
-  region: us-east-2
+  region: us-west-2
   tags:
     owner: dscott
   iam:
@@ -22,6 +22,7 @@ spec:
   #   etcd:
   #     kmsKey: "arn:aws:kms:us-east-1:660250927410:key/b121f0ea-7ad4-4153-b270-1592872f2e7d"
   network:
+    machineCIDR: "10.10.0.0/16"
     subnets:
-      - "subnet-0aab7e3436abe7c2d"
-      - "subnet-057a59ecc95f86f34"
+      - "subnet-04a4aead114ba92b0"
+      - "subnet-04117f78f5866c4a2"
