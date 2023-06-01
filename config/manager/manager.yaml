@@ -94,10 +94,10 @@ spec:
         resources:
           limits:
             cpu: 100m
-            memory: 64Mi
+            memory: 256Mi
           requests:
             cpu: 10m
-            memory: 32Mi
+            memory: 64Mi
         envFrom:
           - secretRef:
               name: ocm-token
