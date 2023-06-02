@@ -15,9 +15,15 @@
 
 Before installing this operator, there are a couple secrets that must be created.
 
-1. OCM Token: used to authenticate against the OCM API.
+1. OCM Token: used to authenticate against the OCM API.  The controller will not start without
+this token as it used for all calls into OCM.
 2. AWS Credentials: uses an assume role to a role created in the instructions below in order
-to access AWS resources.
+to access AWS resources.  This is needed for cluster creation.  See 
+[Create AWS IAM Policies and Roles](#create-aws-iam-policies-and-roles) for more details.
+
+> **Note:**
+> Certain custom resources have their own specific prerequisites.  Please use `oc explain` 
+> or read the docs [here](https://github.com/rh-mobb/ocm-operator/tree/main/docs) for more details.
 
 ### Create OCM Token Secret
 
@@ -127,3 +133,17 @@ spec:
   startingCSV: ocm-operator.v0.1.0
 EOF
 ```
+
+## Provision Resources
+
+Once the operator is available and running, you can provision any of the 
+resources that it manages.  Also note that documentation is always available 
+once the operator is installed as well by using the `oc explain` command.  For 
+example, `oc explain rosacluster.spec.clusterName` will give you detailed documentation 
+about what the field does.
+
+See the following documentation for details:
+
+* [ROSA Clusters](https://github.com/rh-mobb/ocm-operator/blob/main/docs/clusters.md)
+* [Machine Pools](https://github.com/rh-mobb/ocm-operator/blob/main/docs/machinepools.md)
+* [Identity Providers](https://github.com/rh-mobb/ocm-operator/blob/main/docs/identityproviders.md)

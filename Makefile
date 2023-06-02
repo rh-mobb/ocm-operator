@@ -182,7 +182,8 @@ GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v3.8.7
 CONTROLLER_TOOLS_VERSION ?= v0.11.1
-GOLANGCI_LINT_VERSION ?=v1.52.2
+GOLANGCI_LINT_VERSION ?= v1.52.2
+YOT_VERSION ?= 
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -209,7 +210,16 @@ GOLANGCI_LINT_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/golangci/gola
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary. If wrong version is installed, it will be removed before downloading.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	@if test -x $(LOCALBIN)/golangci-lint && ! $(LOCALBIN)/golangci-lint version | grep -q $(KUSTOMIZE_VERSION); then \
+	@if test -x $(LOCALBIN)/golangci-lint && ! $(LOCALBIN)/golangci-lint version | grep -q $(GOLANGCI_LINT_VERSION); then \
+		echo "$(LOCALBIN)/golangci-lint version is not expected $(GOLANGCI_LINT_VERSION). Removing it before installing."; \
+		rm -rf $(LOCALBIN)/golangci-lint; \
+	fi
+	test -s $(LOCALBIN)/golangci-lint || { curl -sSfL $(GOLANGCI_LINT_INSTALL_SCRIPT) | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION); }
+
+.PHONY: yot
+yot: $(GOLANGCI_LINT) ## Download yaml-overlay-tool locally if necessary. If wrong version is installed, it will be removed before downloading.
+$(GOLANGCI_LINT): $(LOCALBIN)
+	@if test -x $(LOCALBIN)/yot && ! $(LOCALBIN)/yot version | grep -q $(KUSTOMIZE_VERSION); then \
 		echo "$(LOCALBIN)/golangci-lint version is not expected $(GOLANGCI_LINT_VERSION). Removing it before installing."; \
 		rm -rf $(LOCALBIN)/golangci-lint; \
 	fi

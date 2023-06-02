@@ -26,8 +26,8 @@ changelog:
 
 dockers:
   - image_templates:
-      - "ghcr.io/{{ .Env.REPO_NAME }}:v{{ .Version }}"
-      - "ghcr.io/{{ .Env.REPO_NAME }}:latest"
+      - "quay.io/mobb/ocm-operator:v{{ .Version }}"
+      - "quay.io/mobb/ocm-operator:latest"
     dockerfile: Dockerfile
     build_flag_templates:
       - "--label=org.opencontainers.image.created={{ .Date }}"
@@ -49,6 +49,16 @@ dockers:
       - "api/"
       - "controllers/"
       - "pkg/"
+  - image_templates:
+      - "quay.io/mobb/ocm-operator-bundle:v{{ .Version }}"
+      - "quay.io/mobb/ocm-operator-bundle:latest"
+    dockerfile: bundle.Dockerfile
+    # NOTE: we must explicitly include the files we need to copy in to the 
+    #       docker image, as goreleaser expects to only be copying its own
+    #       binary into the image.  because we do not build and release the
+    #       binary in an earlier step, this is necessary.
+    extra_files:
+      - "bundle"
 
 # NOTE: earlier versions of goreleaser seemed to automatically include the docker images
 #       that were uploaded.  in the case that this behavior regresses, this may cause
@@ -57,10 +67,6 @@ release:
   extra_files:
     - glob: "build/deploy.yaml"
   footer: |
-    ## OpenShift Manifests
+    ## Docker Image
 
-    * `oc apply -f https://github.com/{{ .Env.REPO_NAME }}/releases/download/v{{ .Version }}/deploy.yaml`
-
-    ## Docker Images
-
-    * `docker pull ghcr.io/{{ .Env.REPO_NAME }}:v{{ .Version }}`
+    * `docker pull quay.io/mobb/ocm-operator:v{{ .Version }}`
