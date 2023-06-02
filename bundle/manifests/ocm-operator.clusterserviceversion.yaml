@@ -88,7 +88,7 @@ metadata:
     capabilities: Basic Install
     categories: Integration & Delivery
     containerImage: quay.io/mobb/ocm-operator:v0.1.0
-    createdAt: "2023-06-02T17:09:49Z"
+    createdAt: "2023-06-02T17:32:25Z"
     operatorframework.io/suggested-namespace: ocm-operator
     operators.operatorframework.io/builder: operator-sdk-v1.28.1
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -517,9 +517,9 @@ spec:
     type: OwnNamespace
   - supported: true
     type: SingleNamespace
-  - supported: false
+  - supported: true
     type: MultiNamespace
-  - supported: false
+  - supported: true
     type: AllNamespaces
   keywords:
   - ocm
