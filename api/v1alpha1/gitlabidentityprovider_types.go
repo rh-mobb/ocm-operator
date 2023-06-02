@@ -35,7 +35,27 @@ const (
 //
 //nolint:lll
 type GitLabIdentityProviderSpec struct {
-	configv1.GitLabIdentityProvider `json:",inline"`
+	// clientID is the oauth client ID
+	ClientID string `json:"clientID"`
+
+	// clientSecret is a required reference to the secret by name containing the oauth client secret.
+	// The key "clientSecret" is used to locate the data.
+	// If the secret or expected key is not found, the identity provider is not honored.
+	// This should exist in the same namespace as the operator.
+	ClientSecret configv1.SecretNameReference `json:"clientSecret"`
+
+	// url is the oauth server base URL
+	URL string `json:"url"`
+
+	// ca is an optional reference to a config map by name containing the PEM-encoded CA bundle.
+	// It is used as a trust anchor to validate the TLS certificate presented by the remote server.
+	// The key "ca.crt" is used to locate the data.
+	// If specified and the config map or expected key is not found, the identity provider is not honored.
+	// If the specified ca data is not valid, the identity provider is not honored.
+	// If empty, the default system roots are used.
+	// This should exist in the same namespace as the operator.
+	// +optional
+	CA configv1.ConfigMapNameReference `json:"ca"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=claim
@@ -76,22 +96,6 @@ type GitLabIdentityProviderSpec struct {
 	// expected key is not found, the identity provider is not honored. The namespace
 	// for this secret must exist in the same namespace as the resource.
 	// AccessTokenSecret string `json:"accessTokenSecret,omitempty"`
-
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:XValidation:message="url is immutable",rule=(self == oldSelf)
-	// +kubebuilder:validation:XValidation:message="url must have an https:// prefix",rule=(self.startsWith("https://"))
-	// url is the oauth server base URL.  This field is immutable to prevent
-	// leaving orphaned resources on a GitLab server.  The URL should contain
-	// an 'https://' prefix.
-	// URL string `json:"url,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	// ca is an optional reference containing the PEM-encoded CA bundle data, as a string value.
-	// It is used as a trust anchor to validate the TLS certificate presented by the remote server.
-	// If the specified ca data is not valid, the identity provider is not honored.
-	// If empty, the default system roots are used.
-	// +optional
-	// CA string `json:"ca,omitempty"`
 }
 
 // GitLabIdentityProviderStatus defines the observed state of GitLabIdentityProvider.

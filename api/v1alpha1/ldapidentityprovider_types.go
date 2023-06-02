@@ -36,7 +36,44 @@ const (
 //
 //nolint:lll
 type LDAPIdentityProviderSpec struct {
-	configv1.LDAPIdentityProvider `json:",inline"`
+	// url is an RFC 2255 URL which specifies the LDAP search parameters to use.
+	// The syntax of the URL is:
+	// ldap://host:port/basedn?attribute?scope?filter
+	URL string `json:"url"`
+
+	// bindDN is an optional DN to bind with during the search phase.
+	// +optional
+	BindDN string `json:"bindDN"`
+
+	// bindPassword is an optional reference to a secret by name
+	// containing a password to bind with during the search phase.
+	// The key "bindPassword" is used to locate the data.
+	// If specified and the secret or expected key is not found, the identity provider is not honored.
+	// This should exist in the same namespace as the operator.
+	// +optional
+	BindPassword configv1.SecretNameReference `json:"bindPassword"`
+
+	// insecure, if true, indicates the connection should not use TLS
+	// WARNING: Should not be set to `true` with the URL scheme "ldaps://" as "ldaps://" URLs always
+	//          attempt to connect using TLS, even when `insecure` is set to `true`
+	// When `true`, "ldap://" URLS connect insecurely. When `false`, "ldap://" URLs are upgraded to
+	// a TLS connection using StartTLS as specified in https://tools.ietf.org/html/rfc2830.
+	// +kubebuilder:default=false
+	Insecure bool `json:"insecure"`
+
+	// ca is an optional reference to a config map by name containing the PEM-encoded CA bundle.
+	// It is used as a trust anchor to validate the TLS certificate presented by the remote server.
+	// The key "ca.crt" is used to locate the data.
+	// If specified and the config map or expected key is not found, the identity provider is not honored.
+	// If the specified ca data is not valid, the identity provider is not honored.
+	// If empty, the default system roots are used.
+	// The namespace for this config map is openshift-config.
+	// +optional
+	CA configv1.ConfigMapNameReference `json:"ca"`
+
+	// attributes maps LDAP attributes to identities
+	// +optional
+	Attributes configv1.LDAPAttributeMapping `json:"attributes"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:message="clusterName is immutable",rule=(self == oldSelf)

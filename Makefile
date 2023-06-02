@@ -216,21 +216,9 @@ $(GOLANGCI_LINT): $(LOCALBIN)
 	fi
 	test -s $(LOCALBIN)/golangci-lint || { curl -sSfL $(GOLANGCI_LINT_INSTALL_SCRIPT) | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION); }
 
-.PHONY: yot
-yot: $(GOLANGCI_LINT) ## Download yaml-overlay-tool locally if necessary. If wrong version is installed, it will be removed before downloading.
-$(GOLANGCI_LINT): $(LOCALBIN)
-	@if test -x $(LOCALBIN)/yot && ! $(LOCALBIN)/yot version | grep -q $(KUSTOMIZE_VERSION); then \
-		echo "$(LOCALBIN)/golangci-lint version is not expected $(GOLANGCI_LINT_VERSION). Removing it before installing."; \
-		rm -rf $(LOCALBIN)/golangci-lint; \
-	fi
-	test -s $(LOCALBIN)/golangci-lint || { curl -sSfL $(GOLANGCI_LINT_INSTALL_SCRIPT) | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION); }
-
-.PHONY: bundle-init
-bundle-init: manifests kustomize ## Generate bundle metadata.
-	operator-sdk generate kustomize manifests --verbose
-
 .PHONY: bundle
-bundle: manifests kustomize ## Generate bundle manifests, then validate generated files.
+bundle: manifests kustomize ## Generate bundle manifests and metadata, then validate generated files.
+	operator-sdk generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
 	operator-sdk bundle validate ./bundle
