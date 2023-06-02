@@ -22,13 +22,14 @@ jobs:
       - name: Generate Manifests
         shell: bash
         run: |
+          ROOT=$(pwd)
           make kustomize
 
           # generate controller manifests
           mkdir -p build
           cp -r config build
-          cd build/config/manager && ../../../bin/kustomize edit set image controller=quay.io/mobb/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}
-          ../../../bin/kustomize build ../../default > ../../deploy.yaml
+          cd build/config/manager && ${ROOT}/bin/kustomize edit set image controller=quay.io/mobb/${GITHUB_REPOSITORY}:${GITHUB_REF_NAME}
+          ${ROOT}/bin/kustomize build ${ROOT}/build/config/default > ${ROOT}/build/deploy.yaml
 
       - name: Login to Quay
         if: startsWith(github.ref, 'refs/tags/v')
