@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/mobb/ocm-operator
-  newTag: v0.1.0-alpha.8
+  newTag: v0.1.0
