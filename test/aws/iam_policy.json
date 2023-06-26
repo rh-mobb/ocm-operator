@@ -46,7 +46,8 @@
               "iam:GetRole",
               "iam:TagRole",
               "iam:ListRoleTags",
-              "iam:DeleteRole"
+              "iam:DeleteRole",
+              "iam:CreateRole"
             ],
             "Resource": "arn:aws:iam::660250927410:role/dscott-*"
         },
