@@ -22,10 +22,10 @@
             "Action": [
               "iam:CreateRole"
             ],
-            "Resource": "arn:aws:iam::660250927410:role/dscott-*",
+            "Resource": "$OCM_ROLE_RESOURCE_FILTER",
             "Condition": {
                 "StringLike": {
-                  "iam:PermissionsBoundary": "arn:aws:iam::660250927410:policy/OCMOperatorBoundary"
+                  "iam:PermissionsBoundary": "$OCM_PERMISSION_BOUNDARY_ARN"
                 }
               }
         },
@@ -38,7 +38,7 @@
               "iam:ListPolicyTags",
               "iam:DeletePolicy"
             ],
-            "Resource": "arn:aws:iam::660250927410:policy/dscott-*"
+            "Resource": "$OCM_POLICY_RESOURCE_FILTER"
         },
         {
             "Effect": "Allow",
@@ -48,7 +48,7 @@
               "iam:ListRoleTags",
               "iam:DeleteRole"
             ],
-            "Resource": "arn:aws:iam::660250927410:role/dscott-*"
+            "Resource": "$OCM_ROLE_RESOURCE_FILTER"
         },
         {
             "Effect": "Allow",
@@ -56,11 +56,11 @@
               "iam:AttachRolePolicy",
               "iam:DetachRolePolicy"
             ],
-            "Resource": "arn:aws:iam::660250927410:role/dscott-*",
+            "Resource":"$OCM_ROLE_RESOURCE_FILTER",
             "Condition": {
                 "StringLike": {
                   "iam:PolicyArn": [
-                    "arn:aws:iam::660250927410:policy/dscott-*"
+                    "$OCM_POLICY_RESOURCE_FILTER"
                   ]
                 }
               }
