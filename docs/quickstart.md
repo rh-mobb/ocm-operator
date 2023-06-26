@@ -49,70 +49,70 @@ oc create secret generic ocm-token \
 
 The operator will need to elevate privileges in order to perform things like 
 creating the operator-roles for the clusters.  Because of this, the operator 
-must have a specific role created to allow it these permissions.
+must have a specific role created to allow it these permissions.  In each instance, 
+it is a best practice to create a new set of policies and roles for each instance 
+of the OCM Operator.  Policies and roles are prefixed with the `ROSA_CLUSTER_NAME` 
+environment variable that is specified below.
 
 **NOTE:** please understand what you are doing if you deviate from the known good 
 policies.  If errors or more stringent security lockdowns are found, please submit a PR 
 so that we can get this fixed.
 
-1. Set `ACCOUNT_ID` environment variable to define your AWS account ID:
+1. Set required variables, substituting the correct values for your environment:
+
+* `AWS_ACCOUNT_ID`: the AWS account ID in which the ROSA cluster where you are installing 
+the OCM operator is running.
+* `ROSA_CLUSTER_NAME`: the ROSA cluster name by which you intend to install the OCM
+operator upon.
 
 ```bash
-export ACCOUNT_ID=111111111111
+export AWS_ACCOUNT_ID=111111111111
+export ROSA_CLUSTER_NAME=dscott
 ```
 
-2. Create the permissions boundary.  Because the operator needs to create policies and 
-roles, the boundary ensures that the operator is not allowed to create additional
-permissions outside of the defined boundary.  The sample permission set is located 
-at `test/aws/boundary.json` in this repository:
+2. Run the script to create the required policies and roles.  This creates a permission boundary, 
+a policy for the operator, and a role which allows the operator to assume a role against the OIDC 
+identity of the ROSA cluster.  If the policies and roles already exist (prefixed by your cluster 
+name), then the creation of them is skipped:
 
 ```bash
-boundary=$(curl -s "https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/aws/boundary.json")
-aws iam create-policy \
-  --policy-name "OCMOperatorBoundary" \
-  --policy-document "$boundary"
+curl -s https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/scripts/generate-iam.sh | bash
 ```
 
-3. Create the policy.  This policy sets what the operator is allowed to do.  For any 
-`iam` permission, the boundary created above is used.  The sample permission set is 
-located at `test/aws/iam_policy.json` in this repository:
+You will see output at the end of the script which gives you instructions to generate
+a credentials file.  This credential is needed by the operator to use the above created
+role.
 
 ```bash
-policy=$(curl -s "https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/aws/iam_policy.json")
-aws iam create-policy \
-  --policy-name "OCMOperator" \
-  --policy-document "$policy"
-```
+create your sts credentials for you operator where you intend to run it with the following:
 
-4. Create the role using a trust policy and attach the previously created role.  The trust 
-policy is located at `test/aws/trust_policy.json` in this repository.  Please note that 
-the trust policy requires an OIDC configuration.  The OIDC configuration refers to 
-**where the operator is running, NOT what it is provisioning**:
-
-```bash
-trust_policy=$(curl -s "https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/aws/trust_policy.json")
-aws iam create-role \
-    --role-name OCMOperator \
-    --assume-role-policy-document "$trust_policy"
-aws iam attach-role-policy \
-    --role-name OCMOperator \
-    --policy-arn arn:aws:iam::$ACCOUNT_ID:policy/OCMOperator
-```
-
-5. Finally, create the secret containing the assume role credentials.  The previous steps allow 
-the operator to assume the role you created in the previous step with the permissions created 
-via the previous policies.
-
-```bash
 cat <<EOF > /tmp/credentials
 [default]
-role_arn = arn:aws:iam::$ACCOUNT_ID:role/OCMOperator
+role_arn = arn:aws:iam::111111111111:role/dscott-OCMOperator
 web_identity_token_file = /var/run/secrets/openshift/serviceaccount/token
 EOF
 
 oc create secret generic aws-credentials \
-  --namespace=ocm-operator \
-  --from-file=credentials=/tmp/credentials
+    --namespace=ocm-operator \
+    --from-file=credentials=/tmp/credentials
+```
+
+3. Finally, following the instruction from the script output above, create the secret containing 
+the assume role credentials:
+
+> **NOTE** Be sure to copy the output from your script run and do not copy from this document 
+as the output will be different.
+
+```bash
+cat <<EOF > /tmp/credentials
+[default]
+role_arn = arn:aws:iam::111111111111:role/dscott-OCMOperator
+web_identity_token_file = /var/run/secrets/openshift/serviceaccount/token
+EOF
+
+oc create secret generic aws-credentials \
+    --namespace=ocm-operator \
+    --from-file=credentials=/tmp/credentials
 ```
 
 ## Install the Operator
