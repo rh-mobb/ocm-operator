@@ -64,10 +64,12 @@ so that we can get this fixed.
 the OCM operator is running.
 * `ROSA_CLUSTER_NAME`: the ROSA cluster name by which you intend to install the OCM
 operator upon.
+* `OCM_OPERATOR_VERSION`: the version of ocm-operator that will be installed.
 
 ```bash
 export AWS_ACCOUNT_ID=111111111111
 export ROSA_CLUSTER_NAME=dscott
+export OCM_OPERATOR_VERSION=v0.1.0
 ```
 
 2. Download, review and make the script executable, and finally run the script 
@@ -135,18 +137,27 @@ oc create secret generic aws-credentials \
 
 ```bash
 cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: ocm-operator
+  namespace: ocm-operator
+spec:
+  targetNamespaces:
+    - ocm-operator
+---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: ocm-operator
   namespace: ocm-operator
 spec:
-  channel: v0.1
+  channel: alpha
   installPlanApproval: Automatic
   name: ocm-operator
   source: community-operators
-  sourceNamespace: ocm-operator
-  startingCSV: ocm-operator.v0.1.0
+  sourceNamespace: openshift-marketplace
+  startingCSV: ocm-operator.$OCM_OPERATOR_VERSION
 EOF
 ```
 
