@@ -37,15 +37,6 @@ OIDC_ENDPOINT_HOST=$(echo $OIDC_ENDPOINT_URL | awk -F'https://' '{print $NF}')
 AWS_ARN_PREFIX="${AWS_ARN_PREFIX:-aws}"
 OCM_OPERATOR_NAMESPACE="${OCM_OPERATOR_NAMESPACE:-ocm-operator}"
 
-# permissions boundary variables
-# NOTE: these are variables related to the permission boundary policy
-OCM_PERMISSION_BOUNDARY_NAME="${OCM_PERMISSION_BOUNDARY_NAME:-OCMOperatorBoundary}"
-if [ -n "${ROSA_CLUSTER_NAME}" ]; then
-    OCM_PERMISSION_BOUNDARY_NAME="${ROSA_CLUSTER_NAME}-${OCM_PERMISSION_BOUNDARY_NAME}"
-fi
-OCM_PERMISSION_BOUNDARY_ARN="arn:${AWS_ARN_PREFIX}:iam::${AWS_ACCOUNT_ID}:policy/${OCM_PERMISSION_BOUNDARY_NAME}"
-OCM_PERMISSION_BOUNDARY_FILE="${OCM_PERMISSION_BOUNDARY_FILE:-https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/aws/boundary.json}"
-
 # policy variables
 # NOTE: these are variables related to the permissions that ocm directly uses
 # NOTE: filters below unused until https://github.com/rh-mobb/ocm-operator/issues/19 is finished
@@ -70,18 +61,6 @@ fi
 OCM_ROLE_ARN="arn:${AWS_ARN_PREFIX}:iam::${AWS_ACCOUNT_ID}:role/${OCM_ROLE_NAME}"
 OCM_ROLE_TRUST_POLICY_FILE="${OCM_ROLE_TRUST_POLICY_FILE:-https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/aws/trust_policy_variables.json}"
 
-# ensure the ocm operator permissions boundary exists in the account
-echo "retrieving ocm operator permissions boundary policy: '${OCM_PERMISSION_BOUNDARY_ARN}'"
-aws iam get-policy --policy-arn=${OCM_PERMISSION_BOUNDARY_ARN}
-
-if [ $? != 0 ]; then
-    echo "missing ocm operator permissions boundary policy...creating from '${OCM_PERMISSION_BOUNDARY_FILE}'"
-    boundary=$(curl -s "${OCM_PERMISSION_BOUNDARY_FILE}")
-    aws iam create-policy \
-        --policy-name "${OCM_PERMISSION_BOUNDARY_NAME}" \
-        --policy-document "$boundary"
-fi
-
 # ensure the ocm operator policy exists in the account
 echo "retrieving ocm operator policy: '${OCM_POLICY_ARN}'"
 aws iam get-policy --policy-arn=${OCM_POLICY_ARN}
@@ -89,7 +68,6 @@ aws iam get-policy --policy-arn=${OCM_POLICY_ARN}
 if [ $? != 0 ]; then
     echo "missing ocm operator policy...creating from '${OCM_POLICY_FILE}'..."
     policy=$(curl -s "${OCM_POLICY_FILE}")
-    new_policy=${policy//\$OCM_PERMISSION_BOUNDARY_ARN/$OCM_PERMISSION_BOUNDARY_ARN}
     new_policy=${new_policy//\$OCM_ROLE_RESOURCE_FILTER/$OCM_ROLE_RESOURCE_FILTER}
     new_policy=${new_policy//\$OCM_POLICY_RESOURCE_FILTER/$OCM_POLICY_RESOURCE_FILTER}
     aws iam create-policy \

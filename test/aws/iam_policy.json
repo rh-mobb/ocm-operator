@@ -20,18 +20,6 @@
         {
             "Effect": "Allow",
             "Action": [
-              "iam:CreateRole"
-            ],
-            "Resource": "arn:aws:iam::660250927410:role/dscott-*",
-            "Condition": {
-                "StringLike": {
-                  "iam:PermissionsBoundary": "arn:aws:iam::660250927410:policy/OCMOperatorBoundary"
-                }
-              }
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
               "iam:GetPolicy",
               "iam:CreatePolicy",
               "iam:TagPolicy",
@@ -44,10 +32,10 @@
             "Effect": "Allow",
             "Action": [
               "iam:GetRole",
+              "iam:CreateRole",
               "iam:TagRole",
               "iam:ListRoleTags",
-              "iam:DeleteRole",
-              "iam:CreateRole"
+              "iam:DeleteRole"
             ],
             "Resource": "arn:aws:iam::660250927410:role/dscott-*"
         },
