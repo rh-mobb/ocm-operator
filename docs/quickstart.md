@@ -70,48 +70,64 @@ export AWS_ACCOUNT_ID=111111111111
 export ROSA_CLUSTER_NAME=dscott
 ```
 
-2. Run the script to create the required policies and roles.  This creates a permission boundary, 
-a policy for the operator, and a role which allows the operator to assume a role against the OIDC 
-identity of the ROSA cluster.  If the policies and roles already exist (prefixed by your cluster 
+2. Download, review and make the script executable, and finally run the script 
+to create the required policies and roles.  This creates a a policy for the operator, and 
+a role which allows the operator to assume a role against the OIDC identity of the 
+ROSA cluster.  If the policies and roles already exist (prefixed by your cluster 
 name), then the creation of them is skipped:
 
 ```bash
-curl -s https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/scripts/generate-iam.sh | bash
+# download
+curl -s https://raw.githubusercontent.com/rh-mobb/ocm-operator/main/test/scripts/generate-iam.sh > ./ocm-operator-policies.sh
+
+# review
+cat ./ocm-operator-policies.sh
+
+# make executable and run
+chmod +x ./ocm-operator-policies.sh && ./ocm-operator-policies.sh
 ```
 
-You will see output at the end of the script which gives you instructions to generate
-a credentials file.  This credential is needed by the operator to use the above created
-role.
+As an alternative to the above, if you prefer Terraform, you can create the roles 
+using Terraform using this example:
 
 ```bash
-create your sts credentials for you operator where you intend to run it with the following:
+cat <<EOF > main.tf
+variable "oidc_provider_url" {
+  type = string
+}
 
+variable "cluster_name" {
+  type = string
+}
+
+module "ocm_operator_iam" {
+  source = "git::https://github.com/rh-mobb/ocm-operator//test/terraform?ref=main"
+
+  oidc_provider_url       = var.oidc_provider_url
+  ocm_operator_iam_prefix = var.cluster_name
+}
+
+output "ocm_operator_iam" {
+  value = module.ocm_operator_iam
+}
+
+EOF
+terraform init
+terraform plan -out ocm.plan -var="oidc_provider_url=$(rosa describe cluster -c $ROSA_CLUSTER_NAME -o json | jq -r '.aws.sts.oidc_endpoint_url')" -var=cluster_name=$ROSA_CLUSTER_NAME
+terraform apply "ocm.plan"
+```
+
+2. Create the secret containing the assume role credentials:
+
+```bash
 cat <<EOF > /tmp/credentials
 [default]
-role_arn = arn:aws:iam::111111111111:role/dscott-OCMOperator
+role_arn = arn:aws:iam::$AWS_ACCOUNT_ID:role/$ROSA_CLUSTER_NAME-OCMOperator
 web_identity_token_file = /var/run/secrets/openshift/serviceaccount/token
 EOF
 
 oc create secret generic aws-credentials \
-    --namespace=ocm-operator \
-    --from-file=credentials=/tmp/credentials
-```
-
-3. Finally, following the instruction from the script output above, create the secret containing 
-the assume role credentials:
-
-> **NOTE** Be sure to copy the output from your script run and do not copy from this document 
-as the output will be different.
-
-```bash
-cat <<EOF > /tmp/credentials
-[default]
-role_arn = arn:aws:iam::111111111111:role/dscott-OCMOperator
-web_identity_token_file = /var/run/secrets/openshift/serviceaccount/token
-EOF
-
-oc create secret generic aws-credentials \
-    --namespace=ocm-operator \
+    --namespace=$OCM_OPERATOR_NAMESPACE \
     --from-file=credentials=/tmp/credentials
 ```
 

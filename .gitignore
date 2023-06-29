@@ -30,3 +30,10 @@ __debug_bin
 # exclude build and cache directories
 build
 cache
+
+# exclude terraform
+**/*.tfstate
+**/*.backup
+**/*.terraform
+**/*.terraform.lock.hcl
+**/*.plan
