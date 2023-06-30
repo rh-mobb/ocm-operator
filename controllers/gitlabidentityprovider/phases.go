@@ -22,18 +22,12 @@ var (
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
 func (r *Controller) GetCurrentState(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
-	// retrieve the cluster id
-	clusterID := request.Original.Status.ClusterID
-	if clusterID == "" {
-		if err := request.updateStatusCluster(); err != nil {
-			return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), err
-		}
-
-		clusterID = request.Original.Status.ClusterID
-	}
-
 	// get the generic identity provider object from ocm
-	request.OCMClient = ocm.NewIdentityProviderClient(request.Reconciler.Connection, request.Desired.Spec.DisplayName, clusterID)
+	request.OCMClient = ocm.NewIdentityProviderClient(
+		request.Reconciler.Connection,
+		request.Desired.Spec.DisplayName,
+		request.Original.Status.ClusterID,
+	)
 
 	idp, err := request.OCMClient.Get()
 	if err != nil {

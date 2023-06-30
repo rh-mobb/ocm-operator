@@ -11,6 +11,7 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
+	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 // GetCurrentState gets the current state of the LDAPIdentityProvider resource.  The current state of the LDAPIdentityProvider resource
@@ -90,6 +91,44 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 	// send a notification that the cluster has been updated
 	if err := request.notify(events.Updated, ClusterUpdated(), rosaConditionTypeUpdated); err != nil {
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster updated notification - %w", err)
+	}
+
+	return controllers.NoRequeue(), nil
+}
+
+// FindChildObjects finds all of the child objects related to this cluster.  This is intended to run during the delete
+// workflow and will return a requeue if any child objects are found.  This is to prevent deletion of the cluster while
+// objects are still attached, which leaves the controller spamming error messages.
+func (r *Controller) FindChildObjects(request *ROSAClusterRequest) (ctrl.Result, error) {
+	// loop through each of our children types and ensure we have no remaining objects based on the
+	// status of the cluster id
+	for _, object := range []workload.ClusterChild{
+		&ocmv1alpha1.GitLabIdentityProvider{},
+		&ocmv1alpha1.LDAPIdentityProvider{},
+		&ocmv1alpha1.MachinePool{},
+	} {
+		exists, err := object.ExistsForClusterID(request.Context, request.Reconciler, request.Original.Status.ClusterID)
+		if err != nil {
+			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
+				"unable to determine if object [%T] has a parent cluster with ID [%s] - %w",
+				object,
+				request.Original.Status.ClusterID,
+				err,
+			)
+		}
+
+		// if our object type still exists, we need to requeue until
+		// we do not have any objects to prevent deleting the cluster while we have
+		// related objects.
+		if exists {
+			request.Log.Info(fmt.Sprintf("cluster [%s/%s] still has child objects of type [%T]...skipping deletion",
+				request.Original.Namespace,
+				request.Original.Name,
+				object,
+			), controllers.LogValues(request)...)
+
+			return controllers.RequeueAfter(defaultClusterRequeue), nil
+		}
 	}
 
 	return controllers.NoRequeue(), nil

@@ -30,6 +30,7 @@ import (
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
+	"github.com/rh-mobb/ocm-operator/pkg/triggers"
 )
 
 const (
@@ -73,6 +74,9 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	// execute the phases
 	// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
 	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "HandleUpstreamCluster", Function: func() (ctrl.Result, error) {
+			return controllers.HandleClusterPhase(request, request.Reconciler.Connection, triggers.Create, request.Log)
+		}},
 		{Name: "GetCurrentState", Function: func() (ctrl.Result, error) { return r.GetCurrentState(request) }},
 		// {Name: "ApplyGitLab", Function: func() (ctrl.Result, error) { return r.ApplyGitLab(request) }},
 		{Name: "ApplyIdentityProvider", Function: func() (ctrl.Result, error) { return r.ApplyIdentityProvider(request) }},

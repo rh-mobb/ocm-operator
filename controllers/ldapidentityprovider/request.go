@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
+	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -130,38 +131,27 @@ func (request *LDAPIdentityProviderRequest) GetName() string {
 	return request.Desired.Spec.DisplayName
 }
 
-// updateStatusCluster updates fields related to the cluster in which the machine pool resides in.
-func (request *LDAPIdentityProviderRequest) updateStatusCluster() error {
-	// retrieve the cluster id
-	clusterClient := ocm.NewClusterClient(request.Reconciler.Connection, request.Desired.Spec.ClusterName)
-	cluster, err := clusterClient.Get()
-	if err != nil || cluster == nil {
-		return fmt.Errorf(
-			"unable to retrieve cluster from ocm [name=%s] - %w",
-			request.Desired.Spec.ClusterName,
-			err,
-		)
+// GetClusterName returns the cluster name that this object belongs to.
+func (request *LDAPIdentityProviderRequest) GetClusterName() string {
+	return request.Desired.Spec.ClusterName
+}
+
+// GetContext returns the context of the request.
+func (request *LDAPIdentityProviderRequest) GetContext() context.Context {
+	return request.Context
+}
+
+// GetReconciler returns the context of the request.
+func (request *LDAPIdentityProviderRequest) GetReconciler() kubernetes.Client {
+	return request.Reconciler
+}
+
+// SetClusterStatus sets the relevant cluster fields in the status.  It is used
+// to satisfy the controllers.Request interface.
+func (request *LDAPIdentityProviderRequest) SetClusterStatus(cluster *clustersmgmtv1.Cluster) {
+	if request.Original.Status.ClusterID == "" {
+		request.Original.Status.ClusterID = cluster.ID()
 	}
-
-	// if the cluster id is missing return an error
-	if cluster.ID() == "" {
-		return fmt.Errorf("missing cluster id in response - %w", ErrMissingClusterID)
-	}
-
-	// keep track of the original object
-	original := request.Original.DeepCopy()
-	request.Original.Status.ClusterID = cluster.ID()
-
-	// store the cluster id in the status
-	if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
-		return fmt.Errorf(
-			"unable to update status.clusterID=%s - %w",
-			cluster.ID(),
-			err,
-		)
-	}
-
-	return nil
 }
 
 func (request *LDAPIdentityProviderRequest) desired() bool {

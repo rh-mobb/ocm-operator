@@ -17,9 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"fmt"
+
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 )
 
 const (
@@ -143,6 +148,59 @@ type GitLabIdentityProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GitLabIdentityProvider `json:"items"`
+}
+
+// FindAll gets a complete list of resources in the cluster for this type.
+func (gitlab *GitLabIdentityProvider) FindAll(
+	ctx context.Context,
+	c kubernetes.Client,
+) ([]GitLabIdentityProvider, error) {
+	objects := &GitLabIdentityProviderList{}
+
+	if err := c.List(ctx, objects); err != nil {
+		return []GitLabIdentityProvider{}, fmt.Errorf("unable to retrieve gitlab identity providers - %w", err)
+	}
+
+	return objects.Items, nil
+}
+
+// FindAllByClusterID gets a list of resources which have a particular cluster ID in the status field.
+func (gitlab *GitLabIdentityProvider) FindAllByClusterID(
+	ctx context.Context,
+	c kubernetes.Client,
+	clusterID string,
+) ([]*GitLabIdentityProvider, error) {
+	objects, err := gitlab.FindAll(ctx, c)
+	if err != nil {
+		return []*GitLabIdentityProvider{}, err
+	}
+
+	matches := []*GitLabIdentityProvider{}
+
+	for i := range objects {
+		if objects[i].Status.ClusterID == clusterID {
+			matches = append(matches, &objects[i])
+		}
+	}
+
+	return matches, nil
+}
+
+// ExistsForClusterID returns if a particular object is associated with a cluster ID.
+func (gitlab *GitLabIdentityProvider) ExistsForClusterID(
+	ctx context.Context,
+	c kubernetes.Client,
+	clusterID string,
+) (bool, error) {
+	objects, err := gitlab.FindAllByClusterID(ctx, c, clusterID)
+
+	return (len(objects) > 0), err
+}
+
+// GetClusterID gets the status.clusterID field from the object.  It is used to
+// satisfy the Workload interface.
+func (gitlab *GitLabIdentityProvider) GetClusterID() string {
+	return gitlab.Status.ClusterID
 }
 
 // GetConditions returns the status.conditions field from the object.  It is used to
