@@ -19,9 +19,6 @@ import (
 // GetCurrentState gets the current state of the MachinePool resource.  The current state of the MachinePool resource
 // is stored in OpenShift Cluster Manager.  It will be compared against the desired state which exists
 // within the OpenShift cluster in which this controller is reconciling against.
-// TODO: needs refactor
-//
-//nolint:cyclop
 func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, error) {
 	// retrieve the machine pool (or node pool for hosted control plane clusters)
 	var pool interface{}

@@ -31,6 +31,7 @@ import (
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
+	"github.com/rh-mobb/ocm-operator/pkg/aws"
 )
 
 var (
@@ -52,6 +53,7 @@ type Controller struct {
 	Connection *sdk.Connection
 	Recorder   record.EventRecorder
 	Interval   time.Duration
+	AWSClient  *aws.Client
 }
 
 //+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=rosaclusters,verbs=get;list;watch;create;update;patch;delete
@@ -67,10 +69,10 @@ func (r *Controller) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 // ReconcileCreate performs the reconciliation logic when a create event triggered
 // the reconciliation.
 func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to a rosa cluster request
-	request, ok := req.(*ROSAClusterRequest)
-	if !ok {
-		return controllers.RequeueAfter(defaultClusterRequeue), ErrClusterRequestConvert
+	// run setup
+	request, err := r.Setup(req)
+	if err != nil {
+		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error executing setup method - %w", err)
 	}
 
 	// add the finalizer
@@ -97,10 +99,10 @@ func (r *Controller) ReconcileUpdate(req controllers.Request) (ctrl.Result, erro
 // ReconcileDelete performs the reconciliation logic when a delete event triggered
 // the reconciliation.
 func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, error) {
-	// type cast the request to a rosa cluster request
-	request, ok := req.(*ROSAClusterRequest)
-	if !ok {
-		return controllers.RequeueAfter(defaultClusterRequeue), ErrClusterRequestConvert
+	// run setup
+	request, err := r.Setup(req)
+	if err != nil {
+		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error executing setup method - %w", err)
 	}
 
 	// execute the phases
@@ -112,6 +114,32 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 		{Name: "DestroyOIDC", Function: func() (ctrl.Result, error) { return r.DestroyOIDC(request) }},
 		{Name: "CompleteDestroy", Function: func() (ctrl.Result, error) { return r.CompleteDestroy(request) }},
 	}...)
+}
+
+// Setup runs the reconciliation process prior to executing the individual
+// reconciliation phases.  It returns the request needed for the reconciliation
+// process.
+func (r *Controller) Setup(req controllers.Request) (*ROSAClusterRequest, error) {
+	// type cast the request to a rosa cluster request
+	request, ok := req.(*ROSAClusterRequest)
+	if !ok {
+		return &ROSAClusterRequest{}, ErrClusterRequestConvert
+	}
+
+	// create the aws client used for interacting with aws services if it
+	// is already not set.  this is set prior to reconciliation to avoid
+	// having to create the client multiple times for each reconcile
+	// request.
+	if r.AWSClient == nil {
+		awsClient, err := aws.NewClient(request.Desired.Spec.Region)
+		if err != nil {
+			return request, fmt.Errorf("unable to create aws client - %w", err)
+		}
+
+		r.AWSClient = awsClient
+	}
+
+	return request, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

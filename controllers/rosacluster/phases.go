@@ -264,7 +264,7 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 	// only destroy the oidc configuration if we have not already done so
 	if !conditions.IsSet(OIDCConfigDeleted(), request.Original) {
 		request.Log.Info("deleting oidc config", controllers.LogValues(request)...)
-		if err := request.AWSClient.DeleteOIDCProvider(request.Original.Status.OIDCProviderARN); err != nil {
+		if err := request.Reconciler.AWSClient.DeleteOIDCProvider(request.Original.Status.OIDCProviderARN); err != nil {
 			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf(
 				"unable to delete oidc config - %w",
 				err,
