@@ -30,6 +30,7 @@ import (
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
+	"github.com/rh-mobb/ocm-operator/pkg/triggers"
 )
 
 // Controller reconciles a LDAPIdentityProvider object.
@@ -68,6 +69,9 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 
 	// execute the phases
 	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "HandleUpstreamCluster", Function: func() (ctrl.Result, error) {
+			return controllers.HandleClusterPhase(request, request.Reconciler.Connection, triggers.Create, request.Log)
+		}},
 		{Name: "GetCurrentState", Function: func() (ctrl.Result, error) { return r.GetCurrentState(request) }},
 		{Name: "Apply", Function: func() (ctrl.Result, error) { return r.ApplyIdentityProvider(request) }},
 		{Name: "Complete", Function: func() (ctrl.Result, error) { return r.Complete(request) }},

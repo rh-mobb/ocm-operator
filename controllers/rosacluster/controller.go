@@ -105,6 +105,7 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 
 	// execute the phases
 	return controllers.Execute(request, request.ControllerRequest, []controllers.Phase{
+		{Name: "FindChildObjects", Function: func() (ctrl.Result, error) { return r.FindChildObjects(request) }},
 		{Name: "DestroyCluster", Function: func() (ctrl.Result, error) { return r.DestroyCluster(request) }},
 		{Name: "WaitUntilMissing", Function: func() (ctrl.Result, error) { return r.WaitUntilMissing(request) }},
 		{Name: "DestroyOperatorRoles", Function: func() (ctrl.Result, error) { return r.DestroyOperatorRoles(request) }},

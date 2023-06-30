@@ -17,7 +17,6 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
-	"github.com/rh-mobb/ocm-operator/pkg/workload"
 )
 
 var (
@@ -30,16 +29,6 @@ const (
 
 	LogLevelDebug = 5
 )
-
-// Request represents a request that was sent to the controller that
-// caused reconciliation.  It is used to track the status during the steps of
-// controller reconciliation and pass information.  It should be able to
-// return back the original object, in its pure form, that was discovered
-// when the request was triggered.
-type Request interface {
-	GetObject() workload.Workload
-	GetName() string
-}
 
 // Controller represents the object that is performing the reconciliation
 // action.
@@ -179,15 +168,4 @@ func RemoveFinalizer(ctx context.Context, r kubernetes.Client, object client.Obj
 	}
 
 	return nil
-}
-
-// LogValues returns a consistent set of values for a request.
-func LogValues(request Request) []interface{} {
-	object := request.GetObject()
-
-	return []interface{}{
-		"kind", object.GetObjectKind().GroupVersionKind().Kind,
-		"resource", fmt.Sprintf("%s/%s", object.GetNamespace(), object.GetName()),
-		"name", request.GetName(),
-	}
 }

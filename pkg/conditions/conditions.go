@@ -14,9 +14,12 @@ import (
 )
 
 const (
-	conditionTypeReconciling         = "Reconciling"
-	conditionMessageReconcilingStart = "beginning reconciliation"
-	conditionMessageReconcilingStop  = "ending reconciliation"
+	conditionTypeReconciling               = "Reconciling"
+	conditionTypeUpstreamClusterExists     = "UpstreamClusterExists"
+	conditionMessageReconcilingStart       = "beginning reconciliation"
+	conditionMessageReconcilingStop        = "ending reconciliation"
+	conditionMessageUpstreamClusterExists  = "upstream cluster exists"
+	conditionMessageUpstreamClusterMissing = "upstream cluster is missing"
 )
 
 var (
@@ -44,6 +47,29 @@ func Reconciled(trigger triggers.Trigger) *metav1.Condition {
 		Status:             metav1.ConditionFalse,
 		Reason:             trigger.String(),
 		Message:            conditionMessageReconcilingStop,
+	}
+}
+
+// UpstreamCluster returns a condition that gives the status of the upstream cluster.
+func UpstreamCluster(trigger triggers.Trigger, exists bool) *metav1.Condition {
+	var message string
+
+	var status metav1.ConditionStatus
+
+	if exists {
+		message = conditionMessageUpstreamClusterExists
+		status = metav1.ConditionTrue
+	} else {
+		message = conditionMessageUpstreamClusterMissing
+		status = metav1.ConditionFalse
+	}
+
+	return &metav1.Condition{
+		Type:               conditionTypeUpstreamClusterExists,
+		LastTransitionTime: metav1.Now(),
+		Status:             status,
+		Reason:             trigger.String(),
+		Message:            message,
 	}
 }
 

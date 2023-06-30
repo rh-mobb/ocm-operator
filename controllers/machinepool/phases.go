@@ -23,26 +23,16 @@ import (
 //
 //nolint:cyclop
 func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, error) {
-	// retrieve the cluster id
-	clusterID := request.Original.Status.ClusterID
-	if clusterID == "" {
-		if err := request.updateStatusCluster(); err != nil {
-			return controllers.RequeueAfter(defaultMachinePoolRequeue), err
-		}
-
-		clusterID = request.Original.Status.ClusterID
-	}
-
 	// retrieve the machine pool (or node pool for hosted control plane clusters)
 	var pool interface{}
 
 	var err error
 
 	if request.Original.Status.Hosted {
-		poolClient := ocm.NewNodePoolClient(r.Connection, request.Desired.Spec.DisplayName, clusterID)
+		poolClient := ocm.NewNodePoolClient(r.Connection, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 		pool, err = poolClient.Get()
 	} else {
-		poolClient := ocm.NewMachinePoolClient(r.Connection, request.Desired.Spec.DisplayName, clusterID)
+		poolClient := ocm.NewMachinePoolClient(r.Connection, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 		pool, err = poolClient.Get()
 	}
 

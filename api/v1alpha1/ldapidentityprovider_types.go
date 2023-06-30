@@ -17,10 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"fmt"
+
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
@@ -141,6 +145,59 @@ type LDAPIdentityProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []LDAPIdentityProvider `json:"items"`
+}
+
+// FindAll gets a complete list of resources in the cluster for this type.
+func (ldap *LDAPIdentityProvider) FindAll(
+	ctx context.Context,
+	c kubernetes.Client,
+) ([]LDAPIdentityProvider, error) {
+	objects := &LDAPIdentityProviderList{}
+
+	if err := c.List(ctx, objects); err != nil {
+		return []LDAPIdentityProvider{}, fmt.Errorf("unable to retrieve ldap identity providers - %w", err)
+	}
+
+	return objects.Items, nil
+}
+
+// FindAllByClusterID gets a list of resources which have a particular cluster ID in the status field.
+func (ldap *LDAPIdentityProvider) FindAllByClusterID(
+	ctx context.Context,
+	c kubernetes.Client,
+	clusterID string,
+) ([]*LDAPIdentityProvider, error) {
+	objects, err := ldap.FindAll(ctx, c)
+	if err != nil {
+		return []*LDAPIdentityProvider{}, err
+	}
+
+	matches := []*LDAPIdentityProvider{}
+
+	for i := range objects {
+		if objects[i].Status.ClusterID == clusterID {
+			matches = append(matches, &objects[i])
+		}
+	}
+
+	return matches, nil
+}
+
+// ExistsForClusterID returns if a particular object is associated with a cluster ID.
+func (ldap *LDAPIdentityProvider) ExistsForClusterID(
+	ctx context.Context,
+	c kubernetes.Client,
+	clusterID string,
+) (bool, error) {
+	objects, err := ldap.FindAllByClusterID(ctx, c, clusterID)
+
+	return (len(objects) > 0), err
+}
+
+// GetClusterID gets the status.clusterID field from the object.  It is used to
+// satisfy the Workload interface.
+func (ldap *LDAPIdentityProvider) GetClusterID() string {
+	return ldap.Status.ClusterID
 }
 
 // GetConditions returns the status.conditions field from the object.  It is used to

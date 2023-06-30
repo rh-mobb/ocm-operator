@@ -17,10 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"fmt"
+
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
@@ -186,6 +190,53 @@ func init() {
 	SchemeBuilder.Register(&MachinePool{}, &MachinePoolList{})
 }
 
+// FindAll gets a complete list of resources in the cluster for this type.
+func (machinePool *MachinePool) FindAll(
+	ctx context.Context,
+	c kubernetes.Client,
+) ([]MachinePool, error) {
+	objects := &MachinePoolList{}
+
+	if err := c.List(ctx, objects); err != nil {
+		return []MachinePool{}, fmt.Errorf("unable to retrieve machine pools - %w", err)
+	}
+
+	return objects.Items, nil
+}
+
+// FindAllByClusterID gets a list of resources which have a particular cluster ID in the status field.
+func (machinePool *MachinePool) FindAllByClusterID(
+	ctx context.Context,
+	c kubernetes.Client,
+	clusterID string,
+) ([]*MachinePool, error) {
+	objects, err := machinePool.FindAll(ctx, c)
+	if err != nil {
+		return []*MachinePool{}, err
+	}
+
+	matches := []*MachinePool{}
+
+	for i := range objects {
+		if objects[i].Status.ClusterID == clusterID {
+			matches = append(matches, &objects[i])
+		}
+	}
+
+	return matches, nil
+}
+
+// ExistsForClusterID returns if a particular object is associated with a cluster ID.
+func (machinePool *MachinePool) ExistsForClusterID(
+	ctx context.Context,
+	c kubernetes.Client,
+	clusterID string,
+) (bool, error) {
+	objects, err := machinePool.FindAllByClusterID(ctx, c, clusterID)
+
+	return (len(objects) > 0), err
+}
+
 // DesiredState returns the desired state of an object that should exist in
 // OCM.  This is required because there are certain things that get set
 // that are not a part of the spec such as managed labels.
@@ -200,6 +251,12 @@ func (machinePool *MachinePool) DesiredState() *MachinePool {
 	desiredState.SetMachinePoolLabels()
 
 	return desiredState
+}
+
+// GetClusterID gets the status.clusterID field from the object.  It is used to
+// satisfy the Workload interface.
+func (machinePool *MachinePool) GetClusterID() string {
+	return machinePool.Status.ClusterID
 }
 
 // GetConditions returns the status.conditions field from the object.  It is used to

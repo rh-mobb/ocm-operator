@@ -359,6 +359,12 @@ type ROSAClusterList struct {
 	Items           []ROSACluster `json:"items"`
 }
 
+// GetClusterID gets the status.clusterID field from the object.  It is used to
+// satisfy the Workload interface.
+func (cluster *ROSACluster) GetClusterID() string {
+	return cluster.Status.ClusterID
+}
+
 // GetConditions returns the status.conditions field from the object.  It is used to
 // satisfy the Workload interface.
 func (cluster *ROSACluster) GetConditions() []metav1.Condition {
