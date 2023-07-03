@@ -1,7 +1,6 @@
 package gitlabidentityprovider
 
 import (
-	"errors"
 	"fmt"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -12,10 +11,6 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
-)
-
-var (
-	ErrGitLabApplicationDrift = errors.New("gitlab application is immutable but differs from the desired state configuration")
 )
 
 // GetCurrentState gets the current state of the GitLabIdentityProvider resource.  The current state of the GitLabIdentityProvider resource
@@ -31,10 +26,7 @@ func (r *Controller) GetCurrentState(request *GitLabIdentityProviderRequest) (ct
 
 	idp, err := request.OCMClient.Get()
 	if err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
-			"unable to retrieve gitlab identity provider from ocm - %w",
-			err,
-		)
+		return controllers.RequeueOnError(request, controllers.ErrGetOCM(request, err))
 	}
 
 	// return if there is no identity provider found
@@ -121,10 +113,7 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 		request.Log.Info("creating gitlab identity provider", controllers.LogValues(request)...)
 		idp, err := request.OCMClient.Create(builder)
 		if err != nil {
-			return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
-				"unable to create gitlab identity provider in ocm - %w",
-				err,
-			)
+			return controllers.RequeueOnError(request, controllers.ErrCreateOCM(request, err))
 		}
 
 		// store the required provider data in the status
@@ -132,11 +121,7 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 		request.Original.Status.ProviderID = idp.ID()
 
 		if err := kubernetes.PatchStatus(request.Context, request.Reconciler, original, request.Original); err != nil {
-			return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
-				"unable to update status providerID=%s - %w",
-				idp.ID(),
-				err,
-			)
+			return errUnableToUpdateStatusProviderID(request, idp.ID(), err)
 		}
 
 		// create an event indicating that the gitlab identity provider has been created
@@ -149,10 +134,7 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 	request.Log.Info("updating gitlab identity provider", controllers.LogValues(request)...)
 	_, err := request.OCMClient.Update(builder)
 	if err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
-			"unable to update gitlab identity provider in ocm - %w",
-			err,
-		)
+		return controllers.RequeueOnError(request, controllers.ErrUpdateOCM(request, err))
 	}
 
 	// create an event indicating that the gitlab identity provider has been updated
@@ -186,10 +168,7 @@ func (r *Controller) Destroy(request *GitLabIdentityProviderRequest) (ctrl.Resul
 
 	// delete the object
 	if err := ocmClient.Delete(request.Original.Status.ProviderID); err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
-			"unable to delete gitlab identity provider from ocm - %w",
-			err,
-		)
+		return controllers.RequeueOnError(request, controllers.ErrDeleteOCM(request, err))
 	}
 
 	// create an event indicating that the gitlab identity provider has been deleted
@@ -197,7 +176,7 @@ func (r *Controller) Destroy(request *GitLabIdentityProviderRequest) (ctrl.Resul
 
 	// set the deleted condition
 	if err := conditions.Update(request.Context, request.Reconciler, request.Original, conditions.IdentityProviderDeleted()); err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf("error updating deleted condition - %w", err)
+		return controllers.RequeueOnError(request, controllers.ErrUpdateDeletedCondition(err))
 	}
 
 	return controllers.NoRequeue(), nil
@@ -213,7 +192,7 @@ func (r *Controller) Complete(request *GitLabIdentityProviderRequest) (ctrl.Resu
 		request.Original,
 		conditions.Reconciled(request.Trigger),
 	); err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
+		return controllers.RequeueOnError(request, controllers.ErrUpdateReconcilingCondition(err))
 	}
 
 	request.Log.Info("completed gitlab identity provider reconciliation", controllers.LogValues(request)...)
