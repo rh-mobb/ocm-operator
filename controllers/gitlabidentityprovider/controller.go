@@ -62,12 +62,12 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	// type cast the request to a gitlab identity provider request
 	request, ok := req.(*GitLabIdentityProviderRequest)
 	if !ok {
-		return controllers.TypeConvertError(defaultGitLabIdentityProviderRequeue, &GitLabIdentityProviderRequest{})
+		return controllers.RequeueOnError(request, controllers.TypeConvertError(&GitLabIdentityProviderRequest{}))
 	}
 
 	// add the finalizer
 	if err := controllers.AddFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.FinalizerError(defaultGitLabIdentityProviderRequeue, controllers.AddFinalizerError(err))
+		return controllers.RequeueOnError(request, controllers.AddFinalizerError(err))
 	}
 
 	// execute the phases
@@ -96,7 +96,7 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	// type cast the request to a gitlab identity provider request
 	request, ok := req.(*GitLabIdentityProviderRequest)
 	if !ok {
-		return controllers.TypeConvertError(defaultGitLabIdentityProviderRequeue, &GitLabIdentityProviderRequest{})
+		return controllers.RequeueOnError(request, controllers.TypeConvertError(&GitLabIdentityProviderRequest{}))
 	}
 
 	// execute the phases

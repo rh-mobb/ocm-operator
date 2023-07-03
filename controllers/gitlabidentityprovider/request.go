@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
@@ -122,6 +123,11 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		ClientSecret: clientSecret,
 		CA:           ca,
 	}, nil
+}
+
+// DefaultRequeue returns the default requeue time for a request.
+func (request *GitLabIdentityProviderRequest) DefaultRequeue() time.Duration {
+	return defaultGitLabIdentityProviderRequeue
 }
 
 // GetObject returns the original object to satisfy the controllers.Request interface.
