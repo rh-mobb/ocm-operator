@@ -32,7 +32,7 @@ func (r *Controller) GetCurrentState(request *ROSAClusterRequest) (ctrl.Result, 
 
 	// return immediately if we have no cluster
 	if cluster == nil {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// store the current state
@@ -41,7 +41,7 @@ func (r *Controller) GetCurrentState(request *ROSAClusterRequest) (ctrl.Result, 
 	request.Current.CopyFrom(cluster)
 	request.Cluster = cluster
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // ApplyCluster applies the desired state of the LDAP rosa cluster to OCM.
@@ -50,7 +50,7 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 	if request.Current == nil {
 		// return immediately if we have already created the cluster
 		if conditions.IsSet(ClusterCreated(), request.Original) {
-			return controllers.NoRequeue(), nil
+			return controllers.ReconcileContinue()
 		}
 
 		if err := request.createCluster(); err != nil {
@@ -65,19 +65,19 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 			return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster created notification - %w", err)
 		}
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// return and pass to the 'waiting' step if not ready
 	if request.Cluster.State() != clustersmgmtv1.ClusterStateReady {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// return if it is already in its desired state
 	if request.desired() {
 		request.Log.V(controllers.LogLevelDebug).Info("rosa cluster already in desired state", controllers.LogValues(request)...)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// update the existing rosa cluster
@@ -93,7 +93,7 @@ func (r *Controller) ApplyCluster(request *ROSAClusterRequest) (ctrl.Result, err
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster updated notification - %w", err)
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // FindChildObjects finds all of the child objects related to this cluster.  This is intended to run during the delete
@@ -131,7 +131,7 @@ func (r *Controller) FindChildObjects(request *ROSAClusterRequest) (ctrl.Result,
 		}
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // DestroyCluster deletes the cluster from OCM.
@@ -159,7 +159,7 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending cluster deleted notification - %w", err)
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // WaitUntilMissing will requeue until the reconciler determines that the cluster is missing.
@@ -168,7 +168,7 @@ func (r *Controller) DestroyCluster(request *ROSAClusterRequest) (ctrl.Result, e
 func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the cluster
 	if conditions.IsSet(ClusterDeleted(), request.Original) {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// retrieve the cluster and return if it does not exist (has been deleted)
@@ -182,7 +182,7 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 	}
 
 	if !exists {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// set the deleted condition and return if we have no cluster
@@ -193,7 +193,7 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 
 		request.Log.Info("cluster has been deleted", controllers.LogValues(request)...)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// return if we are still uninstalling
@@ -222,7 +222,7 @@ func (r *Controller) WaitUntilMissing(request *ROSAClusterRequest) (ctrl.Result,
 func (r *Controller) DestroyOperatorRoles(request *ROSAClusterRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the operator roles
 	if conditions.IsSet(OperatorRolesDeleted(), request.Original) {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	request.Log.Info("deleting operator roles", controllers.LogValues(request)...)
@@ -238,7 +238,7 @@ func (r *Controller) DestroyOperatorRoles(request *ROSAClusterRequest) (ctrl.Res
 		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("error sending operator roles deleted notification - %w", err)
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // DestroyOIDC destroys the OIDC configuration and provider in AWS.
@@ -277,7 +277,7 @@ func (r *Controller) DestroyOIDC(request *ROSAClusterRequest) (ctrl.Result, erro
 		}
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // WaitUntilReady will requeue until the reconciler determines that the current state of the
@@ -289,7 +289,7 @@ func (r *Controller) WaitUntilReady(request *ROSAClusterRequest) (ctrl.Result, e
 	case clustersmgmtv1.ClusterStateReady:
 		request.Log.Info("cluster is ready", controllers.LogValues(request)...)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	case clustersmgmtv1.ClusterStateError:
 		request.Log.Error(fmt.Errorf("cluster is in error state"), fmt.Sprintf(
 			"checking again in %s", request.provisionRequeueTime().String(),
@@ -315,7 +315,7 @@ func (r *Controller) Complete(request *ROSAClusterRequest) (ctrl.Result, error) 
 	request.Log.Info("completed rosa cluster reconciliation", controllers.LogValues(request)...)
 	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
-	return controllers.RequeueAfter(r.Interval), nil
+	return controllers.ReconcileEnd(request)
 }
 
 // CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
@@ -326,5 +326,5 @@ func (r *Controller) CompleteDestroy(request *ROSAClusterRequest) (ctrl.Result, 
 
 	request.Log.Info("completed rosa cluster deletion", controllers.LogValues(request)...)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
