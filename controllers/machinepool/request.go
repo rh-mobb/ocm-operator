@@ -2,7 +2,6 @@ package machinepool
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -25,7 +24,6 @@ const (
 )
 
 var (
-	ErrMissingClusterID         = errors.New("unable to find cluster id")
 	ErrMachinePoolNameLength    = fmt.Errorf("machine pool name exceeds maximum length of %d characters", maximumNameLength)
 	ErrMachinePoolReservedLabel = fmt.Errorf(
 		"problem with system reserved labels: %s, %s",

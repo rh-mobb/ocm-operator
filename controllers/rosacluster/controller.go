@@ -35,7 +35,6 @@ import (
 )
 
 var (
-	ErrMissingClusterID      = errors.New("unable to find cluster id")
 	ErrClusterRequestConvert = errors.New("unable to convert generic request to cluster request")
 )
 

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -12,10 +11,6 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	"github.com/rh-mobb/ocm-operator/pkg/workload"
-)
-
-var (
-	ErrMissingClusterID = errors.New("unable to find cluster id")
 )
 
 const (
