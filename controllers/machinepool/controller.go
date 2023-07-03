@@ -62,7 +62,7 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	// type cast the request to a machine pool request
 	request, ok := req.(*MachinePoolRequest)
 	if !ok {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), ErrMachinePoolRequestConvert
+		return controllers.TypeConvertError(defaultMachinePoolRequeue, &MachinePoolRequest{})
 	}
 
 	// add the finalizer
@@ -95,7 +95,7 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	// type cast the request to a machine pool request
 	request, ok := req.(*MachinePoolRequest)
 	if !ok {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), ErrMachinePoolRequestConvert
+		return controllers.TypeConvertError(defaultMachinePoolRequeue, &MachinePoolRequest{})
 	}
 
 	// execute the phases
