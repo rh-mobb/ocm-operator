@@ -25,10 +25,9 @@ const (
 )
 
 var (
-	ErrMissingClusterID          = errors.New("unable to find cluster id")
-	ErrMachinePoolRequestConvert = errors.New("unable to convert generic request to machine pool request")
-	ErrMachinePoolNameLength     = fmt.Errorf("machine pool name exceeds maximum length of %d characters", maximumNameLength)
-	ErrMachinePoolReservedLabel  = fmt.Errorf(
+	ErrMissingClusterID         = errors.New("unable to find cluster id")
+	ErrMachinePoolNameLength    = fmt.Errorf("machine pool name exceeds maximum length of %d characters", maximumNameLength)
+	ErrMachinePoolReservedLabel = fmt.Errorf(
 		"problem with system reserved labels: %s, %s",
 		ocm.LabelPrefixManaged,
 		ocm.LabelPrefixName,

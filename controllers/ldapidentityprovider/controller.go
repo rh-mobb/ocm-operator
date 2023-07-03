@@ -58,7 +58,7 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 	// type cast the request to an ldap identity provider request
 	request, ok := req.(*LDAPIdentityProviderRequest)
 	if !ok {
-		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), ErrLDAPIdentityProviderRequestConvert
+		return controllers.TypeConvertError(defaultLDAPIdentityProviderRequeue, &LDAPIdentityProviderRequest{})
 	}
 
 	// add the finalizer
@@ -90,7 +90,7 @@ func (r *Controller) ReconcileDelete(req controllers.Request) (ctrl.Result, erro
 	// type cast the request to a ldap identity provider request
 	request, ok := req.(*LDAPIdentityProviderRequest)
 	if !ok {
-		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), ErrLDAPIdentityProviderRequestConvert
+		return controllers.TypeConvertError(defaultLDAPIdentityProviderRequeue, &LDAPIdentityProviderRequest{})
 	}
 
 	// execute the phases

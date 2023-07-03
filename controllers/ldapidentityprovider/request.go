@@ -21,10 +21,9 @@ import (
 )
 
 var (
-	ErrMissingClusterID                   = errors.New("unable to find cluster id")
-	ErrMissingBindPassword                = errors.New("unable to locate ldap bind password data")
-	ErrMissingCA                          = errors.New("ca specified but unable to locate ca data")
-	ErrLDAPIdentityProviderRequestConvert = errors.New("unable to convert generic request to ldap identity provider request")
+	ErrMissingClusterID    = errors.New("unable to find cluster id")
+	ErrMissingBindPassword = errors.New("unable to locate ldap bind password data")
+	ErrMissingCA           = errors.New("ca specified but unable to locate ca data")
 )
 
 // LDAPIdentityProviderRequest is an object that is unique to each reconciliation
