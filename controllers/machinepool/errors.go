@@ -27,3 +27,9 @@ func errMachinePoolManagedLabels(request *MachinePoolRequest, err error) error {
 		ErrMachinePoolReservedLabel,
 	)
 }
+
+// errGetMachinePoolLabels is an error indicating that the MachinePool labels were unable to
+// be retrieved.
+func errGetMachinePoolLabels(request *MachinePoolRequest, err error) error {
+	return fmt.Errorf("unable to get labeled nodes for machine pool [%s] - %w", request.GetName(), err)
+}

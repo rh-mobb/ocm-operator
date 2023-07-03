@@ -32,6 +32,10 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
 )
 
+const (
+	defaultLDAPIdentityProviderRequeue = 30 * time.Second
+)
+
 // Controller reconciles a LDAPIdentityProvider object.
 type Controller struct {
 	client.Client

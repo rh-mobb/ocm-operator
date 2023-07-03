@@ -40,7 +40,7 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 	// return if we did not find a machine pool.  this means that the machine pool does not
 	// exist and must be created in the CreateOrUpdate phase.
 	if reflect.ValueOf(pool).IsNil() {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// copy the machine pool object from ocm into a
@@ -49,14 +49,14 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 	if request.Original.Status.Hosted {
 		nodePool, ok := pool.(*clustersmgmtv1.NodePool)
 		if !ok {
-			return controllers.RequeueAfter(defaultMachinePoolRequeue), ocm.ErrConvertNodePool
+			return controllers.RequeueOnError(request, ocm.ErrConvertNodePool)
 		}
 
 		err = request.Current.CopyFromNodePool(nodePool, request.Desired.Spec.ClusterName)
 	} else {
 		machinePool, ok := pool.(*clustersmgmtv1.MachinePool)
 		if !ok {
-			return controllers.RequeueAfter(defaultMachinePoolRequeue), ocm.ErrConvertMachinePool
+			return controllers.RequeueOnError(request, ocm.ErrConvertMachinePool)
 		}
 
 		err = request.Current.CopyFromMachinePool(machinePool, request.Desired.Spec.ClusterName)
@@ -73,7 +73,7 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 		return controllers.RequeueOnError(request, errMachinePoolManagedLabels(request, err))
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // Apply will create an OpenShift Cluster Manager machine pool if it does not exist,
@@ -88,7 +88,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 			controllers.LogValues(request),
 		)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// get the client
@@ -132,7 +132,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 					controllers.LogValues(request)...,
 				)
 
-				return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
+				return controllers.ReconcileEnd(request)
 			}
 
 			return controllers.RequeueOnError(request, controllers.CreateOCMError(request, createErr))
@@ -141,7 +141,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 		// create an event indicating that the machine pool has been created
 		events.RegisterAction(events.Created, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// update the object
@@ -161,7 +161,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	// create an event indicating that the machine pool has been updated
 	events.RegisterAction(events.Updated, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // Destroy will destroy an OpenShift Cluster Manager machine pool.
@@ -170,17 +170,17 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the machine pool
 	if conditions.IsSet(MachinePoolDeleted(), request.Original) {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// return if the cluster does not exist (has been deleted)
 	_, exists, err := ocm.ClusterExists(request.Desired.Spec.ClusterName, request.Reconciler.Connection)
 	if err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), err
+		return controllers.RequeueOnError(request, err)
 	}
 
 	if !exists {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// get the client
@@ -222,7 +222,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 		return controllers.RequeueOnError(request, controllers.UpdateDeletedConditionError(err))
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 //+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch
@@ -240,27 +240,22 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 func (r *Controller) WaitUntilReady(request *MachinePoolRequest) (ctrl.Result, error) {
 	// skip the wait check if we are not requesting to wait for readiness
 	if !request.Original.Spec.Wait {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	nodes, err := kubernetes.GetLabeledNodes(request.Context, r, request.Desired.Spec.Labels)
 	if err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to get labeled nodes - %w", err)
-	}
-
-	// return if we cannot find any nodes
-	if len(nodes.Items) < 1 {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
+		return controllers.RequeueOnError(request, (errGetMachinePoolLabels(request, err)))
 	}
 
 	// ensure all nodes are ready
 	if !kubernetes.NodesAreReady(nodes.Items...) {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
+		return controllers.Requeue(request)
 	}
 
 	request.Log.Info("nodes are ready", controllers.LogValues(request)...)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // WaitUntilMissing will requeue until the reconciler determines that the nodes
@@ -268,22 +263,22 @@ func (r *Controller) WaitUntilReady(request *MachinePoolRequest) (ctrl.Result, e
 func (r *Controller) WaitUntilMissing(request *MachinePoolRequest) (ctrl.Result, error) {
 	// skip the wait check if we are not requesting to wait for readiness
 	if !request.Original.Spec.Wait {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	nodes, err := kubernetes.GetLabeledNodes(request.Context, r, request.Desired.Spec.Labels)
 	if err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to get labeled nodes - %w", err)
+		return controllers.RequeueOnError(request, (errGetMachinePoolLabels(request, err)))
 	}
 
-	// return if we cannot find any nodes
+	// requeue if we cannot find any nodes
 	if len(nodes.Items) > 0 {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
+		return controllers.Requeue(request)
 	}
 
 	request.Log.Info("nodes have been removed", controllers.LogValues(request)...)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // Complete will perform all actions required to successful complete a reconciliation request.  It will
@@ -302,7 +297,7 @@ func (r *Controller) Complete(request *MachinePoolRequest) (ctrl.Result, error) 
 	request.Log.Info("completed machine pool reconciliation", controllers.LogValues(request)...)
 	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
-	return controllers.RequeueAfter(r.Interval), nil
+	return controllers.ReconcileEnd(request)
 }
 
 // CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
@@ -313,5 +308,5 @@ func (r *Controller) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, 
 
 	request.Log.Info("completed machine pool deletion", controllers.LogValues(request)...)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileStop()
 }

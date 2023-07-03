@@ -31,7 +31,7 @@ func (r *Controller) GetCurrentState(request *GitLabIdentityProviderRequest) (ct
 
 	// return if there is no identity provider found
 	if idp == nil {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// store the current state
@@ -45,7 +45,7 @@ func (r *Controller) GetCurrentState(request *GitLabIdentityProviderRequest) (ct
 	request.Current.Spec.MappingMethod = string(idp.MappingMethod())
 	request.Current.CopyFrom(idp)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
@@ -103,7 +103,7 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 			controllers.LogValues(request)...,
 		)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	builder := request.Desired.Builder(request.CA, request.ClientSecret)
@@ -127,7 +127,7 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 		// create an event indicating that the gitlab identity provider has been created
 		events.RegisterAction(events.Created, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// update the identity provider if it does exist
@@ -140,24 +140,24 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 	// create an event indicating that the gitlab identity provider has been updated
 	events.RegisterAction(events.Updated, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // Destroy will destroy an OpenShift Cluster Manager GitLab Identity Provider.
 func (r *Controller) Destroy(request *GitLabIdentityProviderRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the gitlab identity provider
 	if conditions.IsSet(conditions.IdentityProviderDeleted(), request.Original) {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// return if the cluster does not exist (has been deleted)
 	_, exists, err := ocm.ClusterExists(request.Desired.Spec.ClusterName, request.Reconciler.Connection)
 	if err != nil {
-		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), err
+		return controllers.RequeueOnError(request, err)
 	}
 
 	if !exists {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	ocmClient := ocm.NewIdentityProviderClient(
@@ -179,7 +179,7 @@ func (r *Controller) Destroy(request *GitLabIdentityProviderRequest) (ctrl.Resul
 		return controllers.RequeueOnError(request, controllers.UpdateDeletedConditionError(err))
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // Complete will perform all actions required to successful complete a reconciliation request.  It will
@@ -198,7 +198,7 @@ func (r *Controller) Complete(request *GitLabIdentityProviderRequest) (ctrl.Resu
 	request.Log.Info("completed gitlab identity provider reconciliation", controllers.LogValues(request)...)
 	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
-	return controllers.RequeueAfter(r.Interval), nil
+	return controllers.ReconcileEnd(request)
 }
 
 // CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
@@ -209,5 +209,5 @@ func (r *Controller) CompleteDestroy(request *GitLabIdentityProviderRequest) (ct
 
 	request.Log.Info("completed gitlab identity provider deletion", controllers.LogValues(request)...)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileStop()
 }
