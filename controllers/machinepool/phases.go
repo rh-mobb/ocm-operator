@@ -34,7 +34,7 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 	}
 
 	if err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrGetOCM(request, err))
+		return controllers.RequeueOnError(request, controllers.GetOCMError(request, err))
 	}
 
 	// return if we did not find a machine pool.  this means that the machine pool does not
@@ -135,7 +135,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 				return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
 			}
 
-			return controllers.RequeueOnError(request, controllers.ErrCreateOCM(request, createErr))
+			return controllers.RequeueOnError(request, controllers.CreateOCMError(request, createErr))
 		}
 
 		// create an event indicating that the machine pool has been created
@@ -155,7 +155,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	}
 
 	if updateErr != nil {
-		return controllers.RequeueOnError(request, controllers.ErrUpdateOCM(request, updateErr))
+		return controllers.RequeueOnError(request, controllers.UpdateOCMError(request, updateErr))
 	}
 
 	// create an event indicating that the machine pool has been updated
@@ -211,7 +211,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	}
 
 	if deleteErr != nil {
-		return controllers.RequeueOnError(request, controllers.ErrDeleteOCM(request, deleteErr))
+		return controllers.RequeueOnError(request, controllers.DeleteOCMError(request, deleteErr))
 	}
 
 	// create an event indicating that the machine pool has been deleted
@@ -219,7 +219,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 
 	// set the deleted condition
 	if err := conditions.Update(request.Context, request.Reconciler, request.Original, MachinePoolDeleted()); err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrUpdateDeletedCondition(err))
+		return controllers.RequeueOnError(request, controllers.UpdateDeletedConditionError(err))
 	}
 
 	return controllers.NoRequeue(), nil
@@ -296,7 +296,7 @@ func (r *Controller) Complete(request *MachinePoolRequest) (ctrl.Result, error) 
 		request.Original,
 		conditions.Reconciled(request.Trigger),
 	); err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrUpdateReconcilingCondition(err))
+		return controllers.RequeueOnError(request, controllers.UpdateReconcilingConditionError(err))
 	}
 
 	request.Log.Info("completed machine pool reconciliation", controllers.LogValues(request)...)

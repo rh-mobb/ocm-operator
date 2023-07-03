@@ -31,7 +31,7 @@ func (r *Controller) GetCurrentState(request *LDAPIdentityProviderRequest) (ctrl
 
 	idp, err := request.OCMClient.Get()
 	if err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrGetOCM(request, err))
+		return controllers.RequeueOnError(request, controllers.GetOCMError(request, err))
 	}
 
 	// return if there is no identity provider found
@@ -70,7 +70,7 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 		request.Log.Info("creating ldap identity provider", controllers.LogValues(request)...)
 		idp, err := request.OCMClient.Create(builder)
 		if err != nil {
-			return controllers.RequeueOnError(request, controllers.ErrCreateOCM(request, err))
+			return controllers.RequeueOnError(request, controllers.CreateOCMError(request, err))
 		}
 
 		// store the required provider data in the status
@@ -91,7 +91,7 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 	request.Log.Info("updating ldap identity provider", controllers.LogValues(request)...)
 	_, err := request.OCMClient.Update(builder)
 	if err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrUpdateOCM(request, err))
+		return controllers.RequeueOnError(request, controllers.UpdateOCMError(request, err))
 	}
 
 	// create an event indicating that the ldap identity provider has been updated
@@ -125,7 +125,7 @@ func (r *Controller) Destroy(request *LDAPIdentityProviderRequest) (ctrl.Result,
 
 	// delete the object
 	if err := ocmClient.Delete(request.Original.Status.ProviderID); err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrDeleteOCM(request, err))
+		return controllers.RequeueOnError(request, controllers.DeleteOCMError(request, err))
 	}
 
 	// create an event indicating that the ldap identity provider has been deleted
@@ -133,7 +133,7 @@ func (r *Controller) Destroy(request *LDAPIdentityProviderRequest) (ctrl.Result,
 
 	// set the deleted condition
 	if err := conditions.Update(request.Context, request.Reconciler, request.Original, conditions.IdentityProviderDeleted()); err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrUpdateDeletedCondition(err))
+		return controllers.RequeueOnError(request, controllers.UpdateDeletedConditionError(err))
 	}
 
 	return controllers.NoRequeue(), nil
@@ -149,7 +149,7 @@ func (r *Controller) Complete(request *LDAPIdentityProviderRequest) (ctrl.Result
 		request.Original,
 		conditions.Reconciled(request.Trigger),
 	); err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrUpdateReconcilingCondition(err))
+		return controllers.RequeueOnError(request, controllers.UpdateReconcilingConditionError(err))
 	}
 
 	request.Log.Info("completed ldap identity provider reconciliation", controllers.LogValues(request)...)

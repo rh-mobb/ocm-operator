@@ -11,8 +11,8 @@ var (
 	ErrMissingClusterID = errors.New("unable to find cluster id")
 )
 
-// ErrGetOCM returns an error indicating an object was unable to be retrieved from OCM.
-func ErrGetOCM(request Request, err error) error {
+// GetOCMError returns an error indicating an object was unable to be retrieved from OCM.
+func GetOCMError(request Request, err error) error {
 	return fmt.Errorf(
 		"unable to get [%s] with name [%s] from ocm - %w",
 		request.GetObject().GetObjectKind().GroupVersionKind().Kind,
@@ -21,8 +21,8 @@ func ErrGetOCM(request Request, err error) error {
 	)
 }
 
-// ErrCreateOCM returns an error indicating an object was unable to be created in OCM.
-func ErrCreateOCM(request Request, err error) error {
+// CreateOCMError returns an error indicating an object was unable to be created in OCM.
+func CreateOCMError(request Request, err error) error {
 	return fmt.Errorf(
 		"unable to create [%s] with name [%s] in ocm - %w",
 		request.GetObject().GetObjectKind().GroupVersionKind().Kind,
@@ -31,8 +31,8 @@ func ErrCreateOCM(request Request, err error) error {
 	)
 }
 
-// ErrUpdateOCM returns an error indicating an object was unable to be updated in OCM.
-func ErrUpdateOCM(request Request, err error) error {
+// UpdateOCMError returns an error indicating an object was unable to be updated in OCM.
+func UpdateOCMError(request Request, err error) error {
 	return fmt.Errorf(
 		"unable to update [%s] with name [%s] in ocm - %w",
 		request.GetObject().GetObjectKind().GroupVersionKind().Kind,
@@ -41,8 +41,8 @@ func ErrUpdateOCM(request Request, err error) error {
 	)
 }
 
-// ErrDeleteOCM returns an error indicating an object was unable to be deleted from OCM.
-func ErrDeleteOCM(request Request, err error) error {
+// DeleteOCMError returns an error indicating an object was unable to be deleted from OCM.
+func DeleteOCMError(request Request, err error) error {
 	return fmt.Errorf(
 		"unable to delete [%s] with name [%s] from ocm - %w",
 		request.GetObject().GetObjectKind().GroupVersionKind().Kind,
@@ -51,15 +51,15 @@ func ErrDeleteOCM(request Request, err error) error {
 	)
 }
 
-// ErrUpdateDeletedCondition returns an error indicating an object was unable to update
+// UpdateDeletedConditionError returns an error indicating an object was unable to update
 // the deleted condition.
-func ErrUpdateDeletedCondition(err error) error {
+func UpdateDeletedConditionError(err error) error {
 	return fmt.Errorf("error updating deleted condition - %w", err)
 }
 
-// ErrUpdateReconcilingCondition returns an error indicating an object was unable to update
+// UpdateReconcilingConditionError returns an error indicating an object was unable to update
 // the reconciling condition.
-func ErrUpdateReconcilingCondition(err error) error {
+func UpdateReconcilingConditionError(err error) error {
 	return fmt.Errorf("error updating reconciling condition - %w", err)
 }
 
