@@ -177,7 +177,7 @@ func (r *Controller) Complete(request *LDAPIdentityProviderRequest) (ctrl.Result
 // CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
 func (r *Controller) CompleteDestroy(request *LDAPIdentityProviderRequest) (ctrl.Result, error) {
 	if err := controllers.RemoveFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
+		return controllers.FinalizerError(defaultLDAPIdentityProviderRequeue, controllers.RemoveFinalizerError(err))
 	}
 
 	request.Log.Info("completed ldap identity provider deletion", controllers.LogValues(request)...)
