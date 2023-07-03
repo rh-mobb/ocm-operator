@@ -309,7 +309,7 @@ func (r *Controller) WaitUntilReady(request *ROSAClusterRequest) (ctrl.Result, e
 // object remains in its desired state at a specific interval.
 func (r *Controller) Complete(request *ROSAClusterRequest) (ctrl.Result, error) {
 	if err := conditions.Update(request.Context, request.Reconciler, request.Original, conditions.Reconciled(request.Trigger)); err != nil {
-		return controllers.RequeueOnError(request, controllers.ErrUpdateReconcilingCondition(err))
+		return controllers.RequeueOnError(request, controllers.UpdateReconcilingConditionError(err))
 	}
 
 	request.Log.Info("completed rosa cluster reconciliation", controllers.LogValues(request)...)
