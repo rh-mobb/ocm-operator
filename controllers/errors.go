@@ -6,6 +6,7 @@ import (
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var (
@@ -34,4 +35,21 @@ func AddFinalizerError(err error) error {
 // RemoveFinalizerError returns an error when removing a finalizer.
 func RemoveFinalizerError(err error) error {
 	return fmt.Errorf("unable to remove finalizers - %w", err)
+}
+
+// ReconcileError returns an error for the reconciler.  It is a helper function to
+// pass consistent errors across multiple different controllers.
+func ReconcileError(request reconcile.Request, message string, err error) error {
+	// return a nil error if we received a nil error
+	if err == nil {
+		return nil
+	}
+
+	return fmt.Errorf(
+		"request=%s/%s, message=%s - %w",
+		request.Namespace,
+		request.Name,
+		message,
+		err,
+	)
 }
