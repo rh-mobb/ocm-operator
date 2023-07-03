@@ -107,7 +107,7 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 	// return if it is already in its desired state
 	if request.desired() {
 		request.Log.V(controllers.LogLevelDebug).Info(
-			"ldap identity provider already in desired state",
+			"gitlab identity provider already in desired state",
 			controllers.LogValues(request)...,
 		)
 
@@ -118,11 +118,11 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 
 	// create the identity provider if it does not exist
 	if request.Current == nil {
-		request.Log.Info("creating ldap identity provider", controllers.LogValues(request)...)
+		request.Log.Info("creating gitlab identity provider", controllers.LogValues(request)...)
 		idp, err := request.OCMClient.Create(builder)
 		if err != nil {
 			return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
-				"unable to create ldap identity provider in ocm - %w",
+				"unable to create gitlab identity provider in ocm - %w",
 				err,
 			)
 		}
@@ -155,7 +155,7 @@ func (r *Controller) ApplyIdentityProvider(request *GitLabIdentityProviderReques
 		)
 	}
 
-	// create an event indicating that the ldap identity provider has been updated
+	// create an event indicating that the gitlab identity provider has been updated
 	events.RegisterAction(events.Updated, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
 	return controllers.NoRequeue(), nil
@@ -187,7 +187,7 @@ func (r *Controller) Destroy(request *GitLabIdentityProviderRequest) (ctrl.Resul
 	// delete the object
 	if err := ocmClient.Delete(request.Original.Status.ProviderID); err != nil {
 		return controllers.RequeueAfter(defaultGitLabIdentityProviderRequeue), fmt.Errorf(
-			"unable to delete ldap identity provider from ocm - %w",
+			"unable to delete gitlab identity provider from ocm - %w",
 			err,
 		)
 	}
