@@ -22,7 +22,6 @@ import (
 )
 
 var (
-	ErrMissingClusterID    = errors.New("unable to find cluster id")
 	ErrMissingAccessToken  = errors.New("unable to locate gitlab api access token data")
 	ErrMissingClientSecret = errors.New("unable to locate client secret data")
 	ErrMissingCA           = errors.New("ca specified but unable to locate ca data")

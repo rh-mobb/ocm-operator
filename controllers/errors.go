@@ -1,10 +1,15 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+)
+
+var (
+	ErrMissingClusterID = errors.New("unable to find cluster id")
 )
 
 // TypeConvertError returns an error indicating a generic controllers.Request interface
