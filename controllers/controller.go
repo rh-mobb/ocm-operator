@@ -12,7 +12,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
@@ -96,23 +95,6 @@ func RequeueAfter(seconds time.Duration) ctrl.Result {
 // NoRequeue returns a blank result to prevent a requeue.
 func NoRequeue() ctrl.Result {
 	return ctrl.Result{}
-}
-
-// ReconcileError returns an error for the reconciler.  It is a helper function to
-// pass consistent errors across multiple different controllers.
-func ReconcileError(request reconcile.Request, message string, err error) error {
-	// return a nil error if we received a nil error
-	if err == nil {
-		return nil
-	}
-
-	return fmt.Errorf(
-		"request=%s/%s, message=%s - %w",
-		request.Namespace,
-		request.Name,
-		message,
-		err,
-	)
 }
 
 // FinalizerName returns the finalizer name for the controller.
