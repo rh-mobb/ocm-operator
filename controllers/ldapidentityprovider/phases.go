@@ -2,7 +2,6 @@ package ldapidentityprovider
 
 import (
 	"fmt"
-	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -12,10 +11,6 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/events"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
-)
-
-const (
-	defaultLDAPIdentityProviderRequeue = 30 * time.Second
 )
 
 // GetCurrentState gets the current state of the LDAPIdentityProvider resource.  The current state of the LDAPIdentityProvider resource
@@ -36,7 +31,7 @@ func (r *Controller) GetCurrentState(request *LDAPIdentityProviderRequest) (ctrl
 
 	// return if there is no identity provider found
 	if idp == nil {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// store the current state
@@ -48,10 +43,11 @@ func (r *Controller) GetCurrentState(request *LDAPIdentityProviderRequest) (ctrl
 	request.Current.Spec.MappingMethod = string(idp.MappingMethod())
 	request.Current.CopyFrom(idp.LDAP())
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
-// ApplyIdentityProvider applies the desired state of the LDAP identity provider to OCM.
+// ApplyIdentityProvider applies the LDAP identity provider state to OCM.  This includes creating and/or updating
+// the identity provider based on the provided attributes from the custom resource.
 func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if request.desired() {
@@ -60,7 +56,7 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 			controllers.LogValues(request)...,
 		)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	builder := request.Desired.Builder(request.DesiredCA, request.DesiredBindPassword)
@@ -84,7 +80,7 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 		// create an event indicating that the ldap identity provider has been created
 		events.RegisterAction(events.Created, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// update the identity provider if it does exist
@@ -97,24 +93,24 @@ func (r *Controller) ApplyIdentityProvider(request *LDAPIdentityProviderRequest)
 	// create an event indicating that the ldap identity provider has been updated
 	events.RegisterAction(events.Updated, request.Original, r.Recorder, request.Desired.Spec.DisplayName, request.Original.Status.ClusterID)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // Destroy will destroy an OpenShift Cluster Manager LDAP Identity Provider.
 func (r *Controller) Destroy(request *LDAPIdentityProviderRequest) (ctrl.Result, error) {
 	// return immediately if we have already deleted the ldap identity provider
 	if conditions.IsSet(conditions.IdentityProviderDeleted(), request.Original) {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	// return if the cluster does not exist (has been deleted)
 	_, exists, err := ocm.ClusterExists(request.Desired.Spec.ClusterName, request.Reconciler.Connection)
 	if err != nil {
-		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), err
+		return controllers.RequeueOnError(request, err)
 	}
 
 	if !exists {
-		return controllers.NoRequeue(), nil
+		return controllers.ReconcileContinue()
 	}
 
 	ocmClient := ocm.NewIdentityProviderClient(
@@ -136,7 +132,7 @@ func (r *Controller) Destroy(request *LDAPIdentityProviderRequest) (ctrl.Result,
 		return controllers.RequeueOnError(request, controllers.UpdateDeletedConditionError(err))
 	}
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileContinue()
 }
 
 // Complete will perform all actions required to successful complete a reconciliation request.  It will
@@ -155,7 +151,7 @@ func (r *Controller) Complete(request *LDAPIdentityProviderRequest) (ctrl.Result
 	request.Log.Info("completed ldap identity provider reconciliation", controllers.LogValues(request)...)
 	request.Log.Info(fmt.Sprintf("reconciling again in %s", r.Interval.String()), controllers.LogValues(request)...)
 
-	return controllers.RequeueAfter(r.Interval), nil
+	return controllers.ReconcileEnd(request)
 }
 
 // CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
@@ -166,5 +162,5 @@ func (r *Controller) CompleteDestroy(request *LDAPIdentityProviderRequest) (ctrl
 
 	request.Log.Info("completed ldap identity provider deletion", controllers.LogValues(request)...)
 
-	return controllers.NoRequeue(), nil
+	return controllers.ReconcileStop()
 }
