@@ -18,7 +18,6 @@ package rosacluster
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -32,10 +31,6 @@ import (
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/pkg/aws"
-)
-
-var (
-	ErrClusterRequestConvert = errors.New("unable to convert generic request to cluster request")
 )
 
 const (
@@ -76,7 +71,7 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 
 	// add the finalizer
 	if err := controllers.AddFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.FinalizerError(defaultClusterRequeue, controllers.AddFinalizerError(err))
+		return controllers.RequeueOnError(request, controllers.AddFinalizerError(err))
 	}
 
 	// execute the phases
@@ -122,7 +117,7 @@ func (r *Controller) Setup(req controllers.Request) (*ROSAClusterRequest, error)
 	// type cast the request to a rosa cluster request
 	request, ok := req.(*ROSAClusterRequest)
 	if !ok {
-		return &ROSAClusterRequest{}, ErrClusterRequestConvert
+		return &ROSAClusterRequest{}, controllers.TypeConvertError(&ROSAClusterRequest{})
 	}
 
 	// create the aws client used for interacting with aws services if it

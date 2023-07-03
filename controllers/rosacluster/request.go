@@ -107,6 +107,11 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 	return request, nil
 }
 
+// DefaultRequeue returns the default requeue time for a request.
+func (request *ROSAClusterRequest) DefaultRequeue() time.Duration {
+	return defaultClusterRequeue
+}
+
 // GetObject returns the original object to satisfy the controllers.Request interface.
 func (request *ROSAClusterRequest) GetObject() workload.Workload {
 	return request.Original

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	sdk "github.com/openshift-online/ocm-sdk-go"
@@ -13,10 +12,6 @@ import (
 	"github.com/rh-mobb/ocm-operator/pkg/conditions"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 	"github.com/rh-mobb/ocm-operator/pkg/triggers"
-)
-
-const (
-	defaultMissingUpstreamRequeue = 60 * time.Second
 )
 
 // Phase defines an individual phase in the controller reconciliation process.

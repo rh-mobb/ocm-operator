@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"time"
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 
@@ -23,6 +24,7 @@ const (
 // return back the original object, in its pure form, that was discovered
 // when the request was triggered.
 type Request interface {
+	DefaultRequeue() time.Duration
 	GetObject() workload.Workload
 	GetName() string
 }

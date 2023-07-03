@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
@@ -108,6 +109,11 @@ func (r *Controller) NewRequest(ctx context.Context, req ctrl.Request) (controll
 		Trigger:           triggers.GetTrigger(original),
 		Reconciler:        r,
 	}, nil
+}
+
+// DefaultRequeue returns the default requeue time for a request.
+func (request *MachinePoolRequest) DefaultRequeue() time.Duration {
+	return defaultMachinePoolRequeue
 }
 
 // GetObject returns the original object to satisfy the controllers.Request interface.
