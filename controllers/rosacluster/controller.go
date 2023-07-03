@@ -77,7 +77,7 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 
 	// add the finalizer
 	if err := controllers.AddFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.RequeueAfter(defaultClusterRequeue), fmt.Errorf("unable to register delete hooks - %w", err)
+		return controllers.FinalizerError(defaultClusterRequeue, controllers.AddFinalizerError(err))
 	}
 
 	// execute the phases

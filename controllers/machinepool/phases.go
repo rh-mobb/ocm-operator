@@ -317,7 +317,7 @@ func (r *Controller) Complete(request *MachinePoolRequest) (ctrl.Result, error) 
 // CompleteDestroy will perform all actions required to successfully complete a delete reconciliation request.
 func (r *Controller) CompleteDestroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	if err := controllers.RemoveFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to remove finalizers - %w", err)
+		return controllers.FinalizerError(defaultMachinePoolRequeue, controllers.RemoveFinalizerError(err))
 	}
 
 	request.Log.Info("completed machine pool deletion", controllers.LogValues(request)...)

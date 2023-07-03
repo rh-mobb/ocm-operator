@@ -18,7 +18,6 @@ package ldapidentityprovider
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
@@ -64,7 +63,7 @@ func (r *Controller) ReconcileCreate(req controllers.Request) (ctrl.Result, erro
 
 	// add the finalizer
 	if err := controllers.AddFinalizer(request.Context, r, request.Original); err != nil {
-		return controllers.RequeueAfter(defaultLDAPIdentityProviderRequeue), fmt.Errorf("unable to register delete hooks - %w", err)
+		return controllers.FinalizerError(defaultLDAPIdentityProviderRequeue, controllers.AddFinalizerError(err))
 	}
 
 	// execute the phases
