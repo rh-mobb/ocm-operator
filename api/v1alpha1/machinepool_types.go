@@ -298,10 +298,7 @@ func (machinePool *MachinePool) SetMachinePoolLabels() {
 // HasManagedLabels determines if the MachinePool object has the appropriate managed
 // labels in its desired state.
 func (machinePool *MachinePool) HasManagedLabels() bool {
-	for _, label := range []string{
-		ocm.LabelPrefixManaged,
-		ocm.LabelPrefixName,
-	} {
+	for _, label := range ocm.ManagedLabels() {
 		if machinePool.Spec.Labels[label] == "" {
 			return false
 		}

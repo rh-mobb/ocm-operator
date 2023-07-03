@@ -34,12 +34,7 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 	}
 
 	if err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf(
-			"unable to retrieve machine pool from ocm [name=%s, clusterName=%s] - %w",
-			request.Desired.Spec.DisplayName,
-			request.Desired.Spec.ClusterName,
-			err,
-		)
+		return controllers.RequeueOnError(request, controllers.ErrGetOCM(request, err))
 	}
 
 	// return if we did not find a machine pool.  this means that the machine pool does not
@@ -68,18 +63,14 @@ func (r *Controller) GetCurrentState(request *MachinePoolRequest) (ctrl.Result, 
 	}
 
 	if err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("unable to copy ocm machine pool object - %w", err)
+		return controllers.RequeueOnError(request, errMachinePoolCopy(request, err))
 	}
 
 	// ensure that we have the required labels for the machine pool
 	// we found.  we do this to ensure we are not managing something that
 	// may have been created by another process.
 	if !request.Current.HasManagedLabels() {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf(
-			"missing managed labels [%+v] - %w",
-			request.Current.Spec.Labels,
-			ErrMachinePoolReservedLabel,
-		)
+		return controllers.RequeueOnError(request, errMachinePoolManagedLabels(request, err))
 	}
 
 	return controllers.NoRequeue(), nil
@@ -144,7 +135,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 				return controllers.RequeueAfter(defaultMachinePoolRequeue), nil
 			}
 
-			return controllers.RequeueAfter(defaultMachinePoolRequeue), createErr
+			return controllers.RequeueOnError(request, controllers.ErrCreateOCM(request, createErr))
 		}
 
 		// create an event indicating that the machine pool has been created
@@ -164,7 +155,7 @@ func (r *Controller) Apply(request *MachinePoolRequest) (ctrl.Result, error) {
 	}
 
 	if updateErr != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), updateErr
+		return controllers.RequeueOnError(request, controllers.ErrUpdateOCM(request, updateErr))
 	}
 
 	// create an event indicating that the machine pool has been updated
@@ -220,7 +211,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 	}
 
 	if deleteErr != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), deleteErr
+		return controllers.RequeueOnError(request, controllers.ErrDeleteOCM(request, deleteErr))
 	}
 
 	// create an event indicating that the machine pool has been deleted
@@ -228,7 +219,7 @@ func (r *Controller) Destroy(request *MachinePoolRequest) (ctrl.Result, error) {
 
 	// set the deleted condition
 	if err := conditions.Update(request.Context, request.Reconciler, request.Original, MachinePoolDeleted()); err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating deleted condition - %w", err)
+		return controllers.RequeueOnError(request, controllers.ErrUpdateDeletedCondition(err))
 	}
 
 	return controllers.NoRequeue(), nil
@@ -305,7 +296,7 @@ func (r *Controller) Complete(request *MachinePoolRequest) (ctrl.Result, error) 
 		request.Original,
 		conditions.Reconciled(request.Trigger),
 	); err != nil {
-		return controllers.RequeueAfter(defaultMachinePoolRequeue), fmt.Errorf("error updating reconciling condition - %w", err)
+		return controllers.RequeueOnError(request, controllers.ErrUpdateReconcilingCondition(err))
 	}
 
 	request.Log.Info("completed machine pool reconciliation", controllers.LogValues(request)...)

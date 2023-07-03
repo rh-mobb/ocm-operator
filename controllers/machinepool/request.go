@@ -24,15 +24,6 @@ const (
 	maximumNameLength = 15
 )
 
-var (
-	ErrMachinePoolNameLength    = fmt.Errorf("machine pool name exceeds maximum length of %d characters", maximumNameLength)
-	ErrMachinePoolReservedLabel = fmt.Errorf(
-		"problem with system reserved labels: %s, %s",
-		ocm.LabelPrefixManaged,
-		ocm.LabelPrefixName,
-	)
-)
-
 // MachinePoolRequest is an object that is unique to each reconciliation
 // request.
 //
