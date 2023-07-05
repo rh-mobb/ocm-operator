@@ -35,10 +35,10 @@ import (
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
 	"github.com/rh-mobb/ocm-operator/controllers"
-	"github.com/rh-mobb/ocm-operator/controllers/gitlabidentityprovider"
-	"github.com/rh-mobb/ocm-operator/controllers/ldapidentityprovider"
-	"github.com/rh-mobb/ocm-operator/controllers/machinepool"
-	"github.com/rh-mobb/ocm-operator/controllers/rosacluster"
+	"github.com/rh-mobb/ocm-operator/controllers/reconcilers/gitlabidentityprovider"
+	"github.com/rh-mobb/ocm-operator/controllers/reconcilers/ldapidentityprovider"
+	"github.com/rh-mobb/ocm-operator/controllers/reconcilers/machinepool"
+	"github.com/rh-mobb/ocm-operator/controllers/reconcilers/rosacluster"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -124,6 +124,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("machinepool-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
+		Log:        ctrl.Log.WithName("machinepool-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MachinePool")
 		os.Exit(1)
@@ -134,6 +135,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("gitlab-idp-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
+		Log:        ctrl.Log.WithName("gitlab-idp-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GitLabIdentityProvider")
 		os.Exit(1)
@@ -144,6 +146,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("ldap-idp-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
+		Log:        ctrl.Log.WithName("ldap-idp-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "LDAPIdentityProvider")
 		os.Exit(1)
@@ -154,6 +157,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("rosa-cluster-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
+		Log:        ctrl.Log.WithName("rosa-cluster-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Cluster")
 		os.Exit(1)
