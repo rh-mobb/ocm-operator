@@ -2,22 +2,22 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"time"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/rh-mobb/ocm-operator/pkg/conditions"
+	"github.com/rh-mobb/ocm-operator/controllers/conditions"
+	"github.com/rh-mobb/ocm-operator/controllers/request"
+	"github.com/rh-mobb/ocm-operator/controllers/requeue"
+	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
-	"github.com/rh-mobb/ocm-operator/pkg/triggers"
-)
-
-var (
-	ErrConvertClientObject = errors.New("unable to convert to client object")
 )
 
 const (
+	defaultRequeue = 30 * time.Second
+
 	LogLevelDebug = 5
 )
 
@@ -26,11 +26,11 @@ const (
 type Controller interface {
 	kubernetes.Client
 
-	NewRequest(ctx context.Context, req ctrl.Request) (Request, error)
+	NewRequest(ctx context.Context, req ctrl.Request) (request.Request, error)
 	Reconcile(context.Context, ctrl.Request) (ctrl.Result, error)
-	ReconcileCreate(Request) (ctrl.Result, error)
-	ReconcileUpdate(Request) (ctrl.Result, error)
-	ReconcileDelete(Request) (ctrl.Result, error)
+	ReconcileCreate(request.Request) (ctrl.Result, error)
+	ReconcileUpdate(request.Request) (ctrl.Result, error)
+	ReconcileDelete(request.Request) (ctrl.Result, error)
 	SetupWithManager(mgr ctrl.Manager) error
 }
 
@@ -42,38 +42,34 @@ type Controller interface {
 // Reconcile is a centralized, reusable reconciliation loop by which all controllers can
 // use as their reconciliation function.  It requires that a new request for each reconciliation
 // loop is created to track that status throughout each request.
-func Reconcile(ctx context.Context, controller Controller, req ctrl.Request) (ctrl.Result, error) {
-	// create the request
-	request, err := controller.NewRequest(ctx, req)
+func Reconcile(ctx context.Context, controller Controller, ctrlReq ctrl.Request) (ctrl.Result, error) {
+	// create the reconcile request
+	req, err := controller.NewRequest(ctx, ctrlReq)
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
-			return NoRequeue(), fmt.Errorf("unable to create request - %w", err)
+			return requeue.Skip(fmt.Errorf("unable to create request - %w", err))
 		}
 
-		return NoRequeue(), nil
+		return requeue.Skip(nil)
 	}
 
 	// determine what triggered the reconcile request
-	trigger := triggers.GetTrigger(request.GetObject())
+	trigger := triggers.GetTrigger(req.GetObject())
 
 	// set a condition notifying the resource that we are reconciling
-	if err := conditions.Update(ctx, controller, request.GetObject(), conditions.Reconciling(trigger)); err != nil {
-		return RequeueAfter(defaultRequeue), fmt.Errorf("unable to update condition - %w", err)
+	if err := conditions.Update(req, conditions.Reconciling(trigger)); err != nil {
+		return requeue.After(defaultRequeue, conditions.UpdateReconcilingConditionError(err))
 	}
 
 	// run the reconciliation loop based on the event trigger
 	switch trigger.String() {
 	case triggers.CreateString:
-		return controller.ReconcileCreate(request)
+		return controller.ReconcileCreate(req)
 	case triggers.UpdateString:
-		return controller.ReconcileUpdate(request)
+		return controller.ReconcileUpdate(req)
 	case triggers.DeleteString:
-		return controller.ReconcileDelete(request)
+		return controller.ReconcileDelete(req)
 	default:
-		return NoRequeue(), ReconcileError(
-			req,
-			"unable to determine controller trigger",
-			triggers.ErrTriggerUnknown,
-		)
+		return requeue.Skip(request.Error(req, triggers.ErrTriggerUnknown))
 	}
 }

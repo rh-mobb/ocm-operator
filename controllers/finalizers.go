@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,6 +14,10 @@ import (
 
 const (
 	defaultFinalizerSuffix = "finalizer"
+)
+
+var (
+	ErrConvertClientObject = errors.New("unable to convert to client object")
 )
 
 // FinalizerName returns the finalizer name for the controller.
@@ -68,4 +73,14 @@ func RemoveFinalizer(ctx context.Context, r kubernetes.Client, object client.Obj
 	}
 
 	return nil
+}
+
+// AddFinalizerError returns an error when registering a finalizer.
+func AddFinalizerError(err error) error {
+	return fmt.Errorf("unable to add finalizers - %w", err)
+}
+
+// RemoveFinalizerError returns an error when removing a finalizer.
+func RemoveFinalizerError(err error) error {
+	return fmt.Errorf("unable to remove finalizers - %w", err)
 }
