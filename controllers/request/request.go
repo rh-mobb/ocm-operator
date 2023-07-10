@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/rh-mobb/ocm-operator/controllers/workload"
@@ -19,4 +20,15 @@ type Request interface {
 	GetName() string
 	GetContext() context.Context
 	GetReconciler() kubernetes.Client
+}
+
+// LogValues returns a consistent set of values for a request.
+func LogValues(request Request) []interface{} {
+	object := request.GetObject()
+
+	return []interface{}{
+		"kind", object.GetObjectKind().GroupVersionKind().Kind,
+		"resource", fmt.Sprintf("%s/%s", object.GetNamespace(), object.GetName()),
+		"name", request.GetName(),
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/conditions"
 	"github.com/rh-mobb/ocm-operator/controllers/events"
 	"github.com/rh-mobb/ocm-operator/controllers/phases"
+	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
@@ -100,7 +101,7 @@ func (r *Controller) ApplyIdentityProvider(req *GitLabIdentityProviderRequest) (
 	if req.desired() {
 		r.Log.V(controllers.LogLevelDebug).Info(
 			"gitlab identity provider already in desired state",
-			controllers.LogValues(req)...,
+			request.LogValues(req)...,
 		)
 
 		return phases.Next()
@@ -110,7 +111,7 @@ func (r *Controller) ApplyIdentityProvider(req *GitLabIdentityProviderRequest) (
 
 	// create the identity provider if it does not exist
 	if req.Current == nil {
-		r.Log.Info("creating gitlab identity provider", controllers.LogValues(req)...)
+		r.Log.Info("creating gitlab identity provider", request.LogValues(req)...)
 		idp, err := req.OCMClient.Create(builder)
 		if err != nil {
 			return requeue.OnError(req, ocm.CreateError(req, err))
@@ -131,7 +132,7 @@ func (r *Controller) ApplyIdentityProvider(req *GitLabIdentityProviderRequest) (
 	}
 
 	// update the identity provider if it does exist
-	r.Log.Info("updating gitlab identity provider", controllers.LogValues(req)...)
+	r.Log.Info("updating gitlab identity provider", request.LogValues(req)...)
 	_, err := req.OCMClient.Update(builder)
 	if err != nil {
 		return requeue.OnError(req, ocm.UpdateError(req, err))

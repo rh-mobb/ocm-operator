@@ -22,8 +22,8 @@ func Complete(req request.Request, trigger triggers.Trigger, log logr.Logger) (c
 		return requeue.OnError(req, conditions.UpdateReconcilingConditionError(err))
 	}
 
-	log.Info("completed object reconciliation", controllers.LogValues(req)...)
-	log.Info(fmt.Sprintf("reconciling again in %s", req.DefaultRequeue()), controllers.LogValues(req)...)
+	log.Info("completed object reconciliation", request.LogValues(req)...)
+	log.Info(fmt.Sprintf("reconciling again in %s", req.DefaultRequeue()), request.LogValues(req)...)
 
 	// requeue the reconciliation based on the default controller reconciliation value
 	return requeue.OnSuccess(req)
@@ -35,7 +35,7 @@ func CompleteDestroy(req request.Request, log logr.Logger) (ctrl.Result, error) 
 		return requeue.OnError(req, controllers.RemoveFinalizerError(err))
 	}
 
-	log.Info("completed object deletion", controllers.LogValues(req)...)
+	log.Info("completed object deletion", request.LogValues(req)...)
 
 	// do not requeue since the object is now deleted
 	return requeue.None()

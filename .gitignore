@@ -37,3 +37,6 @@ cache
 **/*.terraform
 **/*.terraform.lock.hcl
 **/*.plan
+
+# exclude random yaml file that gets generated
+_.yaml

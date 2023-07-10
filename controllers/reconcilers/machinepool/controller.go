@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -34,6 +33,8 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	"github.com/rh-mobb/ocm-operator/controllers/triggers"
+	"github.com/rh-mobb/ocm-operator/controllers/workload"
+	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
 const (
@@ -78,7 +79,12 @@ func (r *Controller) ReconcileCreate(reconcileRequest request.Request) (ctrl.Res
 	// execute the phases
 	return phases.NewHandler(req,
 		phases.NewPhase("HandleUpstreamCluster", func() (ctrl.Result, error) {
-			return controllers.HandleClusterPhase(req, req.Reconciler.Connection, triggers.Create, r.Log)
+			return phases.HandleClusterPhase(
+				req,
+				ocm.NewClusterClient(req.Reconciler.Connection, req.GetClusterName()),
+				triggers.Create,
+				r.Log,
+			)
 		}),
 		phases.NewPhase("GetCurrentState", func() (ctrl.Result, error) { return r.GetCurrentState(req) }),
 		phases.NewPhase("Apply", func() (ctrl.Result, error) { return r.Apply(req) }),
@@ -114,7 +120,7 @@ func (r *Controller) ReconcileDelete(reconcileRequest request.Request) (ctrl.Res
 // SetupWithManager sets up the controller with the Manager.
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		WithEventFilter(predicates.WorkloadPredicates()).
+		WithEventFilter(workload.Predicates()).
 		For(&ocmv1alpha1.MachinePool{}).
 		Complete(r)
 }

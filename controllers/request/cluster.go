@@ -20,9 +20,9 @@ type Cluster interface {
 	SetClusterStatus(*clustersmgmtv1.Cluster)
 }
 
-// clusterFetcher is an interface that represents a client that
+// ClusterFetcher is an interface that represents a client that
 // fetches a cluster.  It is mostly used for testing purposes.
-type clusterFetcher interface {
+type ClusterFetcher interface {
 	Get() (*clustersmgmtv1.Cluster, error)
 	For(string) *clustersmgmtv1.ClusterClient
 }
@@ -31,7 +31,7 @@ type clusterFetcher interface {
 // the request.
 //
 //nolint:nestif
-func GetUpstreamCluster(request Cluster, client clusterFetcher) (cluster *clustersmgmtv1.Cluster, err error) {
+func GetUpstreamCluster(request Cluster, client ClusterFetcher) (cluster *clustersmgmtv1.Cluster, err error) {
 	// retrieve the cluster
 	if request.GetObject().GetClusterID() == "" {
 		// retrieve the cluster from ocm
