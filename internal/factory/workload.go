@@ -3,9 +3,10 @@ package factory
 import (
 	"context"
 
-	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 )
 
 const (

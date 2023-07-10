@@ -5,9 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/internal/factory"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func Test_handler_Execute(t *testing.T) {
@@ -15,7 +16,7 @@ func Test_handler_Execute(t *testing.T) {
 
 	testRequest := factory.NewTestRequest(factory.DefaultRequeue, factory.NewTestWorkload(""))
 
-	successPhase := NewPhase("success", func() (ctrl.Result, error) { return Next() })
+	successPhase := NewPhase("success", Next)
 	errorPhase := NewPhase("fail", func() (ctrl.Result, error) {
 		return ctrl.Result{RequeueAfter: testRequest.DefaultRequeue()}, errors.New("fail")
 	})
@@ -65,6 +66,7 @@ func Test_handler_Execute(t *testing.T) {
 			got, err := handler.Execute()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("handler.Execute() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
