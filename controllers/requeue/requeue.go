@@ -3,8 +3,9 @@ package requeue
 import (
 	"time"
 
-	"github.com/rh-mobb/ocm-operator/controllers/request"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/rh-mobb/ocm-operator/controllers/request"
 )
 
 // After returns a requeue result to requeue after a specific

@@ -13,7 +13,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	ocmv1alpha1 "github.com/rh-mobb/ocm-operator/api/v1alpha1"
-	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/controllers/conditions"
 	"github.com/rh-mobb/ocm-operator/controllers/events"
 	"github.com/rh-mobb/ocm-operator/controllers/request"
@@ -221,7 +220,7 @@ func (req *ROSAClusterRequest) createCluster() error {
 
 	// create the operator roles
 	if !req.Original.Status.OperatorRolesCreated {
-		req.Log.Info("creating operator roles", controllers.LogValues(req)...)
+		req.Log.Info("creating operator roles", request.LogValues(req)...)
 		if createErr := req.createOperatorRoles(oidc); createErr != nil {
 			return createErr
 		}
@@ -237,7 +236,7 @@ func (req *ROSAClusterRequest) createCluster() error {
 	}
 
 	// create the cluster
-	req.Log.Info("creating rosa cluster", controllers.LogValues(req)...)
+	req.Log.Info("creating rosa cluster", request.LogValues(req)...)
 	cluster, err := req.OCMClient.Create(req.Desired.Builder(
 		oidc,
 		req.Original.Status.OpenShiftVersionID,
@@ -276,7 +275,7 @@ func (req *ROSAClusterRequest) updateCluster() error {
 	}
 
 	// update the rosa cluster if it does exist
-	req.Log.Info("updating rosa cluster", controllers.LogValues(req)...)
+	req.Log.Info("updating rosa cluster", request.LogValues(req)...)
 	cluster, err := req.OCMClient.Update(req.Desired.Builder(
 		oidc,
 		req.Original.Status.OpenShiftVersionID,
@@ -298,7 +297,7 @@ func (req *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.Oidc
 
 	// create oidc config only if we have not created it already
 	if req.Original.Status.OIDCConfigID == "" {
-		req.Log.Info("creating oidc config", controllers.LogValues(req)...)
+		req.Log.Info("creating oidc config", request.LogValues(req)...)
 		config, err = ocm.NewOIDCConfigClient(req.Reconciler.Connection).Create()
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc config - %w", err)
@@ -319,7 +318,7 @@ func (req *ROSAClusterRequest) ensureOIDCProvider() (config *clustersmgmtv1.Oidc
 
 	// create the oidc provider if we have not created it already
 	if req.Original.Status.OIDCProviderARN == "" {
-		req.Log.Info("creating oidc provider", controllers.LogValues(req)...)
+		req.Log.Info("creating oidc provider", request.LogValues(req)...)
 		providerARN, err := req.Reconciler.AWSClient.CreateOIDCProvider(config.IssuerUrl())
 		if err != nil {
 			return config, fmt.Errorf("unable to create oidc provider - %w", err)

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/nukleros/operator-builder-tools/pkg/controller/predicates"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -35,6 +34,7 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	"github.com/rh-mobb/ocm-operator/controllers/triggers"
+	"github.com/rh-mobb/ocm-operator/controllers/workload"
 	"github.com/rh-mobb/ocm-operator/pkg/aws"
 )
 
@@ -146,7 +146,7 @@ func (r *Controller) Setup(reconcileRequest request.Request) (*ROSAClusterReques
 // SetupWithManager sets up the controller with the Manager.
 func (r *Controller) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		WithEventFilter(predicates.WorkloadPredicates()).
+		WithEventFilter(workload.Predicates()).
 		For(&ocmv1alpha1.ROSACluster{}).
 		Complete(r)
 }

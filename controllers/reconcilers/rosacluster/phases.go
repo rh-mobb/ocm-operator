@@ -11,6 +11,7 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/conditions"
 	"github.com/rh-mobb/ocm-operator/controllers/events"
 	"github.com/rh-mobb/ocm-operator/controllers/phases"
+	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	"github.com/rh-mobb/ocm-operator/controllers/workload"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
@@ -77,7 +78,7 @@ func (r *Controller) ApplyCluster(req *ROSAClusterRequest) (ctrl.Result, error) 
 
 	// return if it is already in its desired state
 	if req.desired() {
-		req.Log.V(controllers.LogLevelDebug).Info("rosa cluster already in desired state", controllers.LogValues(req)...)
+		req.Log.V(controllers.LogLevelDebug).Info("rosa cluster already in desired state", request.LogValues(req)...)
 
 		return phases.Next()
 	}
@@ -127,7 +128,7 @@ func (r *Controller) FindChildObjects(req *ROSAClusterRequest) (ctrl.Result, err
 				req.Original.Namespace,
 				req.Original.Name,
 				object,
-			), controllers.LogValues(req)...)
+			), request.LogValues(req)...)
 
 			return requeue.Retry(req)
 		}
@@ -145,7 +146,7 @@ func (r *Controller) DestroyCluster(req *ROSAClusterRequest) (ctrl.Result, error
 	}
 
 	// delete the cluster
-	req.Log.Info("deleting cluster", controllers.LogValues(req)...)
+	req.Log.Info("deleting cluster", request.LogValues(req)...)
 	req.OCMClient = ocm.NewClusterClient(req.Reconciler.Connection, req.Desired.Spec.DisplayName)
 
 	if err := req.OCMClient.Delete(req.Original.Status.ClusterID); err != nil {
@@ -193,7 +194,7 @@ func (r *Controller) WaitUntilMissing(req *ROSAClusterRequest) (ctrl.Result, err
 			return requeue.OnError(req, fmt.Errorf("error updating deleted condition - %w", err))
 		}
 
-		req.Log.Info("cluster has been deleted", controllers.LogValues(req)...)
+		req.Log.Info("cluster has been deleted", request.LogValues(req)...)
 
 		return phases.Next()
 	}
@@ -201,20 +202,20 @@ func (r *Controller) WaitUntilMissing(req *ROSAClusterRequest) (ctrl.Result, err
 	// return if we are still uninstalling
 	switch cluster.State() {
 	case clustersmgmtv1.ClusterStateUninstalling:
-		req.Log.Info("cluster is still uninstalling", controllers.LogValues(req)...)
-		req.Log.Info(fmt.Sprintf("checking again in %s", req.provisionRequeueTime().String()), controllers.LogValues(req)...)
+		req.Log.Info("cluster is still uninstalling", request.LogValues(req)...)
+		req.Log.Info(fmt.Sprintf("checking again in %s", req.provisionRequeueTime().String()), request.LogValues(req)...)
 
 		return requeue.After(req.provisionRequeueTime(), nil)
 	case clustersmgmtv1.ClusterStateError:
 		req.Log.Error(fmt.Errorf("cluster uninstalling is in error state"), fmt.Sprintf(
 			"checking again in %s", req.provisionRequeueTime().String(),
-		), controllers.LogValues(req)...)
+		), request.LogValues(req)...)
 
 		return requeue.After(req.provisionRequeueTime(), nil)
 	default:
 		req.Log.Error(fmt.Errorf("cluster uninstalling is in unknown state"), fmt.Sprintf(
 			"checking again in %s", req.provisionRequeueTime().String(),
-		), controllers.LogValues(req)...)
+		), request.LogValues(req)...)
 
 		return requeue.After(req.provisionRequeueTime(), nil)
 	}
@@ -227,7 +228,7 @@ func (r *Controller) DestroyOperatorRoles(req *ROSAClusterRequest) (ctrl.Result,
 		return phases.Next()
 	}
 
-	req.Log.Info("deleting operator roles", controllers.LogValues(req)...)
+	req.Log.Info("deleting operator roles", request.LogValues(req)...)
 	if err := req.destroyOperatorRoles(); err != nil {
 		return requeue.OnError(req, fmt.Errorf(
 			"unable to destroy operator roles - %w",
@@ -247,7 +248,7 @@ func (r *Controller) DestroyOperatorRoles(req *ROSAClusterRequest) (ctrl.Result,
 func (r *Controller) DestroyOIDC(req *ROSAClusterRequest) (ctrl.Result, error) {
 	// only destroy the oidc provider if we have not already done so
 	if !conditions.IsSet(OIDCProviderDeleted(), req.Original) {
-		req.Log.Info("deleting oidc provider", controllers.LogValues(req)...)
+		req.Log.Info("deleting oidc provider", request.LogValues(req)...)
 		if err := ocm.NewOIDCConfigClient(
 			req.Reconciler.Connection,
 		).Delete(req.Original.Status.OIDCConfigID); err != nil {
@@ -265,7 +266,7 @@ func (r *Controller) DestroyOIDC(req *ROSAClusterRequest) (ctrl.Result, error) {
 
 	// only destroy the oidc configuration if we have not already done so
 	if !conditions.IsSet(OIDCConfigDeleted(), req.Original) {
-		req.Log.Info("deleting oidc config", controllers.LogValues(req)...)
+		req.Log.Info("deleting oidc config", request.LogValues(req)...)
 		if err := req.Reconciler.AWSClient.DeleteOIDCProvider(req.Original.Status.OIDCProviderARN); err != nil {
 			return requeue.OnError(req, fmt.Errorf(
 				"unable to delete oidc config - %w",
@@ -289,18 +290,18 @@ func (r *Controller) DestroyOIDC(req *ROSAClusterRequest) (ctrl.Result, error) {
 func (r *Controller) WaitUntilReady(req *ROSAClusterRequest) (ctrl.Result, error) {
 	switch req.Cluster.State() {
 	case clustersmgmtv1.ClusterStateReady:
-		req.Log.Info("cluster is ready", controllers.LogValues(req)...)
+		req.Log.Info("cluster is ready", request.LogValues(req)...)
 
 		return phases.Next()
 	case clustersmgmtv1.ClusterStateError:
 		req.Log.Error(fmt.Errorf("cluster is in error state"), fmt.Sprintf(
 			"checking again in %s", req.provisionRequeueTime().String(),
-		), controllers.LogValues(req)...)
+		), request.LogValues(req)...)
 
 		return requeue.After(req.provisionRequeueTime(), nil)
 	default:
-		req.Log.Info("cluster is not ready", controllers.LogValues(req)...)
-		req.Log.Info(fmt.Sprintf("checking again in %s", req.provisionRequeueTime().String()), controllers.LogValues(req)...)
+		req.Log.Info("cluster is not ready", request.LogValues(req)...)
+		req.Log.Info(fmt.Sprintf("checking again in %s", req.provisionRequeueTime().String()), request.LogValues(req)...)
 
 		return requeue.After(req.provisionRequeueTime(), nil)
 	}

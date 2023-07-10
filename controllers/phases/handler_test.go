@@ -13,7 +13,7 @@ import (
 func Test_handler_Execute(t *testing.T) {
 	t.Parallel()
 
-	testRequest := factory.NewTestRequest()
+	testRequest := factory.NewTestRequest(factory.DefaultRequeue, factory.NewTestWorkload(""))
 
 	successPhase := NewPhase("success", func() (ctrl.Result, error) { return Next() })
 	errorPhase := NewPhase("fail", func() (ctrl.Result, error) {

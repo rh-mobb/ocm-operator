@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	testClusterID = "test"
+	DefaultClusterID = "test"
 )
 
 type testWorkloadStatus struct {
@@ -27,12 +27,19 @@ type testWorkload struct {
 
 type testWorkloadSpec struct{}
 
-func NewTestWorkload() *testWorkload {
+func NewTestWorkload(clusterID string) *testWorkload {
 	condition := TestCondition(metav1.Now())
 
 	return &testWorkload{
+		ObjectMeta: metav1.ObjectMeta{
+			Finalizers: []string{"test.workload/finalizer"},
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Test",
+			APIVersion: "workload/v1",
+		},
 		Status: testWorkloadStatus{
-			ClusterID: testClusterID,
+			ClusterID: clusterID,
 			Conditions: []metav1.Condition{
 				*condition,
 			},

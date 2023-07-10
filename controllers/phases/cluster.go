@@ -1,39 +1,38 @@
-package controllers
+package phases
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
-	sdk "github.com/openshift-online/ocm-sdk-go"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/rh-mobb/ocm-operator/controllers/conditions"
-	"github.com/rh-mobb/ocm-operator/controllers/phases"
 	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	"github.com/rh-mobb/ocm-operator/controllers/triggers"
-	"github.com/rh-mobb/ocm-operator/pkg/ocm"
 )
 
 const (
 	defaultMissingUpstreamRequeue = 60 * time.Second
 )
 
+//ocm.NewClusterClient(connection, req.GetClusterName())
+
 // HandleClusterPhase is the common phase that handles the upstream cluster for a child request.  It
 // should be called with a wrapper function in order to satisfy the Phase.Function field.
 func HandleClusterPhase(
-	request request.Cluster,
-	connection *sdk.Connection,
+	req request.Cluster,
+	client request.ClusterFetcher,
 	trigger triggers.Trigger,
 	logger logr.Logger,
 ) (ctrl.Result, error) {
-	cluster, err := HandleUpstreamCluster(request, ocm.NewClusterClient(connection, request.GetClusterName()))
+	cluster, err := request.GetUpstreamCluster(req, client)
 	if err != nil {
 		return requeue.After(defaultMissingUpstreamRequeue, fmt.Errorf(
 			"unable to handle upstream cluster: [%s] - %w",
-			request.GetClusterName(),
+			req.GetClusterName(),
 			err,
 		))
 	}
@@ -42,19 +41,19 @@ func HandleClusterPhase(
 
 	// set condition for a missing or existing cluster
 	if err := conditions.Update(
-		request,
+		req,
 		conditions.UpstreamCluster(trigger, clusterExists),
 	); err != nil {
 		return requeue.After(defaultMissingUpstreamRequeue, fmt.Errorf(
 			"unable to update status on cluster: [%s] - %w",
-			request.GetClusterName(),
+			req.GetClusterName(),
 			err,
 		))
 	}
 
-	// return if the cluster exists
+	// return if the cluster does not exist
 	if !clusterExists {
-		logger.Info(fmt.Sprintf("cluster [%s] does not exist...requeueing", request.GetClusterName()), LogValues(request)...)
+		logger.Info(fmt.Sprintf("cluster [%s] does not exist...requeueing", req.GetClusterName()), request.LogValues(req)...)
 
 		return requeue.After(defaultMissingUpstreamRequeue, nil)
 	}
@@ -64,12 +63,12 @@ func HandleClusterPhase(
 		logger.Info(
 			fmt.Sprintf(
 				"cluster [%s] with state [%s] is not ready...requeueing",
-				request.GetClusterName(),
+				req.GetClusterName(),
 				cluster.State(),
-			), LogValues(request)...)
+			), request.LogValues(req)...)
 
 		return requeue.After(defaultMissingUpstreamRequeue, nil)
 	}
 
-	return phases.Next()
+	return Next()
 }

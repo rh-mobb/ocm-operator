@@ -12,6 +12,7 @@ import (
 	"github.com/rh-mobb/ocm-operator/controllers/conditions"
 	"github.com/rh-mobb/ocm-operator/controllers/events"
 	"github.com/rh-mobb/ocm-operator/controllers/phases"
+	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/rh-mobb/ocm-operator/pkg/ocm"
@@ -86,7 +87,7 @@ func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 	if req.desired() {
 		r.Log.V(controllers.LogLevelDebug).Info(
 			"machine pool already in desired state",
-			controllers.LogValues(req),
+			request.LogValues(req),
 		)
 
 		return phases.Next()
@@ -118,7 +119,7 @@ func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 	if req.Current == nil {
 		var createErr error
 
-		r.Log.Info("creating machine pool", controllers.LogValues(req)...)
+		r.Log.Info("creating machine pool", request.LogValues(req)...)
 		if req.Original.Status.Hosted {
 			createErr = req.createNodePool(poolClient.(*ocm.NodePoolClient))
 		} else {
@@ -130,7 +131,7 @@ func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 			if strings.Contains(createErr.Error(), "is being deleted from cluster") {
 				r.Log.Info(
 					"machine pool with same name is deleting; requeueing",
-					controllers.LogValues(req)...,
+					request.LogValues(req)...,
 				)
 
 				return requeue.Retry(req)
@@ -148,7 +149,7 @@ func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 	// update the object
 	var updateErr error
 
-	r.Log.Info("updating machine pool", controllers.LogValues(req)...)
+	r.Log.Info("updating machine pool", request.LogValues(req)...)
 	if req.Original.Status.Hosted {
 		updateErr = req.updateNodePool(poolClient.(*ocm.NodePoolClient))
 	} else {
@@ -204,7 +205,7 @@ func (r *Controller) Destroy(req *MachinePoolRequest) (ctrl.Result, error) {
 	// delete the object
 	var deleteErr error
 
-	r.Log.Info("deleting machine pool", controllers.LogValues(req)...)
+	r.Log.Info("deleting machine pool", request.LogValues(req)...)
 	if req.Original.Status.Hosted {
 		deleteErr = req.deleteNodePool(poolClient.(*ocm.NodePoolClient))
 	} else {
@@ -254,7 +255,7 @@ func (r *Controller) WaitUntilReady(req *MachinePoolRequest) (ctrl.Result, error
 		return requeue.Retry(req)
 	}
 
-	r.Log.Info("nodes are ready", controllers.LogValues(req)...)
+	r.Log.Info("nodes are ready", request.LogValues(req)...)
 
 	return phases.Next()
 }
@@ -277,7 +278,7 @@ func (r *Controller) WaitUntilMissing(req *MachinePoolRequest) (ctrl.Result, err
 		return requeue.Retry(req)
 	}
 
-	r.Log.Info("nodes have been removed", controllers.LogValues(req)...)
+	r.Log.Info("nodes have been removed", request.LogValues(req)...)
 
 	return phases.Next()
 }

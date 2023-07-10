@@ -113,7 +113,7 @@ func TestUpdate(t *testing.T) {
 		{
 			name: "ensure condition already set is not updated",
 			args: args{
-				req:       factory.NewTestRequest(),
+				req:       factory.NewTestRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
 				condition: factory.TestCondition(metav1.Now()),
 			},
 			wantErr: false,
@@ -121,7 +121,7 @@ func TestUpdate(t *testing.T) {
 		{
 			name: "ensure condition not set is updated",
 			args: args{
-				req:       factory.NewTestRequest(),
+				req:       factory.NewTestRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
 				condition: testConditionReconciling(now),
 			},
 			wantErr: false,
