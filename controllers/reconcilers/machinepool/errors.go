@@ -24,7 +24,7 @@ func errMachinePoolManagedLabels(request *MachinePoolRequest, err error) error {
 		"machine pool [%s] is missing managed labels [%+v] - %w",
 		request.GetName(),
 		request.Current.Spec.Labels,
-		ErrMachinePoolReservedLabel,
+		err,
 	)
 }
 

@@ -6,10 +6,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Unknown: UnknownString,
-// Created: CreatedString,
-// Updated: UpdatedString,
-// Deleted: DeletedString,
 func TestEvent_String(t *testing.T) {
 	t.Parallel()
 

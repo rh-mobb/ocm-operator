@@ -72,7 +72,7 @@ func (r *Controller) GetCurrentState(req *MachinePoolRequest) (ctrl.Result, erro
 	// we found.  we do this to ensure we are not managing something that
 	// may have been created by another process.
 	if !req.Current.HasManagedLabels() {
-		return requeue.OnError(req, errMachinePoolManagedLabels(req, err))
+		return requeue.OnError(req, errMachinePoolManagedLabels(req, ErrMachinePoolReservedLabel))
 	}
 
 	return phases.Next()

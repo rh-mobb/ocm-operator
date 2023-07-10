@@ -32,13 +32,13 @@ func Retry(req request.Request) (ctrl.Result, error) {
 // OnError returns a requeue result with an error.  It is a helper
 // function to reduce the amount of times you requeue with errors in a controller
 // as this often times becomes unreadable.
-func OnError(request request.Request, err error) (ctrl.Result, error) {
-	return After(request.DefaultRequeue(), err)
+func OnError(req request.Request, err error) (ctrl.Result, error) {
+	return After(req.DefaultRequeue(), err)
 }
 
 // OnSuccess returns a requeue result without an error.  It is a helper
 // function to reduce the amount of times you requeue with errors in a controller
 // as this often times becomes unreadable.
-func OnSuccess(request request.Request) (ctrl.Result, error) {
-	return After(request.DefaultRequeue(), nil)
+func OnSuccess(req request.Request) (ctrl.Result, error) {
+	return After(req.DefaultRequeue(), nil)
 }

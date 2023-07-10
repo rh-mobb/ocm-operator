@@ -7,11 +7,12 @@ import (
 
 	"github.com/go-logr/logr"
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 	"github.com/rh-mobb/ocm-operator/internal/factory"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type testClusterFetcher struct {
@@ -125,6 +126,7 @@ func TestHandleClusterPhase(t *testing.T) {
 			got, err := HandleClusterPhase(tt.args.req, tt.args.client, tt.args.trigger, tt.args.logger)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("HandleClusterPhase() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {

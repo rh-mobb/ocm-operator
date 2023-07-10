@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 	"github.com/scottd018/go-utils/pkg/list"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 )
 
 const (

@@ -3,8 +3,9 @@ package ldapidentityprovider
 import (
 	"fmt"
 
-	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/rh-mobb/ocm-operator/controllers/requeue"
 )
 
 // errUnableToUpdateStatus produces an error indicating the GitLab IDP was unable

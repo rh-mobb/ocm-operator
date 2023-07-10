@@ -18,8 +18,6 @@ const (
 	defaultMissingUpstreamRequeue = 60 * time.Second
 )
 
-//ocm.NewClusterClient(connection, req.GetClusterName())
-
 // HandleClusterPhase is the common phase that handles the upstream cluster for a child request.  It
 // should be called with a wrapper function in order to satisfy the Phase.Function field.
 func HandleClusterPhase(

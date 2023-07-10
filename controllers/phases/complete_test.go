@@ -5,10 +5,11 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
+	ctrl "sigs.k8s.io/controller-runtime"
+
 	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 	"github.com/rh-mobb/ocm-operator/internal/factory"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func TestComplete(t *testing.T) {
@@ -54,6 +55,7 @@ func TestComplete(t *testing.T) {
 			got, err := Complete(tt.args.req, tt.args.trigger, tt.args.log)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Complete() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
@@ -103,6 +105,7 @@ func TestCompleteDestroy(t *testing.T) {
 			got, err := CompleteDestroy(tt.args.req, tt.args.log)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CompleteDestroy() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {

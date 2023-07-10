@@ -62,7 +62,13 @@ func (r *Controller) NewRequest(ctx context.Context, ctrlReq ctrl.Request) (requ
 
 	// TODO: see TODO in api/v1alpha1/gitlabidentityprovider_types.go file for explanation.
 	// get the client secret data from the cluster
-	clientSecret, err := kubernetes.GetSecretData(ctx, r, original.Spec.ClientSecret.Name, ctrlReq.Namespace, ocmv1alpha1.GitLabClientSecretKey)
+	clientSecret, err := kubernetes.GetSecretData(
+		ctx,
+		r,
+		original.Spec.ClientSecret.Name,
+		ctrlReq.Namespace,
+		ocmv1alpha1.GitLabClientSecretKey,
+	)
 	if clientSecret == "" {
 		if err != nil {
 			log.Log.Error(err, "error retrieving client secret")
