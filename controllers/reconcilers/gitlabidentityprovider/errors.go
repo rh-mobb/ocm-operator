@@ -15,7 +15,7 @@ var (
 	ErrGitLabApplicationDrift = errors.New("gitlab application is immutable but differs from the desired state configuration")
 )
 
-// errUnableToUpdateStatus produces an error indicating the GitLab IDP was unable
+// errUnableToUpdateStatusProviderID produces an error indicating the GitLab IDP was unable
 // to be updated.
 func errUnableToUpdateStatusProviderID(request *GitLabIdentityProviderRequest, id string, err error) (ctrl.Result, error) {
 	return requeue.OnError(request, fmt.Errorf(

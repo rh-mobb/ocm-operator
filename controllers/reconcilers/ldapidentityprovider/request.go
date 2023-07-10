@@ -73,7 +73,7 @@ func (r *Controller) NewRequest(ctx context.Context, ctrlReq ctrl.Request) (requ
 			log.Log.Error(err, "error retrieving bind password")
 		}
 
-		return &LDAPIdentityProviderRequest{}, bindPasswordError(original)
+		return &LDAPIdentityProviderRequest{}, errGetBindPassword(original)
 	}
 
 	// get the ca config data from the cluster
@@ -85,7 +85,7 @@ func (r *Controller) NewRequest(ctx context.Context, ctrlReq ctrl.Request) (requ
 				log.Log.Error(err, "error retrieving ca data")
 			}
 
-			return &LDAPIdentityProviderRequest{}, caCertError(original)
+			return &LDAPIdentityProviderRequest{}, errGetCert(original)
 		}
 	}
 
@@ -178,25 +178,5 @@ func (req *LDAPIdentityProviderRequest) desired() bool {
 	return reflect.DeepEqual(
 		req.Desired.Spec,
 		req.Current.Spec,
-	)
-}
-
-func bindPasswordError(from *ocmv1alpha1.LDAPIdentityProvider) error {
-	return fmt.Errorf(
-		"unable to retrieve bind password from secret [%s/%s] at key [%s] - %w",
-		from.Namespace,
-		from.Spec.BindPassword.Name,
-		ocmv1alpha1.LDAPBindPasswordKey,
-		ErrMissingBindPassword,
-	)
-}
-
-func caCertError(from *ocmv1alpha1.LDAPIdentityProvider) error {
-	return fmt.Errorf(
-		"unable to retrieve ca cert from config map [%s/%s] at key [%s] - %w",
-		from.Namespace,
-		from.Spec.CA.Name,
-		ocmv1alpha1.LDAPCAKey,
-		ErrMissingCA,
 	)
 }
