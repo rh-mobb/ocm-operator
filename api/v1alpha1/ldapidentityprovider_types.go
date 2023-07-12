@@ -63,6 +63,7 @@ type LDAPIdentityProviderSpec struct {
 	// When `true`, "ldap://" URLS connect insecurely. When `false`, "ldap://" URLs are upgraded to
 	// a TLS connection using StartTLS as specified in https://tools.ietf.org/html/rfc2830.
 	// +kubebuilder:default=false
+	// +optional
 	Insecure bool `json:"insecure"`
 
 	// ca is an optional reference to a config map by name containing the PEM-encoded CA bundle.
@@ -81,10 +82,9 @@ type LDAPIdentityProviderSpec struct {
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:message="clusterName is immutable",rule=(self == oldSelf)
-	// Cluster ID in OpenShift Cluster Manager by which this should be managed for.  The cluster ID
-	// can be obtained on the Clusters page for the individual cluster.  It may also be known as the
-	// 'External ID' in some CLI clients.  It shows up in the format of 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
-	// where the 'x' represents any alphanumeric character.
+	// Cluster name in OpenShift Cluster Manager by which this should be managed for.  A cluster with this
+	// name should exist in the organization by which the operator is associated.  If the cluster does
+	// not exist, the reconciliation process will continue until one does.
 	ClusterName string `json:"clusterName,omitempty"`
 
 	// +kubebuilder:validation:Optional
