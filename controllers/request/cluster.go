@@ -6,6 +6,8 @@ import (
 	"reflect"
 
 	clustersmgmtv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/rh-mobb/ocm-operator/pkg/kubernetes"
 )
@@ -49,8 +51,10 @@ func GetUpstreamCluster(request Cluster, client ClusterFetcher) (cluster *cluste
 			return cluster, fmt.Errorf("%s: [%s] - %w", errRetrieveClusterMessage, request.GetClusterName(), ErrMissingClusterID)
 		}
 	} else {
+		var response *clustersmgmtv1.ClusterGetResponse
+
 		// retrieve the cluster from ocm by id
-		response, err := client.For(request.GetObject().GetClusterID()).Get().Send()
+		response, err = client.For(request.GetObject().GetClusterID()).Get().Send()
 		if err != nil {
 			if response.Status() == http.StatusNotFound {
 				return cluster, nil
@@ -61,7 +65,17 @@ func GetUpstreamCluster(request Cluster, client ClusterFetcher) (cluster *cluste
 	}
 
 	// keep track of the original object
-	original := request.GetObject()
+	object := request.GetObject().DeepCopyObject()
+
+	// convert the client object to a runtime object.  to do this,
+	// we convert to an unstructured object which satisfies both a client.Object
+	// and runtime.Object interface.
+	// TODO: this is a little sloppy and needs some attention.
+	objectMap, objectErr := runtime.DefaultUnstructuredConverter.ToUnstructured(object)
+	if objectErr != nil {
+		return cluster, fmt.Errorf("unable to convert client.Object to runtime.Object - %w", err)
+	}
+	original := &unstructured.Unstructured{Object: objectMap}
 
 	// update the object
 	request.SetClusterStatus(cluster)
