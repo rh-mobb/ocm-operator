@@ -60,10 +60,11 @@ func HandleClusterPhase(
 	if cluster.State() != clustersmgmtv1.ClusterStateReady {
 		logger.Info(
 			fmt.Sprintf(
-				"cluster [%s] with state [%s] is not ready...requeueing",
+				"cluster [%s] with state [%s] is not ready",
 				req.GetClusterName(),
 				cluster.State(),
 			), request.LogValues(req)...)
+		logger.Info(fmt.Sprintf("checking again in %s", defaultMissingUpstreamRequeue.String()), request.LogValues(req)...)
 
 		return requeue.After(defaultMissingUpstreamRequeue, nil)
 	}

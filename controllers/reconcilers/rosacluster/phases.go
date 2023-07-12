@@ -294,13 +294,13 @@ func (r *Controller) WaitUntilReady(req *ROSAClusterRequest) (ctrl.Result, error
 
 		return phases.Next()
 	case clustersmgmtv1.ClusterStateError:
-		req.Log.Error(fmt.Errorf("cluster is in error state"), fmt.Sprintf(
+		req.Log.Error(fmt.Errorf("cluster has error state"), fmt.Sprintf(
 			"checking again in %s", req.provisionRequeueTime().String(),
 		), request.LogValues(req)...)
 
 		return requeue.After(req.provisionRequeueTime(), nil)
 	default:
-		req.Log.Info("cluster is not ready", request.LogValues(req)...)
+		req.Log.Info(fmt.Sprintf("cluster with state [%s] is not ready", req.Cluster.State()), request.LogValues(req)...)
 		req.Log.Info(fmt.Sprintf("checking again in %s", req.provisionRequeueTime().String()), request.LogValues(req)...)
 
 		return requeue.After(req.provisionRequeueTime(), nil)
