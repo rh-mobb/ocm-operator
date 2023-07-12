@@ -200,7 +200,7 @@ func (req *MachinePoolRequest) updateNodePool(poolClient *ocm.NodePoolClient) er
 // deleteMachinePool deletes a machine pool object in OCM.
 func (req *MachinePoolRequest) deleteMachinePool(poolClient *ocm.MachinePoolClient) error {
 	if err := poolClient.Delete(req.Desired.Spec.DisplayName); err != nil {
-		return fmt.Errorf("unable to update machine pool - %w", err)
+		return fmt.Errorf("unable to delete machine pool - %w", err)
 	}
 
 	return nil
