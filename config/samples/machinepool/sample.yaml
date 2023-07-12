@@ -1,15 +1,15 @@
 apiVersion: ocm.mobb.redhat.com/v1alpha1
 kind: MachinePool
 metadata:
-  name: sample
+  name: sample-missing
 spec:
   wait: false
-  clusterName: "my-cluster"
+  clusterName: "dscott-test3"
   minimumNodesPerZone: 1
   maximumNodesPerZone: 1
   instanceType: m5.xlarge
   labels:
-    owner: my-user
+    owner: dscott
   aws:
     spotInstances:
       enabled: false
