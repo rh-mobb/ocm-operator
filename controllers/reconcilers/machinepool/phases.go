@@ -85,7 +85,7 @@ func (r *Controller) GetCurrentState(req *MachinePoolRequest) (ctrl.Result, erro
 func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if req.desired() {
-		r.Log.V(controllers.LogLevelDebug).Info(
+		r.Logger.V(controllers.LogLevelDebug).Info(
 			"machine pool already in desired state",
 			request.LogValues(req),
 		)
@@ -119,7 +119,7 @@ func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 	if req.Current == nil {
 		var createErr error
 
-		r.Log.Info("creating machine pool", request.LogValues(req)...)
+		r.Logger.Info("creating machine pool", request.LogValues(req)...)
 		if req.Original.Status.Hosted {
 			createErr = req.createNodePool(poolClient.(*ocm.NodePoolClient))
 		} else {
@@ -129,7 +129,7 @@ func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 		if createErr != nil {
 			// if the cluster with same name is deleting, requeue without an error
 			if strings.Contains(createErr.Error(), "is being deleted from cluster") {
-				r.Log.Info(
+				r.Logger.Info(
 					"machine pool with same name is deleting; requeueing",
 					request.LogValues(req)...,
 				)
@@ -149,7 +149,7 @@ func (r *Controller) Apply(req *MachinePoolRequest) (ctrl.Result, error) {
 	// update the object
 	var updateErr error
 
-	r.Log.Info("updating machine pool", request.LogValues(req)...)
+	r.Logger.Info("updating machine pool", request.LogValues(req)...)
 	if req.Original.Status.Hosted {
 		updateErr = req.updateNodePool(poolClient.(*ocm.NodePoolClient))
 	} else {
@@ -205,7 +205,7 @@ func (r *Controller) Destroy(req *MachinePoolRequest) (ctrl.Result, error) {
 	// delete the object
 	var deleteErr error
 
-	r.Log.Info("deleting machine pool", request.LogValues(req)...)
+	r.Logger.Info("deleting machine pool", request.LogValues(req)...)
 	if req.Original.Status.Hosted {
 		deleteErr = req.deleteNodePool(poolClient.(*ocm.NodePoolClient))
 	} else {
@@ -255,7 +255,7 @@ func (r *Controller) WaitUntilReady(req *MachinePoolRequest) (ctrl.Result, error
 		return requeue.Retry(req)
 	}
 
-	r.Log.Info("nodes are ready", request.LogValues(req)...)
+	r.Logger.Info("nodes are ready", request.LogValues(req)...)
 
 	return phases.Next()
 }
@@ -278,7 +278,7 @@ func (r *Controller) WaitUntilMissing(req *MachinePoolRequest) (ctrl.Result, err
 		return requeue.Retry(req)
 	}
 
-	r.Log.Info("nodes have been removed", request.LogValues(req)...)
+	r.Logger.Info("nodes have been removed", request.LogValues(req)...)
 
 	return phases.Next()
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -27,6 +28,8 @@ type Controller interface {
 	kubernetes.Client
 
 	NewRequest(ctx context.Context, req ctrl.Request) (request.Request, error)
+	Log() logr.Logger
+	ReconcileInterval() time.Duration
 	Reconcile(context.Context, ctrl.Request) (ctrl.Result, error)
 	ReconcileCreate(request.Request) (ctrl.Result, error)
 	ReconcileUpdate(request.Request) (ctrl.Result, error)

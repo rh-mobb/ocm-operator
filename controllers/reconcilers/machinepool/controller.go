@@ -49,7 +49,7 @@ type Controller struct {
 	Connection *sdk.Connection
 	Recorder   record.EventRecorder
 	Interval   time.Duration
-	Log        logr.Logger
+	Logger     logr.Logger
 }
 
 //+kubebuilder:rbac:groups=ocm.mobb.redhat.com,resources=machinepools,verbs=get;list;watch;create;update;patch;delete
@@ -83,13 +83,13 @@ func (r *Controller) ReconcileCreate(reconcileRequest request.Request) (ctrl.Res
 				req,
 				ocm.NewClusterClient(req.Reconciler.Connection, req.GetClusterName()),
 				triggers.Create,
-				r.Log,
+				r.Logger,
 			)
 		}),
 		phases.NewPhase("GetCurrentState", func() (ctrl.Result, error) { return r.GetCurrentState(req) }),
 		phases.NewPhase("Apply", func() (ctrl.Result, error) { return r.Apply(req) }),
 		phases.NewPhase("WaitUntilReady", func() (ctrl.Result, error) { return r.WaitUntilReady(req) }),
-		phases.NewPhase("Complete", func() (ctrl.Result, error) { return phases.Complete(req, triggers.Create, r.Log) }),
+		phases.NewPhase("Complete", func() (ctrl.Result, error) { return phases.Complete(req, triggers.Create, r) }),
 	).Execute()
 }
 
@@ -113,8 +113,19 @@ func (r *Controller) ReconcileDelete(reconcileRequest request.Request) (ctrl.Res
 	return phases.NewHandler(req,
 		phases.NewPhase("Destroy", func() (ctrl.Result, error) { return r.Destroy(req) }),
 		phases.NewPhase("WaitUntilMissing", func() (ctrl.Result, error) { return r.WaitUntilMissing(req) }),
-		phases.NewPhase("CompleteDestroy", func() (ctrl.Result, error) { return phases.CompleteDestroy(req, r.Log) }),
+		phases.NewPhase("CompleteDestroy", func() (ctrl.Result, error) { return phases.CompleteDestroy(req, r) }),
 	).Execute()
+}
+
+// ReconcileInterval returns the requeue interval for the controller.  It is used to
+// satisfy the Controller interface.
+func (r *Controller) ReconcileInterval() time.Duration {
+	return r.Interval
+}
+
+// Log returns the controller logger.  It is used to satisfy the Controller interface.
+func (r *Controller) Log() logr.Logger {
+	return r.Logger
 }
 
 // SetupWithManager sets up the controller with the Manager.

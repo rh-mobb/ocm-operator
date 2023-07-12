@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/go-logr/logr"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/rh-mobb/ocm-operator/controllers"
 	"github.com/rh-mobb/ocm-operator/controllers/request"
 	"github.com/rh-mobb/ocm-operator/controllers/triggers"
 	"github.com/rh-mobb/ocm-operator/internal/factory"
@@ -16,9 +16,9 @@ func TestComplete(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		req     request.Request
-		trigger triggers.Trigger
-		log     logr.Logger
+		req        request.Request
+		trigger    triggers.Trigger
+		controller controllers.Controller
 	}
 	tests := []struct {
 		name    string
@@ -29,9 +29,9 @@ func TestComplete(t *testing.T) {
 		{
 			name: "ensure bad request fails on create",
 			args: args{
-				trigger: triggers.Create,
-				log:     ctrl.Log.WithName("bad-request-create"),
-				req:     factory.NewTestErrorRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
+				trigger:    triggers.Create,
+				controller: factory.NewTestController(),
+				req:        factory.NewTestErrorRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
 			},
 			want:    ctrl.Result{Requeue: true, RequeueAfter: factory.DefaultRequeue},
 			wantErr: true,
@@ -39,9 +39,9 @@ func TestComplete(t *testing.T) {
 		{
 			name: "ensure good request succeeds on create",
 			args: args{
-				trigger: triggers.Create,
-				log:     ctrl.Log.WithName("good-request-create"),
-				req:     factory.NewTestRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
+				trigger:    triggers.Create,
+				controller: factory.NewTestController(),
+				req:        factory.NewTestRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
 			},
 			want:    ctrl.Result{Requeue: true, RequeueAfter: factory.DefaultRequeue},
 			wantErr: false,
@@ -52,7 +52,7 @@ func TestComplete(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := Complete(tt.args.req, tt.args.trigger, tt.args.log)
+			got, err := Complete(tt.args.req, tt.args.trigger, tt.args.controller)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Complete() error = %v, wantErr %v", err, tt.wantErr)
 
@@ -69,8 +69,8 @@ func TestCompleteDestroy(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		req request.Request
-		log logr.Logger
+		req        request.Request
+		controller controllers.Controller
 	}
 	tests := []struct {
 		name    string
@@ -81,8 +81,8 @@ func TestCompleteDestroy(t *testing.T) {
 		{
 			name: "ensure bad request fails",
 			args: args{
-				log: ctrl.Log.WithName("bad-request"),
-				req: factory.NewTestErrorRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
+				controller: factory.NewTestController(),
+				req:        factory.NewTestErrorRequest(factory.DefaultRequeue, factory.NewTestWorkload("")),
 			},
 			want:    ctrl.Result{Requeue: true, RequeueAfter: factory.DefaultRequeue},
 			wantErr: true,
@@ -90,8 +90,8 @@ func TestCompleteDestroy(t *testing.T) {
 		{
 			name: "ensure good request succeeds",
 			args: args{
-				log: ctrl.Log.WithName("good-request"),
-				req: factory.NewTestRequest(0, factory.NewTestWorkload("")),
+				controller: factory.NewTestController(),
+				req:        factory.NewTestRequest(0, factory.NewTestWorkload("")),
 			},
 			want:    ctrl.Result{Requeue: false},
 			wantErr: false,
@@ -102,7 +102,7 @@ func TestCompleteDestroy(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := CompleteDestroy(tt.args.req, tt.args.log)
+			got, err := CompleteDestroy(tt.args.req, tt.args.controller)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CompleteDestroy() error = %v, wantErr %v", err, tt.wantErr)
 

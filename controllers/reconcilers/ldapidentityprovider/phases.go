@@ -52,7 +52,7 @@ func (r *Controller) GetCurrentState(req *LDAPIdentityProviderRequest) (ctrl.Res
 func (r *Controller) ApplyIdentityProvider(req *LDAPIdentityProviderRequest) (ctrl.Result, error) {
 	// return if it is already in its desired state
 	if req.desired() {
-		r.Log.V(controllers.LogLevelDebug).Info(
+		r.Logger.V(controllers.LogLevelDebug).Info(
 			"ldap identity provider already in desired state",
 			request.LogValues(req)...,
 		)
@@ -64,7 +64,7 @@ func (r *Controller) ApplyIdentityProvider(req *LDAPIdentityProviderRequest) (ct
 
 	// create the identity provider if it does not exist
 	if req.Current == nil {
-		r.Log.Info("creating ldap identity provider", request.LogValues(req)...)
+		r.Logger.Info("creating ldap identity provider", request.LogValues(req)...)
 		idp, err := req.OCMClient.Create(builder)
 		if err != nil {
 			return requeue.OnError(req, ocm.CreateError(req, err))
@@ -85,7 +85,7 @@ func (r *Controller) ApplyIdentityProvider(req *LDAPIdentityProviderRequest) (ct
 	}
 
 	// update the identity provider if it does exist
-	r.Log.Info("updating ldap identity provider", request.LogValues(req)...)
+	r.Logger.Info("updating ldap identity provider", request.LogValues(req)...)
 	_, err := req.OCMClient.Update(builder)
 	if err != nil {
 		return requeue.OnError(req, ocm.UpdateError(req, err))
