@@ -28,12 +28,17 @@ func (handler *handler) Execute() (ctrl.Result, error) {
 	for execute := range handler.Phases {
 		// run each phase function and return if we receive any errors
 		result, err := handler.Phases[execute].Function()
-		if err != nil || result.Requeue {
+		if err != nil {
 			return requeue.OnError(handler.Request, request.Error(handler.Request, fmt.Errorf(
 				"error in phase [%s] - %w",
 				handler.Phases[execute].Name,
 				err,
 			)))
+		}
+
+		// requeue if we are instructed to requeue
+		if result.Requeue {
+			return result, nil
 		}
 	}
 
