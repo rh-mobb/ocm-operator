@@ -52,7 +52,7 @@ type Controller struct {
 	Connection *sdk.Connection
 	Recorder   record.EventRecorder
 	Interval   time.Duration
-	Log        logr.Logger
+	Logger     logr.Logger
 
 	AWSClient *aws.Client
 }
@@ -86,7 +86,7 @@ func (r *Controller) ReconcileCreate(reconcileRequest request.Request) (ctrl.Res
 		phases.NewPhase("GetCurrentState", func() (ctrl.Result, error) { return r.GetCurrentState(req) }),
 		phases.NewPhase("ApplyCluster", func() (ctrl.Result, error) { return r.ApplyCluster(req) }),
 		phases.NewPhase("WaitUntilReady", func() (ctrl.Result, error) { return r.WaitUntilReady(req) }),
-		phases.NewPhase("Complete", func() (ctrl.Result, error) { return phases.Complete(req, triggers.Create, r.Log) }),
+		phases.NewPhase("Complete", func() (ctrl.Result, error) { return phases.Complete(req, triggers.Create, r) }),
 	).Execute()
 }
 
@@ -113,7 +113,7 @@ func (r *Controller) ReconcileDelete(reconcileRequest request.Request) (ctrl.Res
 		phases.NewPhase("WaitUntilMissing", func() (ctrl.Result, error) { return r.WaitUntilMissing(req) }),
 		phases.NewPhase("DestroyOperatorRoles", func() (ctrl.Result, error) { return r.DestroyOperatorRoles(req) }),
 		phases.NewPhase("DestroyOIDC", func() (ctrl.Result, error) { return r.DestroyOIDC(req) }),
-		phases.NewPhase("CompleteDestroy", func() (ctrl.Result, error) { return phases.CompleteDestroy(req, r.Log) }),
+		phases.NewPhase("CompleteDestroy", func() (ctrl.Result, error) { return phases.CompleteDestroy(req, r) }),
 	).Execute()
 }
 
@@ -141,6 +141,17 @@ func (r *Controller) Setup(reconcileRequest request.Request) (*ROSAClusterReques
 	}
 
 	return req, nil
+}
+
+// ReconcileInterval returns the requeue interval for the controller.  It is used to
+// satisfy the Controller interface.
+func (r *Controller) ReconcileInterval() time.Duration {
+	return r.Interval
+}
+
+// Log returns the controller logger.  It is used to satisfy the Controller interface.
+func (r *Controller) Log() logr.Logger {
+	return r.Logger
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -93,7 +93,7 @@ func (r *Controller) NewRequest(ctx context.Context, ctrlReq ctrl.Request) (requ
 		Desired:           desired,
 		ControllerRequest: ctrlReq,
 		Context:           ctx,
-		Log:               r.Log,
+		Log:               r.Logger,
 		Trigger:           triggers.GetTrigger(original),
 		Reconciler:        r,
 	}

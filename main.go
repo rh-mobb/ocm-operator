@@ -124,7 +124,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("machinepool-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
-		Log:        ctrl.Log.WithName("machinepool-controller"),
+		Logger:     ctrl.Log.WithName("machinepool-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "MachinePool")
 		os.Exit(1)
@@ -135,7 +135,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("gitlab-idp-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
-		Log:        ctrl.Log.WithName("gitlab-idp-controller"),
+		Logger:     ctrl.Log.WithName("gitlab-idp-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GitLabIdentityProvider")
 		os.Exit(1)
@@ -146,7 +146,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("ldap-idp-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
-		Log:        ctrl.Log.WithName("ldap-idp-controller"),
+		Logger:     ctrl.Log.WithName("ldap-idp-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "LDAPIdentityProvider")
 		os.Exit(1)
@@ -157,7 +157,7 @@ func main() {
 		Scheme:     mgr.GetScheme(),
 		Recorder:   mgr.GetEventRecorderFor("rosa-cluster-controller"),
 		Interval:   time.Duration(config.PollerIntervalMinutes) * time.Minute,
-		Log:        ctrl.Log.WithName("rosa-cluster-controller"),
+		Logger:     ctrl.Log.WithName("rosa-cluster-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Cluster")
 		os.Exit(1)
