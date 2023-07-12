@@ -16,13 +16,14 @@ func Test_handler_Execute(t *testing.T) {
 
 	testRequest := factory.NewTestRequest(factory.DefaultRequeue, factory.NewTestWorkload(""))
 
+	requeuePhase := NewPhase("requeue", func() (ctrl.Result, error) { return ctrl.Result{Requeue: true}, nil })
 	successPhase := NewPhase("success", Next)
 	errorPhase := NewPhase("fail", func() (ctrl.Result, error) {
 		return ctrl.Result{RequeueAfter: testRequest.DefaultRequeue()}, errors.New("fail")
 	})
 
+	requeueHandler := NewHandler(testRequest, successPhase, requeuePhase)
 	errorHandler := NewHandler(testRequest, successPhase, errorPhase, successPhase)
-
 	successHandler := NewHandler(testRequest, successPhase, successPhase, successPhase)
 
 	type fields struct {
@@ -51,6 +52,15 @@ func Test_handler_Execute(t *testing.T) {
 				Phases:  successHandler.Phases,
 			},
 			want:    ctrl.Result{},
+			wantErr: false,
+		},
+		{
+			name: "ensure phase with requeue result will requeue",
+			fields: fields{
+				Request: requeueHandler.Request,
+				Phases:  requeueHandler.Phases,
+			},
+			want:    ctrl.Result{Requeue: true},
 			wantErr: false,
 		},
 	}
